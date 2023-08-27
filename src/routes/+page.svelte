@@ -39,7 +39,6 @@ const pool = new SimplePool();
 // kind:40を取得する
 const getChannels = async (relays: string[]) => {
 	const sub = pool.sub(relays, [{kinds: [40], limit: 100}]);
-	const pubkeys: Set<string> = new Set();
 	sub.on('event', (ev: NostrEvent) => {
 		channels.push(JSON.parse(ev.content));
 		console.log(ev);
@@ -57,7 +56,7 @@ const getChannels = async (relays: string[]) => {
 
 // kind:42, 43, 44を取得する
 const getNotes = async (relays: string[]) => {
-	const sub = pool.sub(relays, [{kinds: [42, 43, 44], limit: 50}]);
+	const sub = pool.sub(relays, [{kinds: [42, 43, 44], limit: 100}]);
 	const pubkeys: Set<string> = new Set();
 	let getEOSE = false;
 	const update = () => {
@@ -73,19 +72,23 @@ const getNotes = async (relays: string[]) => {
 		});
 		// 表示を反映させる
 		notes = notes;
-		// プロフィールを取得しに行く
-		getProf(relays, Array.from(pubkeys));
 	};
 	sub.on('event', (ev: NostrEvent) => {
 		notes.push(ev);
-		pubkeys.add(ev.pubkey);
 		if (getEOSE) {
 			update();
+			if (!(ev.pubkey in profs)) {
+				getProf(relays, [ev.pubkey]);
+			}
+		}
+		else {
+			pubkeys.add(ev.pubkey);
 		}
 		console.log(ev);
 	});
 	sub.on('eose', () => {
 		update();
+		getProf(relays, Array.from(pubkeys));
 		getEOSE = true;
 		console.log('getNotes * EOSE *');
 	});
