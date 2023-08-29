@@ -116,10 +116,10 @@ const getChannelName = (noteEvent: NostrEvent) => {
 			if (channelObjects[tag[1]]) {
 				return channelObjects[tag[1]].name;
 			}
-			return '不明';
+			return 'チャンネル情報不明';
 		}
 	}
-	return '不明';
+	return 'チャンネル情報不明';
 };
 
 // kind:42, 43, 44を取得する
