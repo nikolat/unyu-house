@@ -109,11 +109,14 @@ const getSortedChannels = () => {
 	return channelArray;
 };
 
-const getChannelName = (noteEvent: NostrEvent): string => {
+const getChannelName = (noteEvent: NostrEvent) => {
 	console.log(noteEvent.content);
 	for (const tag of noteEvent.tags) {
 		if (tag[0] === 'e' && tag[3] === 'root') {
-			return channelObjects[tag[1]]?.name;
+			if (channelObjects[tag[1]]) {
+				return channelObjects[tag[1]].name;
+			}
+			return '不明';
 		}
 	}
 	return '不明';
