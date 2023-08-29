@@ -24,10 +24,13 @@ interface Profile {
 	picture: string
 }
 
-// kind:40を溜めておく
-let channels: Channel[] = [];
+// kind:40を溜めておく keyはid
+const channelEvents: NostrEvent[] = [];
+let channels: {[key: string]: Channel} = {};
 $: channels = channels;
-// kind:42, 43, 44を溜めておく
+// kind:41を溜めておく
+const metadataEvents: NostrEvent[] = [];
+// kind:42, 43, 44を溜めておく(43,44は未対応だけど)
 let notes: NostrEvent[] = [];
 $: notes = notes;
 // kind:0 プロフィール情報を溜めておく keyは公開鍵
@@ -38,19 +41,52 @@ const pool = new SimplePool();
 
 // kind:40を取得する
 const getChannels = async (relays: string[]) => {
-	const sub = pool.sub(relays, [{kinds: [40], limit: 100}]);
+	const sub = pool.sub(relays, [{kinds: [40]}]);
 	sub.on('event', (ev: NostrEvent) => {
-		channels.push(JSON.parse(ev.content));
+		channelEvents.push(ev);
+		channels[ev.id] = JSON.parse(ev.content);
 		console.log(ev);
 	});
 	sub.on('eose', () => {
-		// 表示を反映させる
-		channels = channels;
+		console.log('getChannels * EOSE *');
 		//取得できたらもう用済みなのでunsubする
 		sub.unsub();
-		// 投稿の取得が終わったらプロフィールを取得しに行く
-		getNotes(relays);
-		console.log('getChannels * EOSE *');
+		// kind:41を取得する
+		getMetadata(relays);
+	});
+};
+
+// kind:41を取得する
+const getMetadata = async (relays: string[]) => {
+	const sub = pool.sub(relays, [{kinds: [41]}]);
+	sub.on('event', (ev: NostrEvent) => {
+		metadataEvents.push(ev);
+		console.log(ev);
+	});
+	sub.on('eose', () => {
+		console.log('getMetadata * EOSE *');
+		//取得できたらもう用済みなのでunsubする
+		sub.unsub();
+		// 更新すべきkind:41を適用する
+		updateChannels();
+		// 表示を反映させる
+		channels = channels;
+	});
+};
+
+// 更新すべきkind:41を適用する
+const updateChannels = () => {
+	metadataEvents.forEach(m => {
+		channelEvents.forEach(c => {
+			if (m.pubkey === c.pubkey) {
+				m.tags.forEach(tag => {
+					if (tag[0] === 'e' && tag[1] === c.id) {
+						console.log('kind:41 replace', channels[c.id], JSON.parse(m.content));
+						channels[c.id] = JSON.parse(m.content);
+					}
+				});
+			}
+		})
 	});
 };
 
@@ -78,7 +114,7 @@ const getNotes = async (relays: string[]) => {
 		if (getEOSE) {
 			update();
 			if (!(ev.pubkey in profs)) {
-				getProf(relays, [ev.pubkey]);
+				getProfile(relays, [ev.pubkey]);
 			}
 		}
 		else {
@@ -87,31 +123,34 @@ const getNotes = async (relays: string[]) => {
 		console.log(ev);
 	});
 	sub.on('eose', () => {
-		update();
-		getProf(relays, Array.from(pubkeys));
-		getEOSE = true;
 		console.log('getNotes * EOSE *');
+		getEOSE = true;
+		update();
+		// 投稿の取得が終わったらプロフィールを取得しに行く
+		getProfile(relays, Array.from(pubkeys));
 	});
 };
 
 // プロフィールを取得する
-const getProf = async (relays: string[], pubkeys: string[]) => {
+const getProfile = async (relays: string[], pubkeys: string[]) => {
 	const sub = pool.sub(relays, [{kinds: [0], authors: pubkeys}]);
 	sub.on('event', (ev: NostrEvent) => {
 		profs[ev.pubkey] = JSON.parse(ev.content);
-		// Nostrイベントのオブジェクトがコールバックに渡る
 		console.log(ev);
 	});
 	sub.on('eose', () => {
-		// 表示を反映させる
-		profs = profs;
+		console.log('getProfile * EOSE *');
 		//取得できたらもう用済みなのでunsubする
 		sub.unsub();
-		console.log('kind:0 * EOSE *');
+		// 表示を反映させる
+		profs = profs;
 	});
 };
 
+// チャンネルの取得
 getChannels(defaultRelays).catch((e) => console.error(e));
+// 投稿の取得
+getNotes(defaultRelays).catch((e) => console.error(e));
 
 </script>
 
@@ -126,9 +165,9 @@ getChannels(defaultRelays).catch((e) => console.error(e));
 	</ul>
 	<nav>
 		<h2>チャンネル</h2>
-		<p>チャンネル取得数: {channels.length}</p>
+		<p>チャンネル取得数: {Object.keys(channels).length}</p>
 		<ul>
-			{#each channels as channel}
+			{#each Object.values(channels) as channel}
 			<li>{channel.name}</li>
 			{/each}
 		</ul>
