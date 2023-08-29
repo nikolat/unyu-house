@@ -109,6 +109,16 @@ const getSortedChannels = () => {
 	return channelArray;
 };
 
+const getChannelName = (noteEvent: NostrEvent): string => {
+	console.log(noteEvent.content);
+	for (const tag of noteEvent.tags) {
+		if (tag[0] === 'e' && tag[3] === 'root') {
+			return channelObjects[tag[1]]?.name;
+		}
+	}
+	return '不明';
+};
+
 // kind:42, 43, 44を取得する
 const getNotes = async (relays: string[]) => {
 	const sub = pool.sub(relays, [{kinds: [42, 43, 44], limit: 100}]);
@@ -202,7 +212,7 @@ getNotes(defaultRelays).catch((e) => console.error(e));
 		{:else}
 			@{nip19.npubEncode(note.pubkey)}
 		{/if}
-		| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind}</dt>
+		| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {getChannelName(note)}</dt>
 		<dd>{note.content}</dd>
 	{/each}
 	</dl>
