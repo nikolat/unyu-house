@@ -15,6 +15,7 @@ interface Channel {
 	name: string
 	about: string
 	picture: string
+	updated_at: number
 }
 
 interface Profile {
@@ -26,7 +27,8 @@ interface Profile {
 
 // kind:40を溜めておく keyはid
 const channelEvents: NostrEvent[] = [];
-let channels: {[key: string]: Channel} = {};
+const channelObjects: {[key: string]: Channel} = {};
+let channels: Channel[] = [];
 $: channels = channels;
 // kind:41を溜めておく
 const metadataEvents: NostrEvent[] = [];
@@ -44,7 +46,8 @@ const getChannels = async (relays: string[]) => {
 	const sub = pool.sub(relays, [{kinds: [40]}]);
 	sub.on('event', (ev: NostrEvent) => {
 		channelEvents.push(ev);
-		channels[ev.id] = JSON.parse(ev.content);
+		channelObjects[ev.id] = JSON.parse(ev.content);
+		channelObjects[ev.id].updated_at = ev.created_at;
 		console.log(ev);
 	});
 	sub.on('eose', () => {
@@ -70,7 +73,7 @@ const getMetadata = async (relays: string[]) => {
 		// 更新すべきkind:41を適用する
 		updateChannels();
 		// 表示を反映させる
-		channels = channels;
+		channels = getSortedChannels();
 	});
 };
 
@@ -81,13 +84,29 @@ const updateChannels = () => {
 			if (m.pubkey === c.pubkey) {
 				m.tags.forEach(tag => {
 					if (tag[0] === 'e' && tag[1] === c.id) {
-						console.log('kind:41 replace', channels[c.id], JSON.parse(m.content));
-						channels[c.id] = JSON.parse(m.content);
+						console.log('kind:41 replace', channelObjects[c.id], JSON.parse(m.content));
+						channelObjects[c.id] = JSON.parse(m.content);
+						channelObjects[c.id].updated_at = m.created_at;
 					}
 				});
 			}
 		})
 	});
+};
+
+// 降順にソートされたチャンネル情報の配列を返す
+const getSortedChannels = () => {
+	const channelArray: Channel[] = Object.values(channelObjects);
+	channelArray.sort((a, b) => {
+		if (a.updated_at < b.updated_at) {
+			return 1;
+		}
+		if (a.updated_at > b.updated_at) {
+			return -1;
+		}
+		return 0;
+	});
+	return channelArray;
 };
 
 // kind:42, 43, 44を取得する
@@ -165,9 +184,9 @@ getNotes(defaultRelays).catch((e) => console.error(e));
 	</ul>
 	<nav>
 		<h2>チャンネル</h2>
-		<p>チャンネル取得数: {Object.keys(channels).length}</p>
+		<p>チャンネル取得数: {channels.length}</p>
 		<ul>
-			{#each Object.values(channels) as channel}
+			{#each channels as channel}
 			<li>{channel.name}</li>
 			{/each}
 		</ul>
