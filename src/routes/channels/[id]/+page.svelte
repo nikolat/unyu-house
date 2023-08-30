@@ -201,6 +201,8 @@ getNotes(defaultRelays).catch((e) => console.error(e));
 		<li>{relay}</li>
 	{/each}
 	</ul>
+	<h2>GitHub</h2>
+	<p><a href="https://github.com/nikolat/svelte-practice">nikolat/svelte-practice</a></p>
 	<nav>
 		<h2>チャンネル</h2>
 		<p>チャンネル取得数: {channels.length}</p>
