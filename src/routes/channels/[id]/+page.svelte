@@ -21,6 +21,7 @@ interface Channel {
 	picture: string
 	updated_at: number
 	id: string
+	pubkey: string
 }
 
 interface Profile {
@@ -54,6 +55,7 @@ const getChannels = async (relays: string[]) => {
 		channelObjects[ev.id] = JSON.parse(ev.content);
 		channelObjects[ev.id].updated_at = ev.created_at;
 		channelObjects[ev.id].id = ev.id;
+		channelObjects[ev.id].pubkey = ev.pubkey;
 		console.log(ev);
 	});
 	sub.on('eose', () => {
@@ -94,6 +96,7 @@ const updateChannels = () => {
 						channelObjects[c.id] = JSON.parse(m.content);
 						channelObjects[c.id].updated_at = m.created_at;
 						channelObjects[c.id].id = c.id;
+						channelObjects[c.id].pubkey = c.pubkey;
 					}
 				});
 			}
@@ -214,6 +217,13 @@ getNotes(defaultRelays).catch((e) => console.error(e));
 	</nav>
 </header>
 <main>
+	<h2>{channelObjects[currentChannelId]?.name}</h2>
+	{#if channelObjects[currentChannelId]}
+	<p>{#if channelObjects[currentChannelId]?.picture}<img src="{channelObjects[currentChannelId]?.picture}" width="100" height="100" alt="banner" />{/if}{channelObjects[currentChannelId]?.about}</p>
+	{/if}
+	{#if profs[channelObjects[currentChannelId]?.pubkey]}
+	<p>owner: <img src="{profs[channelObjects[currentChannelId]?.pubkey]?.picture}" width="32" height="32" alt="{profs[channelObjects[currentChannelId]?.pubkey]?.display_name}" />@{profs[channelObjects[currentChannelId]?.pubkey]?.name}</p>
+	{/if}
 	<p>投稿取得数: {notes.length}</p>
 	<dl>
 	{#each notes as note}

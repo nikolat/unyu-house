@@ -18,6 +18,7 @@ interface Channel {
 	picture: string
 	updated_at: number
 	id: string
+	pubkey: string
 }
 
 interface Profile {
@@ -51,6 +52,7 @@ const getChannels = async (relays: string[]) => {
 		channelObjects[ev.id] = JSON.parse(ev.content);
 		channelObjects[ev.id].updated_at = ev.created_at;
 		channelObjects[ev.id].id = ev.id;
+		channelObjects[ev.id].pubkey = ev.pubkey;
 		console.log(ev);
 	});
 	sub.on('eose', () => {
@@ -91,6 +93,7 @@ const updateChannels = () => {
 						channelObjects[c.id] = JSON.parse(m.content);
 						channelObjects[c.id].updated_at = m.created_at;
 						channelObjects[c.id].id = c.id;
+						channelObjects[c.id].pubkey = c.pubkey;
 					}
 				});
 			}
@@ -123,6 +126,17 @@ const getChannelName = (noteEvent: NostrEvent) => {
 		}
 	}
 	return 'チャンネル情報不明';
+};
+const getChannelId = (noteEvent: NostrEvent) => {
+	for (const tag of noteEvent.tags) {
+		if (tag[0] === 'e' && tag[3] === 'root') {
+			if (channelObjects[tag[1]]) {
+				return channelObjects[tag[1]].id;
+			}
+			return null;
+		}
+	}
+	return null;
 };
 
 // kind:42, 43, 44を取得する
@@ -220,7 +234,7 @@ getNotes(defaultRelays).catch((e) => console.error(e));
 		{:else}
 			@{nip19.npubEncode(note.pubkey)}
 		{/if}
-		| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {getChannelName(note)}</dt>
+		| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {#if getChannelId(note)}<a href="/channels/{getChannelId(note)}">{getChannelName(note)}</a>{:else}{getChannelName(note)}{/if}</dt>
 		<dd>{note.content}</dd>
 	{/each}
 	</dl>
