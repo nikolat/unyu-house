@@ -1,5 +1,8 @@
 <script lang='ts'>
 
+export let data: any;
+const currentChannelId = data.params.id;
+
 import {
 	SimplePool,
 	nip19,
@@ -127,7 +130,7 @@ const getChannelName = (noteEvent: NostrEvent) => {
 
 // kind:42, 43, 44を取得する
 const getNotes = async (relays: string[]) => {
-	const sub = pool.sub(relays, [{kinds: [42, 43, 44], limit: 100}]);
+	const sub = pool.sub(relays, [{kinds: [42, 43, 44], limit: 100, '#e': [currentChannelId]}]);
 	const pubkeys: Set<string> = new Set();
 	let getEOSE = false;
 	const update = () => {
