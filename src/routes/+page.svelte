@@ -200,7 +200,7 @@ const getProfile = async (relays: string[], pubkeys: string[]) => {
 };
 
 onDestroy(() => {
-	subNotes.unsub();
+	subNotes?.unsub();
 });
 onMount(() => {
 	// チャンネルの取得
