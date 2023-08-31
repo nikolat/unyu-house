@@ -1,13 +1,15 @@
 <script lang='ts'>
 
 export let data: any;
-const currentChannelId = data.params.id;
+let currentChannelId = data.params.id;
 
 import {
 	SimplePool,
 	nip19,
 	type Event as NostrEvent,
+	type Sub,
 } from 'nostr-tools';
+import { afterNavigate, beforeNavigate } from '$app/navigation';
 
 // とりあえずリレーは固定
 const defaultRelays = [
@@ -32,12 +34,12 @@ interface Profile {
 }
 
 // kind:40を溜めておく keyはid
-const channelEvents: NostrEvent[] = [];
-const channelObjects: {[key: string]: Channel} = {};
+let channelEvents: NostrEvent[] = [];
+let channelObjects: {[key: string]: Channel} = {};
 let channels: Channel[] = [];
 $: channels = channels;
 // kind:41を溜めておく
-const metadataEvents: NostrEvent[] = [];
+let metadataEvents: NostrEvent[] = [];
 // kind:42, 43, 44を溜めておく(43,44は未対応だけど)
 let notes: NostrEvent[] = [];
 $: notes = notes;
@@ -46,6 +48,7 @@ let profs: {[key: string]: Profile} = {};
 $: profs = profs;
 
 const pool = new SimplePool();
+let subNotes: Sub<42 | 43 | 44>;
 
 // kind:40を取得する
 const getChannels = async (relays: string[]) => {
@@ -133,7 +136,7 @@ const getChannelName = (noteEvent: NostrEvent) => {
 
 // kind:42, 43, 44を取得する
 const getNotes = async (relays: string[]) => {
-	const sub = pool.sub(relays, [{kinds: [42, 43, 44], limit: 100, '#e': [currentChannelId]}]);
+	subNotes = pool.sub(relays, [{kinds: [42, 43, 44], limit: 100, '#e': [currentChannelId]}]);
 	const pubkeys: Set<string> = new Set();
 	let getEOSE = false;
 	const update = () => {
@@ -150,7 +153,7 @@ const getNotes = async (relays: string[]) => {
 		// 表示を反映させる
 		notes = notes;
 	};
-	sub.on('event', (ev: NostrEvent) => {
+	subNotes.on('event', (ev: NostrEvent) => {
 		notes.push(ev);
 		if (getEOSE) {
 			update();
@@ -163,7 +166,7 @@ const getNotes = async (relays: string[]) => {
 		}
 		console.log(ev);
 	});
-	sub.on('eose', () => {
+	subNotes.on('eose', () => {
 		console.log('getNotes * EOSE *');
 		getEOSE = true;
 		update();
@@ -188,10 +191,22 @@ const getProfile = async (relays: string[], pubkeys: string[]) => {
 	});
 };
 
-// チャンネルの取得
-getChannels(defaultRelays).catch((e) => console.error(e));
-// 投稿の取得
-getNotes(defaultRelays).catch((e) => console.error(e));
+beforeNavigate(() => {
+	subNotes.unsub();
+});
+afterNavigate(() => {
+	currentChannelId = data.params.id;
+	channelEvents = [];
+	channelObjects = {};
+	channels = [];
+	metadataEvents = [];
+	notes = [];
+	profs = {};
+	// チャンネルの取得
+	getChannels(defaultRelays).catch((e) => console.error(e));
+	// 投稿の取得
+	getNotes(defaultRelays).catch((e) => console.error(e));
+});
 
 </script>
 

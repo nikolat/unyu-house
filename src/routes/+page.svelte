@@ -4,7 +4,9 @@ import {
 	SimplePool,
 	nip19,
 	type Event as NostrEvent,
+	type Sub,
 } from 'nostr-tools';
+import { onDestroy, onMount } from 'svelte';
 
 // とりあえずリレーは固定
 const defaultRelays = [
@@ -43,6 +45,7 @@ let profs: {[key: string]: Profile} = {};
 $: profs = profs;
 
 const pool = new SimplePool();
+let subNotes: Sub<42 | 43 | 44>;
 
 // kind:40を取得する
 const getChannels = async (relays: string[]) => {
@@ -141,7 +144,7 @@ const getChannelId = (noteEvent: NostrEvent) => {
 
 // kind:42, 43, 44を取得する
 const getNotes = async (relays: string[]) => {
-	const sub = pool.sub(relays, [{kinds: [42, 43, 44], limit: 100}]);
+	subNotes = pool.sub(relays, [{kinds: [42, 43, 44], limit: 100}]);
 	const pubkeys: Set<string> = new Set();
 	let getEOSE = false;
 	const update = () => {
@@ -158,7 +161,7 @@ const getNotes = async (relays: string[]) => {
 		// 表示を反映させる
 		notes = notes;
 	};
-	sub.on('event', (ev: NostrEvent) => {
+	subNotes.on('event', (ev: NostrEvent) => {
 		notes.push(ev);
 		if (getEOSE) {
 			update();
@@ -171,7 +174,7 @@ const getNotes = async (relays: string[]) => {
 		}
 		console.log(ev);
 	});
-	sub.on('eose', () => {
+	subNotes.on('eose', () => {
 		console.log('getNotes * EOSE *');
 		getEOSE = true;
 		update();
@@ -196,10 +199,15 @@ const getProfile = async (relays: string[], pubkeys: string[]) => {
 	});
 };
 
-// チャンネルの取得
-getChannels(defaultRelays).catch((e) => console.error(e));
-// 投稿の取得
-getNotes(defaultRelays).catch((e) => console.error(e));
+onDestroy(() => {
+	subNotes.unsub();
+});
+onMount(() => {
+	// チャンネルの取得
+	getChannels(defaultRelays).catch((e) => console.error(e));
+	// 投稿の取得
+	getNotes(defaultRelays).catch((e) => console.error(e));
+});
 
 </script>
 
