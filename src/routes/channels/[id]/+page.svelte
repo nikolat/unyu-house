@@ -252,15 +252,36 @@ afterNavigate(() => {
 		<dd>{note.content}</dd>
 	{/each}
 	</dl>
+	<textarea placeholder="なんちゃって投稿欄"></textarea>
 </main>
 </div>
 
 <style>
+:global(html) {
+	width: 100%;
+	height: 100%;
+}
+:global(body) {
+	width: 100%;
+	height: 100%;
+	margin: 0;
+}
 #container {
+	width: 100%;
+	height: 100%;
 	display: flex;
+	overflow: hidden;
 }
 header {
+	width: 20%;
+	height: 100%;
 	background-color: #ccc;
+	overflow-y: scroll;
+}
+main {
+	width: 80%;
+	height: calc(100% - 5em);
+	overflow-y: scroll;
 }
 dt {
 	border-top: 1px solid #666;
@@ -268,5 +289,11 @@ dt {
 dd {
 	border-top: 1px dashed #999;
 	white-space: pre-wrap;
+}
+textarea {
+	width: 75%;
+	height: 5em;
+	position: absolute;
+	bottom: 0%;
 }
 </style>
