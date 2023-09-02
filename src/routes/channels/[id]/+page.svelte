@@ -11,6 +11,7 @@ import {
 } from 'nostr-tools';
 import { afterUpdate } from 'svelte';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
+import { browser } from '$app/environment';
 
 // とりあえずリレーは固定
 const defaultRelays = [
@@ -192,6 +193,17 @@ const getProfile = async (relays: string[], pubkeys: string[]) => {
 	});
 };
 
+let loginPubkey: string;
+$: loginPubkey = loginPubkey;
+const login = async() => {
+	if (browser && (window as any).nostr?.getPublicKey) {
+		loginPubkey = await (window as any).nostr.getPublicKey();
+	}
+};
+const logout = () => {
+	loginPubkey = '';
+};
+
 beforeNavigate(() => {
 	subNotes.unsub();
 });
@@ -213,8 +225,18 @@ afterUpdate(() => {
 	main.scroll(0, main.scrollHeight);
 });
 
+let inputText = '';
+$: inputText = inputText;
+const sendMessage = () => {
+	alert('投稿機能は鋭意作成中です！');
+	inputText = '';
+}
+
 </script>
 
+<svelte:head>
+	<title>{channelObjects[currentChannelId]?.name} | ぱぶ茶(仮)</title>
+</svelte:head>
 <div id="container">
 <header>
 	<h1><a href="/">ぱぶ茶(仮)</a></h1>
@@ -224,6 +246,11 @@ afterUpdate(() => {
 		<li>{relay}</li>
 	{/each}
 	</ul>
+	{#if loginPubkey}
+	<button on:click={logout}>logout</button>
+	{:else}
+	<button on:click={login}>login with NIP-07</button>
+	{/if}
 	<h2>GitHub</h2>
 	<p><a href="https://github.com/nikolat/svelte-practice">nikolat/svelte-practice</a></p>
 	<nav>
@@ -257,7 +284,19 @@ afterUpdate(() => {
 		<dd>{note.content}</dd>
 	{/each}
 	</dl>
-	<textarea placeholder="なんちゃって投稿欄"></textarea>
+	<div id="input">
+		{#if loginPubkey}
+		<textarea id="input-text" bind:value={inputText}></textarea>
+			{#if inputText !== ''}
+			<button on:click={sendMessage}>投稿</button>
+			{:else}
+			<button disabled>投稿</button>
+			{/if}
+		{:else}
+		<textarea id="input-text" disabled></textarea>
+		<button disabled>投稿</button>
+		{/if}
+	</div>
 </main>
 </div>
 
@@ -285,7 +324,7 @@ header {
 }
 main {
 	width: 80%;
-	height: calc(100% - 5em);
+	height: calc(100% - 7em);
 	overflow-y: scroll;
 	word-break: break-all;
 }
@@ -305,10 +344,14 @@ dd {
 	border-top: 1px dashed #999;
 	white-space: pre-wrap;
 }
-textarea {
-	width: 75%;
-	height: 5em;
+#input {
 	position: absolute;
+	width: 80%;
+	height: 7em;
 	bottom: 0%;
+}
+#input > textarea {
+	width: 100%;
+	height: 5em;
 }
 </style>
