@@ -7,6 +7,7 @@ import {
 	type Sub,
 } from 'nostr-tools';
 import { afterUpdate, onDestroy, onMount } from 'svelte';
+import { browser } from '$app/environment';
 
 // とりあえずリレーは固定
 const defaultRelays = [
@@ -199,6 +200,17 @@ const getProfile = async (relays: string[], pubkeys: string[]) => {
 	});
 };
 
+let loginPubkey: string;
+$: loginPubkey = loginPubkey;
+const login = async() => {
+	if (browser && (window as any).nostr?.getPublicKey) {
+		loginPubkey = await (window as any).nostr.getPublicKey();
+	}
+};
+const logout = () => {
+	loginPubkey = '';
+};
+
 onDestroy(() => {
 	subNotes?.unsub();
 });
@@ -206,7 +218,7 @@ onMount(async () => {
 	// チャンネルの取得
 	getChannels(defaultRelays).catch((e) => console.error(e));
 	// 投稿の取得
-	await getNotes(defaultRelays).catch((e) => console.error(e));
+	getNotes(defaultRelays).catch((e) => console.error(e));
 });
 afterUpdate(() => {
 	const main = document.getElementsByTagName('main')[0];
@@ -215,6 +227,9 @@ afterUpdate(() => {
 
 </script>
 
+<svelte:head>
+	<title>ぱぶ茶(仮)</title>
+</svelte:head>
 <div id="container">
 <header>
 	<h1><a href="/">ぱぶ茶(仮)</a></h1>
@@ -224,6 +239,11 @@ afterUpdate(() => {
 		<li>{relay}</li>
 	{/each}
 	</ul>
+	{#if loginPubkey}
+	<button on:click={logout}>logout</button>
+	{:else}
+	<button on:click={login}>login with NIP-07</button>
+	{/if}
 	<h2>GitHub</h2>
 	<p><a href="https://github.com/nikolat/svelte-practice">nikolat/svelte-practice</a></p>
 	<nav>
@@ -250,7 +270,6 @@ afterUpdate(() => {
 		<dd>{note.content}</dd>
 	{/each}
 	</dl>
-	<textarea placeholder="なんちゃって投稿欄"></textarea>
 </main>
 </div>
 
@@ -280,6 +299,7 @@ main {
 	width: 80%;
 	height: calc(100% - 5em);
 	overflow-y: scroll;
+	word-break: break-all;
 }
 dt {
 	border-top: 1px solid #666;
@@ -287,11 +307,5 @@ dt {
 dd {
 	border-top: 1px dashed #999;
 	white-space: pre-wrap;
-}
-textarea {
-	width: 75%;
-	height: 5em;
-	position: absolute;
-	bottom: 0%;
 }
 </style>
