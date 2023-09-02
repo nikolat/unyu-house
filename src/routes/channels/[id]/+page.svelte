@@ -9,6 +9,7 @@ import {
 	type Event as NostrEvent,
 	type Sub,
 } from 'nostr-tools';
+import { afterUpdate } from 'svelte';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
 
 // とりあえずリレーは固定
@@ -206,6 +207,10 @@ afterNavigate(() => {
 	getChannels(defaultRelays).catch((e) => console.error(e));
 	// 投稿の取得
 	getNotes(defaultRelays).catch((e) => console.error(e));
+});
+afterUpdate(() => {
+	const main = document.getElementsByTagName('main')[0];
+	main.scroll(0, main.scrollHeight);
 });
 
 </script>
