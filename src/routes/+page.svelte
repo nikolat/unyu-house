@@ -6,7 +6,7 @@ import {
 	type Event as NostrEvent,
 	type Sub,
 } from 'nostr-tools';
-import { onDestroy, onMount } from 'svelte';
+import { afterUpdate, onDestroy, onMount } from 'svelte';
 
 // とりあえずリレーは固定
 const defaultRelays = [
@@ -202,11 +202,15 @@ const getProfile = async (relays: string[], pubkeys: string[]) => {
 onDestroy(() => {
 	subNotes?.unsub();
 });
-onMount(() => {
+onMount(async () => {
 	// チャンネルの取得
 	getChannels(defaultRelays).catch((e) => console.error(e));
 	// 投稿の取得
-	getNotes(defaultRelays).catch((e) => console.error(e));
+	await getNotes(defaultRelays).catch((e) => console.error(e));
+});
+afterUpdate(() => {
+	const main = document.getElementsByTagName('main')[0];
+	main.scroll(0, main.scrollHeight);
 });
 
 </script>
