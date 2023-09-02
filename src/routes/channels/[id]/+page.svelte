@@ -287,6 +287,7 @@ main {
 	width: 80%;
 	height: calc(100% - 5em);
 	overflow-y: scroll;
+	word-break: break-all;
 }
 #channel-about {
 	white-space: pre-wrap;

@@ -250,7 +250,6 @@ afterUpdate(() => {
 		<dd>{note.content}</dd>
 	{/each}
 	</dl>
-	<textarea placeholder="なんちゃって投稿欄"></textarea>
 </main>
 </div>
 
@@ -280,6 +279,7 @@ main {
 	width: 80%;
 	height: calc(100% - 5em);
 	overflow-y: scroll;
+	word-break: break-all;
 }
 dt {
 	border-top: 1px solid #666;
@@ -287,11 +287,5 @@ dt {
 dd {
 	border-top: 1px dashed #999;
 	white-space: pre-wrap;
-}
-textarea {
-	width: 75%;
-	height: 5em;
-	position: absolute;
-	bottom: 0%;
 }
 </style>
