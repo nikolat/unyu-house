@@ -239,10 +239,10 @@ afterUpdate(() => {
 <main>
 	<h2>{channelObjects[currentChannelId]?.name}</h2>
 	{#if channelObjects[currentChannelId]}
-	<p>{#if channelObjects[currentChannelId]?.picture}<img src="{channelObjects[currentChannelId]?.picture}" width="100" height="100" alt="banner" />{/if}{channelObjects[currentChannelId]?.about}</p>
+	<p id="channel-about">{#if channelObjects[currentChannelId]?.picture}<img src="{channelObjects[currentChannelId]?.picture}" width="100" height="100" alt="banner" />{/if}{channelObjects[currentChannelId]?.about}</p>
 	{/if}
 	{#if profs[channelObjects[currentChannelId]?.pubkey]}
-	<p>owner: <img src="{profs[channelObjects[currentChannelId]?.pubkey]?.picture}" width="32" height="32" alt="{profs[channelObjects[currentChannelId]?.pubkey]?.display_name}" />@{profs[channelObjects[currentChannelId]?.pubkey]?.name}</p>
+	<p id="channel-owner">owner: <img src="{profs[channelObjects[currentChannelId]?.pubkey]?.picture}" width="32" height="32" alt="{profs[channelObjects[currentChannelId]?.pubkey]?.display_name}" />@{profs[channelObjects[currentChannelId]?.pubkey]?.name}</p>
 	{/if}
 	<p>投稿取得数: {notes.length}</p>
 	<dl>
@@ -287,6 +287,15 @@ main {
 	width: 80%;
 	height: calc(100% - 5em);
 	overflow-y: scroll;
+}
+#channel-about {
+	white-space: pre-wrap;
+}
+#channel-about > img {
+	float: left;
+}
+#channel-owner {
+	clear: left;
 }
 dt {
 	border-top: 1px solid #666;
