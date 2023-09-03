@@ -148,6 +148,14 @@ const getChannelId = (noteEvent: NostrEvent) => {
 	}
 	return null;
 };
+const getImagesUrls = (content: string) => {
+	const matchesIterator = content.matchAll(/https?:\/\/.+\.(jpe?g|png|gif)/g);
+	const urls = [];
+	for (const match of matchesIterator) {
+		urls.push(match[0]);
+	}
+	return urls;
+};
 
 // kind:42, 43, 44を取得する
 const getNotes = async (relays: string[]) => {
@@ -277,7 +285,12 @@ afterUpdate(() => {
 			@{nip19.npubEncode(note.pubkey)}
 		{/if}
 		| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {#if getChannelId(note)}<a href="/channels/{getChannelId(note)}">{getChannelName(note)}</a>{:else}{getChannelName(note)}{/if}</dt>
-		<dd>{note.content}</dd>
+		<dd>
+			{note.content}
+			{#each getImagesUrls(note.content) as imageUrl}
+				<a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a>
+			{/each}
+		</dd>
 	{/each}
 	</dl>
 </main>
@@ -307,7 +320,7 @@ header {
 }
 main {
 	width: 80%;
-	height: calc(100% - 5em);
+	height: calc(100% - 7em);
 	overflow-y: scroll;
 	word-break: break-all;
 }
@@ -317,5 +330,8 @@ dt {
 dd {
 	border-top: 1px dashed #999;
 	white-space: pre-wrap;
+}
+dd img {
+	max-height: 200px;
 }
 </style>

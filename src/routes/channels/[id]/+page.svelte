@@ -149,6 +149,14 @@ const getChannelName = (noteEvent: NostrEvent) => {
 	}
 	return 'チャンネル情報不明';
 };
+const getImagesUrls = (content: string) => {
+	const matchesIterator = content.matchAll(/https?:\/\/.+\.(jpe?g|png|gif)/g);
+	const urls = [];
+	for (const match of matchesIterator) {
+		urls.push(match[0]);
+	}
+	return urls;
+};
 
 // kind:42, 43, 44を取得する
 const getNotes = async (relays: string[]) => {
@@ -231,7 +239,8 @@ afterNavigate(() => {
 	currentChannelId = data.params.id;
 	if (/^nevent/.test(currentChannelId)) {
 		const d = nip19.decode(currentChannelId);
-		currentChannelId = (d.data as any).id;
+		currentChannelId = (d.data as nip19.EventPointer).id
+		currentChannelOwner = (d.data as nip19.EventPointer).author;
 	}
 	channelEvents = [];
 	channelObjects = {};
@@ -327,7 +336,12 @@ const sendMessage = async() => {
 			@{nip19.npubEncode(note.pubkey)}
 		{/if}
 		| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {getChannelName(note)}</dt>
-		<dd>{note.content}</dd>
+		<dd>
+			{note.content}
+			{#each getImagesUrls(note.content) as imageUrl}
+				<a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a>
+			{/each}
+		</dd>
 	{/each}
 	</dl>
 	<div id="input">
@@ -389,6 +403,9 @@ dt {
 dd {
 	border-top: 1px dashed #999;
 	white-space: pre-wrap;
+}
+dd img {
+	max-height: 200px;
 }
 #input {
 	position: absolute;
