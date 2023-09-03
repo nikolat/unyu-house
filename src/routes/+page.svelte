@@ -140,7 +140,8 @@ const getChannelId = (noteEvent: NostrEvent) => {
 	for (const tag of noteEvent.tags) {
 		if (tag[0] === 'e' && tag[3] === 'root') {
 			if (channelObjects[tag[1]]) {
-				return channelObjects[tag[1]].id;
+				const id = channelObjects[tag[1]].id;
+				return nip19.neventEncode({id:id, relays:[channelObjects[id].recommendedRelay], author:channelObjects[id].pubkey});
 			}
 			return null;
 		}
@@ -260,7 +261,7 @@ afterUpdate(() => {
 		<p>チャンネル取得数: {channels.length}</p>
 		<ul>
 			{#each channels as channel}
-			<li><a href="/channels/{channel.id}">{channel.name}</a></li>
+			<li><a href="/channels/{nip19.neventEncode({id:channel.id, relays:[channelObjects[channel.id].recommendedRelay], author:channelObjects[channel.id].pubkey})}">{channel.name}</a></li>
 			{/each}
 		</ul>
 	</nav>
