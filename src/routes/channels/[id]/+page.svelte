@@ -239,11 +239,23 @@ let inputText = '';
 $: inputText = inputText;
 const sendMessage = async() => {
 	const recommendedRelay: string = channelObjects[currentChannelId].recommendedRelay;
+	const tags = [['e', currentChannelId, recommendedRelay, 'root']];
+	const matchesIterator = inputText.matchAll(/(^|\W|\b)(nostr:(npub\w{59}))($|\W|\b)/g);
+	const mentionPubkeys: Set<string> = new Set();
+	for (const match of matchesIterator) {
+		const pubkey = nip19.decode(match[3]).data;
+		if (typeof pubkey !== 'string')
+			continue;
+		mentionPubkeys.add(pubkey);
+	}
+	for (const p of mentionPubkeys) {
+		tags.push(['p', p, '']);
+	}
 	const baseEvent: UnsignedEvent = {
 		kind: 42,
 		pubkey: '',
 		created_at: Math.floor(Date.now() / 1000),
-		tags: [['e', currentChannelId, recommendedRelay, 'root']],
+		tags: tags,
 		content: inputText
 	};
 	const newEvent: NostrEvent = await (window as any).nostr.signEvent(baseEvent);
