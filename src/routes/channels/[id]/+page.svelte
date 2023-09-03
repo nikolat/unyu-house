@@ -28,6 +28,7 @@ interface Channel {
 	updated_at: number
 	id: string
 	pubkey: string
+	recommendedRelay: string
 }
 
 interface Profile {
@@ -63,7 +64,8 @@ const getChannels = async (relays: string[]) => {
 		channelObjects[ev.id].updated_at = ev.created_at;
 		channelObjects[ev.id].id = ev.id;
 		channelObjects[ev.id].pubkey = ev.pubkey;
-		console.log(ev);
+		channelObjects[ev.id].recommendedRelay = pool.seenOn(ev.id)[0];
+//		console.log(ev);
 	});
 	sub.on('eose', () => {
 		console.log('getChannels * EOSE *');
@@ -79,7 +81,7 @@ const getMetadata = async (relays: string[]) => {
 	const sub = pool.sub(relays, [{kinds: [41]}]);
 	sub.on('event', (ev: NostrEvent) => {
 		metadataEvents.push(ev);
-		console.log(ev);
+//		console.log(ev);
 	});
 	sub.on('eose', () => {
 		console.log('getMetadata * EOSE *');
@@ -99,11 +101,13 @@ const updateChannels = () => {
 			if (m.pubkey === c.pubkey) {
 				m.tags.forEach(tag => {
 					if (tag[0] === 'e' && tag[1] === c.id) {
-						console.log('kind:41 replace', channelObjects[c.id], JSON.parse(m.content));
+//						console.log('kind:41 replace', channelObjects[c.id], JSON.parse(m.content));
+						const savedRecommendedRelay = channelObjects[c.id].recommendedRelay;
 						channelObjects[c.id] = JSON.parse(m.content);
 						channelObjects[c.id].updated_at = m.created_at;
 						channelObjects[c.id].id = c.id;
 						channelObjects[c.id].pubkey = c.pubkey;
+						channelObjects[c.id].recommendedRelay = savedRecommendedRelay;
 					}
 				});
 			}
@@ -168,7 +172,7 @@ const getNotes = async (relays: string[]) => {
 		else {
 			pubkeys.add(ev.pubkey);
 		}
-		console.log(ev);
+//		console.log(ev);
 	});
 	subNotes.on('eose', () => {
 		console.log('getNotes * EOSE *');
@@ -184,7 +188,7 @@ const getProfile = async (relays: string[], pubkeys: string[]) => {
 	const sub = pool.sub(relays, [{kinds: [0], authors: pubkeys}]);
 	sub.on('event', (ev: NostrEvent) => {
 		profs[ev.pubkey] = JSON.parse(ev.content);
-		console.log(ev);
+//		console.log(ev);
 	});
 	sub.on('eose', () => {
 		console.log('getProfile * EOSE *');
@@ -234,12 +238,12 @@ afterUpdate(() => {
 let inputText = '';
 $: inputText = inputText;
 const sendMessage = async() => {
-	const recommendRelay = defaultRelays[Math.floor(Math.random() * defaultRelays.length)];
+	const recommendedRelay: string = channelObjects[currentChannelId].recommendedRelay;
 	const baseEvent: UnsignedEvent = {
 		kind: 42,
 		pubkey: '',
 		created_at: Math.floor(Date.now() / 1000),
-		tags: [['e', currentChannelId, recommendRelay, 'root']],
+		tags: [['e', currentChannelId, recommendedRelay, 'root']],
 		content: inputText
 	};
 	const newEvent: NostrEvent = await (window as any).nostr.signEvent(baseEvent);
