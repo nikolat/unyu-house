@@ -14,9 +14,11 @@ import { storedLoginpubkey } from '../../store';
 
 export let data: any;
 let currentChannelId: string = data.params.id;
+let currentChannelOwner: string | undefined;
 if (/^nevent/.test(currentChannelId)) {
 	const d = nip19.decode(currentChannelId);
-	currentChannelId = (d.data as any).id;
+	currentChannelId = (d.data as nip19.EventPointer).id
+	currentChannelOwner = (d.data as nip19.EventPointer).author;
 }
 
 // とりあえずリレーは固定
@@ -150,6 +152,8 @@ const getChannelName = (noteEvent: NostrEvent) => {
 const getNotes = async (relays: string[]) => {
 	subNotes = pool.sub(relays, [{kinds: [42, 43, 44], limit: 100, '#e': [currentChannelId]}]);
 	const pubkeys: Set<string> = new Set();
+	if (currentChannelOwner)
+		pubkeys.add(currentChannelOwner);
 	let getEOSE = false;
 	const update = () => {
 		// 時系列順にソートする
