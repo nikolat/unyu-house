@@ -7,6 +7,7 @@ import {
 	SimplePool,
 	nip19,
 	type Event as NostrEvent,
+	type UnsignedEvent,
 	type Sub,
 } from 'nostr-tools';
 import { afterUpdate } from 'svelte';
@@ -232,8 +233,18 @@ afterUpdate(() => {
 
 let inputText = '';
 $: inputText = inputText;
-const sendMessage = () => {
-	alert('投稿機能は鋭意作成中です！');
+const sendMessage = async() => {
+	const recommendRelay = defaultRelays[Math.floor(Math.random() * defaultRelays.length)];
+	const baseEvent: UnsignedEvent = {
+		kind: 42,
+		pubkey: '',
+		created_at: Math.floor(Date.now() / 1000),
+		tags: [['e', currentChannelId, recommendRelay, 'root']],
+		content: inputText
+	};
+	const newEvent: NostrEvent = await (window as any).nostr.signEvent(baseEvent);
+	const pubs = pool.publish(defaultRelays, newEvent);
+	await Promise.all(pubs);
 	inputText = '';
 }
 
