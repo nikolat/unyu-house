@@ -8,6 +8,7 @@ import {
 } from 'nostr-tools';
 import { afterUpdate, onDestroy, onMount } from 'svelte';
 import { browser } from '$app/environment';
+import { storedLoginpubkey } from './store';
 
 // とりあえずリレーは固定
 const defaultRelays = [
@@ -205,11 +206,15 @@ $: loginPubkey = loginPubkey;
 const login = async() => {
 	if (browser && (window as any).nostr?.getPublicKey) {
 		loginPubkey = await (window as any).nostr.getPublicKey();
+		storedLoginpubkey.set(loginPubkey);
 	}
 };
 const logout = () => {
-	loginPubkey = '';
+	storedLoginpubkey.set('');
 };
+storedLoginpubkey.subscribe((value) => {
+	loginPubkey = value;
+});
 
 onDestroy(() => {
 	subNotes?.unsub();
