@@ -72,6 +72,8 @@ const getChannels = async (relays: string[]) => {
 		channelObjects[ev.id].pubkey = ev.pubkey;
 		channelObjects[ev.id].recommendedRelay = pool.seenOn(ev.id)[0];
 //		console.log(ev);
+		if (typeof currentChannelOwner === 'undefined' && currentChannelId === ev.id)
+			currentChannelOwner = ev.pubkey;
 	});
 	sub.on('eose', () => {
 		console.log('getChannels * EOSE *');
@@ -152,8 +154,6 @@ const getChannelName = (noteEvent: NostrEvent) => {
 const getNotes = async (relays: string[]) => {
 	subNotes = pool.sub(relays, [{kinds: [42, 43, 44], limit: 100, '#e': [currentChannelId]}]);
 	const pubkeys: Set<string> = new Set();
-	if (currentChannelOwner)
-		pubkeys.add(currentChannelOwner);
 	let getEOSE = false;
 	const update = () => {
 		// 時系列順にソートする
@@ -187,6 +187,8 @@ const getNotes = async (relays: string[]) => {
 		getEOSE = true;
 		update();
 		// 投稿の取得が終わったらプロフィールを取得しに行く
+		if (currentChannelOwner)
+			pubkeys.add(currentChannelOwner);
 		getProfile(relays, Array.from(pubkeys));
 	});
 };
