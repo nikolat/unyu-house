@@ -267,11 +267,11 @@ const sendMessage = async() => {
 </script>
 
 <svelte:head>
-	<title>{channelObjects[currentChannelId]?.name} | ぱぶ茶(仮)</title>
+	<title>{channelObjects[currentChannelId]?.name} | うにゅうハウス</title>
 </svelte:head>
 <div id="container">
 <header>
-	<h1><a href="/">ぱぶ茶(仮)</a></h1>
+	<h1><a href="/">うにゅうハウス</a></h1>
 	<p>以下のリレーに接続しています</p>
 	<ul>
 	{#each defaultRelays as relay}
@@ -284,7 +284,7 @@ const sendMessage = async() => {
 	<button on:click={login}>login with NIP-07</button>
 	{/if}
 	<h2>GitHub</h2>
-	<p><a href="https://github.com/nikolat/svelte-practice">nikolat/svelte-practice</a></p>
+	<p><a href="https://github.com/nikolat/unyu-house">nikolat/unyu-house</a></p>
 	<nav>
 		<h2>チャンネル</h2>
 		<p>チャンネル取得数: {channels.length}</p>

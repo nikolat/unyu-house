@@ -1,4 +1,4 @@
-# ぱぶ茶(仮)
+# Unyu house
 
 The web client for [NIP-28](https://github.com/nostr-protocol/nips/blob/master/28.md) (Public Chat) .
 
