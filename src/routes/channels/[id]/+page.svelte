@@ -137,6 +137,7 @@ const getSortedChannels = () => {
 	});
 	return channelArray;
 };
+
 const getChannelName = (noteEvent: NostrEvent) => {
 	for (const tag of noteEvent.tags) {
 		if (tag[0] === 'e' && tag[3] === 'root') {
@@ -238,7 +239,8 @@ afterNavigate(() => {
 	currentChannelId = data.params.id;
 	if (/^nevent/.test(currentChannelId)) {
 		const d = nip19.decode(currentChannelId);
-		currentChannelId = (d.data as any).id;
+		currentChannelId = (d.data as nip19.EventPointer).id
+		currentChannelOwner = (d.data as nip19.EventPointer).author;
 	}
 	channelEvents = [];
 	channelObjects = {};

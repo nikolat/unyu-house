@@ -320,7 +320,7 @@ header {
 }
 main {
 	width: 80%;
-	height: calc(100% - 5em);
+	height: calc(100% - 7em);
 	overflow-y: scroll;
 	word-break: break-all;
 }
