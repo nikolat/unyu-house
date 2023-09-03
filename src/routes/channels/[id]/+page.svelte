@@ -12,6 +12,7 @@ import {
 import { afterUpdate } from 'svelte';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
 import { browser } from '$app/environment';
+import { storedLoginpubkey } from '../../store';
 
 // とりあえずリレーは固定
 const defaultRelays = [
@@ -198,11 +199,15 @@ $: loginPubkey = loginPubkey;
 const login = async() => {
 	if (browser && (window as any).nostr?.getPublicKey) {
 		loginPubkey = await (window as any).nostr.getPublicKey();
+		storedLoginpubkey.set(loginPubkey);
 	}
 };
 const logout = () => {
-	loginPubkey = '';
+	storedLoginpubkey.set('');
 };
+storedLoginpubkey.subscribe((value) => {
+	loginPubkey = value;
+});
 
 beforeNavigate(() => {
 	subNotes.unsub();
