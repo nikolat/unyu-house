@@ -1,8 +1,5 @@
 <script lang='ts'>
 
-export let data: any;
-let currentChannelId = data.params.id;
-
 import {
 	SimplePool,
 	nip19,
@@ -14,6 +11,13 @@ import { afterUpdate } from 'svelte';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
 import { browser } from '$app/environment';
 import { storedLoginpubkey } from '../../store';
+
+export let data: any;
+let currentChannelId: string = data.params.id;
+if (/^nevent/.test(currentChannelId)) {
+	const d = nip19.decode(currentChannelId);
+	currentChannelId = (d.data as any).id;
+}
 
 // とりあえずリレーは固定
 const defaultRelays = [
@@ -219,6 +223,10 @@ beforeNavigate(() => {
 });
 afterNavigate(() => {
 	currentChannelId = data.params.id;
+	if (/^nevent/.test(currentChannelId)) {
+		const d = nip19.decode(currentChannelId);
+		currentChannelId = (d.data as any).id;
+	}
 	channelEvents = [];
 	channelObjects = {};
 	channels = [];
@@ -290,7 +298,7 @@ const sendMessage = async() => {
 		<p>チャンネル取得数: {channels.length}</p>
 		<ul>
 			{#each channels as channel}
-			<li><a href="/channels/{channel.id}">{channel.name}</a></li>
+			<li><a href="/channels/{nip19.neventEncode({id:channel.id, relays:[channelObjects[channel.id].recommendedRelay], author:channelObjects[channel.id].pubkey})}">{channel.name}</a></li>
 			{/each}
 		</ul>
 	</nav>
