@@ -8,15 +8,13 @@ import {
 } from 'nostr-tools';
 import { afterUpdate, onDestroy, onMount } from 'svelte';
 import { browser } from '$app/environment';
-import { storedLoginpubkey, storedUseRelaysNIP07 as storedUseRelaysNIP07 } from './store';
+import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse } from './store';
 
 // とりあえずリレーは固定
 const defaultRelays = {
 	'wss://relay-jp.nostr.wirednet.jp': {'read': true, 'write': true},
 	'wss://yabu.me': {'read': true, 'write': true},
 }
-let relaysToUse: object = {};
-$: relaysToUse = relaysToUse;
 let relaysToRead: string[] = [];
 let relaysToWrite: string[] = [];
 
@@ -51,7 +49,7 @@ $: notes = notes;
 let profs: {[key: string]: Profile} = {};
 $: profs = profs;
 
-const pool = new SimplePool();
+let pool = new SimplePool();
 let subNotes: Sub<42 | 43 | 44>;
 
 // kind:40を取得する
@@ -239,33 +237,45 @@ storedUseRelaysNIP07.subscribe((value) => {
 	useRelaysNIP07 = value;
 });
 
+let relaysToUse: object = {};
+$: relaysToUse = relaysToUse;
+storedRelaysToUse.subscribe((value) => {
+	relaysToUse = value;
+});
+
 const importRelays = async() => {
 	storedUseRelaysNIP07.set((<HTMLInputElement>document.getElementById('use-relay-nip07')).checked);
 	if (useRelaysNIP07) {
-		relaysToUse = await (window as any).nostr.getRelays();
+		storedRelaysToUse.set(await (window as any).nostr.getRelays());
 	}
 	else {
-		relaysToUse = defaultRelays;
+		storedRelaysToUse.set(defaultRelays);
 	}
 	subNotes?.unsub();
+	pool.close(relaysToRead);
+	pool = new SimplePool();
 	applyRelays();
 };
 
-const applyRelays = () => {
+const applyRelays = async() => {
 	channelEvents = [];
 	channelObjects = {};
 	channels = [];
 	metadataEvents = [];
 	notes = [];
 	profs = {};
+	const relaysToReadSet = new Set<string>();
+	const relaysToWriteSet = new Set<string>();
 	for (const relay of Object.entries(relaysToUse)) {
 		if (relay[1].read) {
-			relaysToRead.push(relay[0]);
+			relaysToReadSet.add(relay[0]);
 		}
 		if (relay[1].write) {
-			relaysToWrite.push(relay[0]);
+			relaysToWriteSet.add(relay[0]);
 		}
 	}
+	relaysToRead = Array.from(relaysToReadSet);
+	relaysToWrite = Array.from(relaysToWriteSet);
 	// チャンネルの取得
 	getChannels(relaysToRead).catch((e) => console.error(e));
 	// 投稿の取得
@@ -274,9 +284,11 @@ const applyRelays = () => {
 
 onDestroy(() => {
 	subNotes?.unsub();
+	pool.close(relaysToRead);
 });
 onMount(async () => {
-	relaysToUse = defaultRelays;
+	if (!useRelaysNIP07)
+		storedRelaysToUse.set(defaultRelays);
 	applyRelays();
 });
 afterUpdate(() => {
@@ -309,10 +321,10 @@ afterUpdate(() => {
 	</table>
 	{#if loginPubkey}
 	<button on:click={logout}>logout</button>
-	<!--<dl>
+	<dl>
 		<dt><label for="useRelaysInNIP07">Use relays in NIP-07</label></dt>
-		<dd><input id="use-relay-nip07" name="useRelaysInNIP07" type="checkbox" on:change={importRelays} /></dd>
-	</dl>-->
+		<dd><input id="use-relay-nip07" name="useRelaysInNIP07" type="checkbox" on:change={importRelays} bind:checked={useRelaysNIP07} /></dd>
+	</dl>
 	{:else}
 	<button on:click={login}>login with NIP-07</button>
 	{/if}
