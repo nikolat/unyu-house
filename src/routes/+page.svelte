@@ -4,6 +4,7 @@ import {
 	SimplePool,
 	nip19,
 	type Event as NostrEvent,
+	type UnsignedEvent,
 	type Sub,
 } from 'nostr-tools';
 import { afterUpdate, onDestroy, onMount } from 'svelte';
@@ -282,6 +283,23 @@ const applyRelays = async() => {
 	getNotes(relaysToRead).catch((e) => console.error(e));
 }
 
+const sendFav = async(noteid: string, targetPubkey: string) => {
+	const savedloginPubkey = loginPubkey;
+	loginPubkey = '';
+	const tags = [['p', targetPubkey, ''], ['e', noteid, '', '']];
+	const baseEvent: UnsignedEvent = {
+		kind: 7,
+		pubkey: '',
+		created_at: Math.floor(Date.now() / 1000),
+		tags: tags,
+		content: '+'
+	};
+	const newEvent: NostrEvent = await (window as any).nostr.signEvent(baseEvent);
+	const pubs = pool.publish(relaysToWrite, newEvent);
+	await Promise.all(pubs);
+	loginPubkey = savedloginPubkey;
+}
+
 onDestroy(() => {
 	subNotes?.unsub();
 	pool.close(relaysToRead);
@@ -356,6 +374,7 @@ afterUpdate(() => {
 			{#each getImagesUrls(note.content) as imageUrl}
 				<a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a>
 			{/each}
+			<div class="action-bar"><button on:click={() => sendFav(note.id, note.pubkey)} disabled={!loginPubkey}>☆ふぁぼる</button></div>
 		</dd>
 	{/each}
 	</dl>
