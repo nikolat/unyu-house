@@ -364,9 +364,9 @@ afterUpdate(() => {
 	{#each notes as note}
 		<dt>
 		{#if profs[note.pubkey]}
-			<img src="{profs[note.pubkey].picture || './default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} | @{profs[note.pubkey].name}
+			<img src="{profs[note.pubkey].picture || './default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} | <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name}</a>
 		{:else}
-			@{nip19.npubEncode(note.pubkey)}
+			<a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name}</a>
 		{/if}
 		| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {#if getChannelId(note)}<a href="/channels/{getChannelId(note)}">{getChannelName(note)}</a>{:else}{getChannelName(note)}{/if}</dt>
 		<dd>
