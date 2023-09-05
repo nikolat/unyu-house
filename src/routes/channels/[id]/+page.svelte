@@ -285,34 +285,28 @@ const applyRelays = async() => {
 	getNotes(relaysToRead).catch((e) => console.error(e));
 }
 
-beforeNavigate(() => {
-	subNotes.unsub();
-});
-afterNavigate(() => {
-	currentChannelId = data.params.id;
-	if (/^nevent/.test(currentChannelId)) {
-		const d = nip19.decode(currentChannelId);
-		currentChannelId = (d.data as nip19.EventPointer).id
-		currentChannelOwner = (d.data as nip19.EventPointer).author;
-	}
-	channelEvents = [];
-	channelObjects = {};
-	channels = [];
-	metadataEvents = [];
-	notes = [];
-	profs = {};
-	if (!useRelaysNIP07)
-		storedRelaysToUse.set(defaultRelays);
-	applyRelays();
-});
-afterUpdate(() => {
-	const main = document.getElementsByTagName('main')[0];
-	main.scroll(0, main.scrollHeight);
-});
+const sendFav = async(noteid: string, targetPubkey: string) => {
+	const savedloginPubkey = loginPubkey;
+	loginPubkey = '';
+	const tags = [['p', targetPubkey, ''], ['e', noteid, '', '']];
+	const baseEvent: UnsignedEvent = {
+		kind: 7,
+		pubkey: '',
+		created_at: Math.floor(Date.now() / 1000),
+		tags: tags,
+		content: '+'
+	};
+	const newEvent: NostrEvent = await (window as any).nostr.signEvent(baseEvent);
+	const pubs = pool.publish(relaysToWrite, newEvent);
+	await Promise.all(pubs);
+	loginPubkey = savedloginPubkey;
+}
 
 let inputText = '';
 $: inputText = inputText;
 const sendMessage = async() => {
+	const savedloginPubkey = loginPubkey;
+	loginPubkey = '';
 	const recommendedRelay: string = channelObjects[currentChannelId].recommendedRelay;
 	const tags = [['e', currentChannelId, recommendedRelay, 'root']];
 	const matchesIterator = inputText.matchAll(/(^|\W|\b)(nostr:(npub\w{59}))($|\W|\b)/g);
@@ -337,7 +331,33 @@ const sendMessage = async() => {
 	const pubs = pool.publish(relaysToWrite, newEvent);
 	await Promise.all(pubs);
 	inputText = '';
+	loginPubkey = savedloginPubkey;
 }
+
+beforeNavigate(() => {
+	subNotes.unsub();
+});
+afterNavigate(() => {
+	currentChannelId = data.params.id;
+	if (/^nevent/.test(currentChannelId)) {
+		const d = nip19.decode(currentChannelId);
+		currentChannelId = (d.data as nip19.EventPointer).id
+		currentChannelOwner = (d.data as nip19.EventPointer).author;
+	}
+	channelEvents = [];
+	channelObjects = {};
+	channels = [];
+	metadataEvents = [];
+	notes = [];
+	profs = {};
+	if (!useRelaysNIP07)
+		storedRelaysToUse.set(defaultRelays);
+	applyRelays();
+});
+afterUpdate(() => {
+	const main = document.getElementsByTagName('main')[0];
+	main.scroll(0, main.scrollHeight);
+});
 
 </script>
 
@@ -406,6 +426,7 @@ const sendMessage = async() => {
 			{#each getImagesUrls(note.content) as imageUrl}
 				<a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a>
 			{/each}
+			<div class="action-bar"><button on:click={() => sendFav(note.id, note.pubkey)} disabled={!loginPubkey}>☆ふぁぼる</button></div>
 		</dd>
 	{/each}
 	</dl>
