@@ -422,7 +422,15 @@ afterUpdate(() => {
 		{/if}
 		| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {getChannelName(note)}</dt>
 		<dd>
-			{note.content}
+			{#if true}
+			{@const reg = /https?:\/\/\S+/g}
+			{@const plainTexts = note.content.split(reg)}
+			{plainTexts.shift()}
+			{#each note.content.matchAll(reg) as match}
+				<a href={match[0]}>{match[0]}</a>
+				{plainTexts.shift()}
+			{/each}
+			{/if}
 			{#each getImagesUrls(note.content) as imageUrl}
 				<a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a>
 			{/each}
