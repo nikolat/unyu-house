@@ -10,16 +10,11 @@ import {
 import { afterUpdate } from 'svelte';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
 import { browser } from '$app/environment';
-import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse } from '../../store';
+import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse } from '../store';
 
 export let data: any;
-let currentChannelId: string = data.params.id;
-let currentChannelOwner: string | undefined;
-if (/^nevent/.test(currentChannelId)) {
-	const d = nip19.decode(currentChannelId);
-	currentChannelId = (d.data as nip19.EventPointer).id
-	currentChannelOwner = (d.data as nip19.EventPointer).author;
-}
+let npub: string = data.params.id;
+let pubkey = (nip19.decode(npub).data as string);
 
 // とりあえずリレーは固定
 const defaultRelays = {
@@ -74,8 +69,6 @@ const getChannels = async (relays: string[]) => {
 		channelObjects[ev.id].pubkey = ev.pubkey;
 		channelObjects[ev.id].recommendedRelay = pool.seenOn(ev.id)[0];
 //		console.log(ev);
-		if (typeof currentChannelOwner === 'undefined' && currentChannelId === ev.id)
-			currentChannelOwner = ev.pubkey;
 	});
 	sub.on('eose', () => {
 		console.log('getChannels * EOSE *');
@@ -151,6 +144,18 @@ const getChannelName = (noteEvent: NostrEvent) => {
 	}
 	return 'チャンネル情報不明';
 };
+const getChannelId = (noteEvent: NostrEvent) => {
+	for (const tag of noteEvent.tags) {
+		if (tag[0] === 'e' && tag[3] === 'root') {
+			if (channelObjects[tag[1]]) {
+				const id = channelObjects[tag[1]].id;
+				return nip19.neventEncode({id:id, relays:[channelObjects[id].recommendedRelay], author:channelObjects[id].pubkey});
+			}
+			return null;
+		}
+	}
+	return null;
+};
 const getImagesUrls = (content: string) => {
 	const matchesIterator = content.matchAll(/https?:\/\/.+\.(jpe?g|png|gif)/g);
 	const urls = [];
@@ -162,7 +167,7 @@ const getImagesUrls = (content: string) => {
 
 // kind:42, 43, 44を取得する
 const getNotes = async (relays: string[]) => {
-	subNotes = pool.sub(relays, [{kinds: [42, 43, 44], limit: 100, '#e': [currentChannelId]}]);
+	subNotes = pool.sub(relays, [{kinds: [42, 43, 44], limit: 100, authors: [pubkey]}]);
 	const pubkeys: Set<string> = new Set();
 	let getEOSE = false;
 	const update = () => {
@@ -197,8 +202,8 @@ const getNotes = async (relays: string[]) => {
 		getEOSE = true;
 		update();
 		// 投稿の取得が終わったらプロフィールを取得しに行く
-		if (currentChannelOwner)
-			pubkeys.add(currentChannelOwner);
+		if (pubkey)
+			pubkeys.add(pubkey);
 		getProfile(relays, Array.from(pubkeys));
 	});
 };
@@ -302,48 +307,12 @@ const sendFav = async(noteid: string, targetPubkey: string) => {
 	loginPubkey = savedloginPubkey;
 }
 
-let inputText = '';
-$: inputText = inputText;
-const sendMessage = async() => {
-	const savedloginPubkey = loginPubkey;
-	loginPubkey = '';
-	const recommendedRelay: string = channelObjects[currentChannelId].recommendedRelay;
-	const tags = [['e', currentChannelId, recommendedRelay, 'root']];
-	const matchesIterator = inputText.matchAll(/(^|\W|\b)(nostr:(npub\w{59}))($|\W|\b)/g);
-	const mentionPubkeys: Set<string> = new Set();
-	for (const match of matchesIterator) {
-		const pubkey = nip19.decode(match[3]).data;
-		if (typeof pubkey !== 'string')
-			continue;
-		mentionPubkeys.add(pubkey);
-	}
-	for (const p of mentionPubkeys) {
-		tags.push(['p', p, '']);
-	}
-	const baseEvent: UnsignedEvent = {
-		kind: 42,
-		pubkey: '',
-		created_at: Math.floor(Date.now() / 1000),
-		tags: tags,
-		content: inputText
-	};
-	const newEvent: NostrEvent = await (window as any).nostr.signEvent(baseEvent);
-	const pubs = pool.publish(relaysToWrite, newEvent);
-	await Promise.all(pubs);
-	inputText = '';
-	loginPubkey = savedloginPubkey;
-}
-
 beforeNavigate(() => {
 	subNotes.unsub();
 });
 afterNavigate(() => {
-	currentChannelId = data.params.id;
-	if (/^nevent/.test(currentChannelId)) {
-		const d = nip19.decode(currentChannelId);
-		currentChannelId = (d.data as nip19.EventPointer).id
-		currentChannelOwner = (d.data as nip19.EventPointer).author;
-	}
+	npub = data.params.id;
+	pubkey = (nip19.decode(npub).data as string);
 	channelEvents = [];
 	channelObjects = {};
 	channels = [];
@@ -362,7 +331,7 @@ afterUpdate(() => {
 </script>
 
 <svelte:head>
-	<title>{channelObjects[currentChannelId]?.name} | うにゅうハウス</title>
+	<title>{profs[pubkey]?.name} | うにゅうハウス</title>
 </svelte:head>
 <div id="container">
 <header>
@@ -404,23 +373,19 @@ afterUpdate(() => {
 	</nav>
 </header>
 <main>
-	<h2>{channelObjects[currentChannelId]?.name}</h2>
-	{#if channelObjects[currentChannelId]}
-	<p id="channel-about">{#if channelObjects[currentChannelId]?.picture}<img src="{channelObjects[currentChannelId]?.picture}" width="100" height="100" alt="banner" />{/if}{channelObjects[currentChannelId]?.about}</p>
-	{/if}
-	{#if profs[channelObjects[currentChannelId]?.pubkey]}
-	<p id="channel-owner">owner: <img src="{profs[channelObjects[currentChannelId]?.pubkey]?.picture}" width="32" height="32" alt="{profs[channelObjects[currentChannelId]?.pubkey]?.display_name}" />@{profs[channelObjects[currentChannelId]?.pubkey]?.name}</p>
-	{/if}
+	<h2>{profs[pubkey]?.display_name ?? ''} @{profs[pubkey]?.name ?? ''}</h2>
+	<p class="about"><img src="{profs[pubkey]?.picture || './default.png'}" alt="avatar of {nip19.npubEncode(pubkey)}" width="32" height="32">
+		{profs[pubkey]?.about ?? ''}</p>
 	<p>投稿取得数: {notes.length}</p>
 	<dl>
 	{#each notes as note}
 		<dt>
 		{#if profs[note.pubkey]}
-			<img src="{profs[note.pubkey].picture || '../default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} | <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name}</a>
+			<img src="{profs[note.pubkey].picture || './default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} | @{profs[note.pubkey].name}
 		{:else}
-			<a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name}</a>
+			@{nip19.npubEncode(note.pubkey)}
 		{/if}
-		| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {getChannelName(note)}</dt>
+		| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {#if getChannelId(note)}<a href="/channels/{getChannelId(note)}">{getChannelName(note)}</a>{:else}{getChannelName(note)}{/if}</dt>
 		<dd>
 			{#if true}
 			{@const reg = /https?:\/\/\S+/g}
@@ -438,19 +403,6 @@ afterUpdate(() => {
 		</dd>
 	{/each}
 	</dl>
-	<div id="input">
-		{#if loginPubkey}
-		<textarea id="input-text" bind:value={inputText}></textarea>
-			{#if inputText !== ''}
-			<button on:click={sendMessage}>投稿</button>
-			{:else}
-			<button disabled>投稿</button>
-			{/if}
-		{:else}
-		<textarea id="input-text" disabled></textarea>
-		<button disabled>投稿</button>
-		{/if}
-	</div>
 </main>
 </div>
 
@@ -482,14 +434,8 @@ main {
 	overflow-y: scroll;
 	word-break: break-all;
 }
-#channel-about {
+.about {
 	white-space: pre-wrap;
-}
-#channel-about > img {
-	float: left;
-}
-#channel-owner {
-	clear: left;
 }
 main dt {
 	border-top: 1px solid #666;
@@ -500,15 +446,5 @@ main dd {
 }
 main dd img {
 	max-height: 200px;
-}
-#input {
-	position: absolute;
-	width: 80%;
-	height: 7em;
-	bottom: 0%;
-}
-#input > textarea {
-	width: 100%;
-	height: 5em;
 }
 </style>
