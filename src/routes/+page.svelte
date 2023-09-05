@@ -364,7 +364,7 @@ afterUpdate(() => {
 	{#each notes as note}
 		<dt>
 		{#if profs[note.pubkey]}
-			<img src="{profs[note.pubkey].picture}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} | @{profs[note.pubkey].name}
+			<img src="{profs[note.pubkey].picture || './default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} | @{profs[note.pubkey].name}
 		{:else}
 			@{nip19.npubEncode(note.pubkey)}
 		{/if}
