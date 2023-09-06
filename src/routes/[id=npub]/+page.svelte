@@ -407,11 +407,21 @@ afterUpdate(() => {
 			{/each}
 			</div>
 		{#if true}
-			{@const reg = /https?:\/\/\S+/g}
-			{@const plainTexts = note.content.split(reg)}
+			{@const regMatch = /(https?:\/\/\S+)|(nostr:(npub\w{59}))/g}
+			{@const regSplit = /https?:\/\/\S+|nostr:npub\w{59}/}
+			{@const plainTexts = note.content.split(regSplit)}
 			{plainTexts.shift()}
-			{#each note.content.matchAll(reg) as match}
-				<a href={match[0]}>{match[0]}</a>
+			{#each note.content.matchAll(regMatch) as match}
+				{#if /https?:\/\/\S+/.test(match[1]) }
+					<a href="{match[1]}">{match[1]}</a>
+				{:else if /npub\w{59}/.test(match[3])}
+					{@const data = nip19.decode(match[3]).data}
+					{#if typeof data === 'string'}
+						<a href="{match[3]}">@{profs[data]?.name}</a>
+					{:else}
+						{match[3]}
+					{/if}
+				{/if}
 				{plainTexts.shift()}
 			{/each}
 		{/if}
