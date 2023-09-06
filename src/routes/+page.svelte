@@ -183,8 +183,15 @@ const getNotes = async (relays: string[]) => {
 		notes.push(ev);
 		if (getEOSE) {
 			update();
+			const pubkeysToGet: Set<string> = new Set();
 			if (!(ev.pubkey in profs)) {
-				getProfile(relays, [ev.pubkey]);
+				pubkeysToGet.add(ev.pubkey);
+			}
+			for (const pubkey of ev.tags.filter(v => v[0] === 'p' && !(v[1] in profs)).map(v => v[1])) {
+				pubkeysToGet.add(pubkey);
+			}
+			if (pubkeysToGet.size > 0) {
+				getProfile(relays, Array.from(pubkeysToGet));
 			}
 		}
 		else {
@@ -223,7 +230,7 @@ $: muteList = muteList;
 const getMutelist = async (relays: string[], pubkey: string) => {
 	const sub = pool.sub(relays, [{kinds: [10000], authors: [pubkey]}]);
 	sub.on('event', (ev: NostrEvent) => {
-		muteList = ev.tags.filter(v => v[0] == 'p').map(v => v[1]);
+		muteList = ev.tags.filter(v => v[0] === 'p').map(v => v[1]);
 	});
 	sub.on('eose', () => {
 		console.log('getMutelist * EOSE *');
@@ -391,9 +398,14 @@ afterUpdate(() => {
 				| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {#if getChannelId(note)}<a href="/channels/{getChannelId(note)}">{getChannelName(note)}</a>{:else}{getChannelName(note)}{/if}
 			</dt>
 			<dd>
-			{#if note.tags.filter(v => v[0] == 'e' && v[3] == 'reply').length}
-				<a href="#{note.tags.filter(v => v[0] == 'e' && v[3] == 'reply')[0][1]}">&gt;&gt;</a><br />
-			{/if}
+				<div class="info-header">
+				{#if note.tags.filter(v => v[0] === 'e' && v[3] === 'reply').length}
+					<a href="#{note.tags.filter(v => v[0] === 'e' && v[3] === 'reply')[0][1]}">&gt;&gt;</a>
+				{/if}
+				{#each note.tags.filter(v => v[0] === 'p').map(v => v[1]) as pubkey}
+					&nbsp;@{profs[pubkey]?.name}
+				{/each}
+				</div>
 			{#if true}
 				{@const reg = /https?:\/\/\S+/g}
 				{@const plainTexts = note.content.split(reg)}
@@ -448,6 +460,9 @@ main dt {
 main dd {
 	border-top: 1px dashed #999;
 	white-space: pre-wrap;
+}
+main dd .info-header {
+	color: #999;
 }
 main dd img {
 	max-height: 200px;
