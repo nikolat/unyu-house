@@ -217,16 +217,33 @@ const getProfile = async (relays: string[], pubkeys: string[]) => {
 	});
 };
 
+let muteList: string[] = [];
+$: muteList = muteList;
+// ミュートリストを取得する
+const getMutelist = async (relays: string[], pubkey: string) => {
+	const sub = pool.sub(relays, [{kinds: [10000], authors: [pubkey]}]);
+	sub.on('event', (ev: NostrEvent) => {
+		muteList = ev.tags.filter(v => v[0] == 'p').map(v => v[1]);
+	});
+	sub.on('eose', () => {
+		console.log('getMutelist * EOSE *');
+		//取得できたらもう用済みなのでunsubする
+		sub.unsub();
+	});
+};
+
 let loginPubkey: string;
 $: loginPubkey = loginPubkey;
 const login = async() => {
 	if (browser && (window as any).nostr?.getPublicKey) {
 		loginPubkey = await (window as any).nostr.getPublicKey();
 		storedLoginpubkey.set(loginPubkey);
+		getMutelist(relaysToRead, loginPubkey);
 	}
 };
 const logout = () => {
 	storedLoginpubkey.set('');
+	muteList = [];
 };
 storedLoginpubkey.subscribe((value) => {
 	loginPubkey = value;
@@ -281,6 +298,8 @@ const applyRelays = async() => {
 	getChannels(relaysToRead).catch((e) => console.error(e));
 	// 投稿の取得
 	getNotes(relaysToRead).catch((e) => console.error(e));
+	if (loginPubkey)
+		getMutelist(relaysToRead, loginPubkey);
 }
 
 const sendFav = async(noteid: string, targetPubkey: string) => {
@@ -362,28 +381,30 @@ afterUpdate(() => {
 	<p>投稿取得数: {notes.length}</p>
 	<dl>
 	{#each notes as note}
-		<dt>
-		{#if profs[note.pubkey]}
-			<img src="{profs[note.pubkey].picture || './default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} | <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name}</a>
-		{:else}
-			<a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name}</a>
-		{/if}
-		| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {#if getChannelId(note)}<a href="/channels/{getChannelId(note)}">{getChannelName(note)}</a>{:else}{getChannelName(note)}{/if}</dt>
-		<dd>
-			{#if true}
-			{@const reg = /https?:\/\/\S+/g}
-			{@const plainTexts = note.content.split(reg)}
-			{plainTexts.shift()}
-			{#each note.content.matchAll(reg) as match}
-				<a href={match[0]}>{match[0]}</a>
-				{plainTexts.shift()}
-			{/each}
+		{#if !muteList.includes(note.pubkey)}
+			<dt>
+			{#if profs[note.pubkey]}
+				<img src="{profs[note.pubkey].picture || './default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} | <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name}</a>
+			{:else}
+				<a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name}</a>
 			{/if}
-			{#each getImagesUrls(note.content) as imageUrl}
-				<a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a>
-			{/each}
-			<div class="action-bar"><button on:click={() => sendFav(note.id, note.pubkey)} disabled={!loginPubkey}>☆ふぁぼる</button></div>
-		</dd>
+			| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {#if getChannelId(note)}<a href="/channels/{getChannelId(note)}">{getChannelName(note)}</a>{:else}{getChannelName(note)}{/if}</dt>
+			<dd>
+				{#if true}
+				{@const reg = /https?:\/\/\S+/g}
+				{@const plainTexts = note.content.split(reg)}
+				{plainTexts.shift()}
+				{#each note.content.matchAll(reg) as match}
+					<a href={match[0]}>{match[0]}</a>
+					{plainTexts.shift()}
+				{/each}
+				{/if}
+				{#each getImagesUrls(note.content) as imageUrl}
+					<a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a>
+				{/each}
+				<div class="action-bar"><button on:click={() => sendFav(note.id, note.pubkey)} disabled={!loginPubkey}>☆ふぁぼる</button></div>
+			</dd>
+		{/if}
 	{/each}
 	</dl>
 </main>
