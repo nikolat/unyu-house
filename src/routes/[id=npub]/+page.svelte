@@ -379,15 +379,19 @@ afterUpdate(() => {
 	<p>投稿取得数: {notes.length}</p>
 	<dl>
 	{#each notes as note}
-		<dt>
+		<dt id="{note.id}">
 		{#if profs[note.pubkey]}
 			<img src="{profs[note.pubkey].picture || './default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} | @{profs[note.pubkey].name}
 		{:else}
 			@{nip19.npubEncode(note.pubkey)}
 		{/if}
-		| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {#if getChannelId(note)}<a href="/channels/{getChannelId(note)}">{getChannelName(note)}</a>{:else}{getChannelName(note)}{/if}</dt>
+			| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {#if getChannelId(note)}<a href="/channels/{getChannelId(note)}">{getChannelName(note)}</a>{:else}{getChannelName(note)}{/if}
+		</dt>
 		<dd>
-			{#if true}
+		{#if note.tags.filter(v => v[0] == 'e' && v[3] == 'reply').length}
+			<a href="#{note.tags.filter(v => v[0] == 'e' && v[3] == 'reply')[0][1]}">&gt;&gt;</a><br />
+		{/if}
+		{#if true}
 			{@const reg = /https?:\/\/\S+/g}
 			{@const plainTexts = note.content.split(reg)}
 			{plainTexts.shift()}
@@ -395,10 +399,10 @@ afterUpdate(() => {
 				<a href={match[0]}>{match[0]}</a>
 				{plainTexts.shift()}
 			{/each}
-			{/if}
-			{#each getImagesUrls(note.content) as imageUrl}
-				<a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a>
-			{/each}
+		{/if}
+		{#each getImagesUrls(note.content) as imageUrl}
+			<a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a>
+		{/each}
 			<div class="action-bar"><button on:click={() => sendFav(note.id, note.pubkey)} disabled={!loginPubkey}>☆ふぁぼる</button></div>
 		</dd>
 	{/each}
