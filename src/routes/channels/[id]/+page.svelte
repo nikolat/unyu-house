@@ -434,15 +434,19 @@ afterUpdate(() => {
 	<dl>
 	{#each notes as note}
 		{#if !muteList.includes(note.pubkey)}
-			<dt>
+			<dt id="{note.id}">
 			{#if profs[note.pubkey]}
 				<img src="{profs[note.pubkey].picture || '../default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} | <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name}</a>
 			{:else}
 				<a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name}</a>
 			{/if}
-			| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {getChannelName(note)}</dt>
+				| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {getChannelName(note)}
+			</dt>
 			<dd>
-				{#if true}
+			{#if note.tags.filter(v => v[0] == 'e' && v[3] == 'reply').length}
+				<a href="#{note.tags.filter(v => v[0] == 'e' && v[3] == 'reply')[0][1]}">&gt;&gt;</a><br />
+			{/if}
+			{#if true}
 				{@const reg = /https?:\/\/\S+/g}
 				{@const plainTexts = note.content.split(reg)}
 				{plainTexts.shift()}
@@ -450,10 +454,10 @@ afterUpdate(() => {
 					<a href={match[0]}>{match[0]}</a>
 					{plainTexts.shift()}
 				{/each}
-				{/if}
-				{#each getImagesUrls(note.content) as imageUrl}
-					<a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a>
-				{/each}
+			{/if}
+			{#each getImagesUrls(note.content) as imageUrl}
+				<a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a>
+			{/each}
 				<div class="action-bar"><button on:click={() => sendFav(note.id, note.pubkey)} disabled={!loginPubkey}>☆ふぁぼる</button></div>
 			</dd>
 		{/if}
