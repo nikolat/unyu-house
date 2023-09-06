@@ -184,18 +184,32 @@ const getNotes = async (relays: string[]) => {
 		if (getEOSE) {
 			update();
 			const pubkeysToGet: Set<string> = new Set();
-			if (!(ev.pubkey in profs)) {
-				pubkeysToGet.add(ev.pubkey);
-			}
-			for (const pubkey of ev.tags.filter(v => v[0] === 'p' && !(v[1] in profs)).map(v => v[1])) {
+			pubkeysToGet.add(ev.pubkey);
+			for (const pubkey of ev.tags.filter(v => v[0] === 'p').map(v => v[1])) {
 				pubkeysToGet.add(pubkey);
 			}
-			if (pubkeysToGet.size > 0) {
-				getProfile(relays, Array.from(pubkeysToGet));
+			const matchesIterator = ev.content.matchAll(/nostr:(npub\w{59})/g);
+			for (const match of matchesIterator) {
+				const d = nip19.decode(match[1]);
+				if (d.type === 'npub')
+					pubkeysToGet.add(d.data);
+			}
+			const pubkeysToGetArray = Array.from(pubkeysToGet).filter(v => !(v in profs))
+			if (pubkeysToGetArray.length > 0) {
+				getProfile(relays, Array.from(pubkeysToGetArray));
 			}
 		}
 		else {
 			pubkeys.add(ev.pubkey);
+			for (const pubkey of ev.tags.filter(v => v[0] === 'p').map(v => v[1])) {
+				pubkeys.add(pubkey);
+			}
+			const matchesIterator = ev.content.matchAll(/nostr:(npub\w{59})/g);
+			for (const match of matchesIterator) {
+				const d = nip19.decode(match[1]);
+				if (d.type === 'npub')
+					pubkeys.add(d.data);
+			}
 		}
 //		console.log(ev);
 	});
@@ -415,9 +429,9 @@ afterUpdate(() => {
 					{#if /https?:\/\/\S+/.test(match[1]) }
 						<a href="{match[1]}">{match[1]}</a>
 					{:else if /npub\w{59}/.test(match[3])}
-						{@const data = nip19.decode(match[3]).data}
-						{#if typeof data === 'string'}
-							<a href="/{match[3]}">@{profs[data]?.name}</a>
+						{@const d = nip19.decode(match[3])}
+						{#if d.type === 'npub'}
+							<a href="/{match[3]}">@{profs[d.data]?.name}</a>
 						{:else}
 							{match[3]}
 						{/if}
