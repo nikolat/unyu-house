@@ -306,7 +306,7 @@ const applyRelays = async() => {
 
 const sendFav = async(noteid: string, targetPubkey: string) => {
 	const savedloginPubkey = loginPubkey;
-	loginPubkey = '';
+	storedLoginpubkey.set('');
 	const tags = [['p', targetPubkey, ''], ['e', noteid, '', '']];
 	const baseEvent: UnsignedEvent = {
 		kind: 7,
@@ -318,17 +318,19 @@ const sendFav = async(noteid: string, targetPubkey: string) => {
 	const newEvent: NostrEvent = await (window as any).nostr.signEvent(baseEvent);
 	const pubs = pool.publish(relaysToWrite, newEvent);
 	await Promise.all(pubs);
-	loginPubkey = savedloginPubkey;
+	storedLoginpubkey.set(savedloginPubkey);
 }
 
 let inputText = '';
 $: inputText = inputText;
 const sendMessage = async() => {
+	const content = inputText;
+	inputText = '';
 	const savedloginPubkey = loginPubkey;
-	loginPubkey = '';
+	storedLoginpubkey.set('');
 	const recommendedRelay: string = channelObjects[currentChannelId].recommendedRelay;
 	const tags = [['e', currentChannelId, recommendedRelay, 'root']];
-	const matchesIterator = inputText.matchAll(/(^|\W|\b)(nostr:(npub\w{59}))($|\W|\b)/g);
+	const matchesIterator = content.matchAll(/(^|\W|\b)(nostr:(npub\w{59}))($|\W|\b)/g);
 	const mentionPubkeys: Set<string> = new Set();
 	for (const match of matchesIterator) {
 		const pubkey = nip19.decode(match[3]).data;
@@ -344,13 +346,12 @@ const sendMessage = async() => {
 		pubkey: '',
 		created_at: Math.floor(Date.now() / 1000),
 		tags: tags,
-		content: inputText
+		content: content
 	};
 	const newEvent: NostrEvent = await (window as any).nostr.signEvent(baseEvent);
 	const pubs = pool.publish(relaysToWrite, newEvent);
 	await Promise.all(pubs);
-	inputText = '';
-	loginPubkey = savedloginPubkey;
+	storedLoginpubkey.set(savedloginPubkey);
 }
 
 beforeNavigate(() => {

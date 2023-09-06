@@ -292,7 +292,7 @@ const applyRelays = async() => {
 
 const sendFav = async(noteid: string, targetPubkey: string) => {
 	const savedloginPubkey = loginPubkey;
-	loginPubkey = '';
+	storedLoginpubkey.set('');
 	const tags = [['p', targetPubkey, ''], ['e', noteid, '', '']];
 	const baseEvent: UnsignedEvent = {
 		kind: 7,
@@ -304,7 +304,7 @@ const sendFav = async(noteid: string, targetPubkey: string) => {
 	const newEvent: NostrEvent = await (window as any).nostr.signEvent(baseEvent);
 	const pubs = pool.publish(relaysToWrite, newEvent);
 	await Promise.all(pubs);
-	loginPubkey = savedloginPubkey;
+	storedLoginpubkey.set(savedloginPubkey);
 }
 
 beforeNavigate(() => {
