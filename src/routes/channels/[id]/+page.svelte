@@ -470,7 +470,7 @@ afterUpdate(() => {
 					{:else if /npub\w{59}/.test(match[3])}
 						{@const data = nip19.decode(match[3]).data}
 						{#if typeof data === 'string'}
-							<a href="{match[3]}">@{profs[data]?.name}</a>
+							<a href="/{match[3]}">@{profs[data]?.name}</a>
 						{:else}
 							{match[3]}
 						{/if}
