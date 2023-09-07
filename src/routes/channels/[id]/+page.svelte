@@ -9,8 +9,8 @@ import {
 } from 'nostr-tools';
 import { afterUpdate } from 'svelte';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
-import { browser } from '$app/environment';
 import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse } from '../../store';
+import Sidebar from '../../Sidebar.svelte';
 
 export let data: any;
 let currentChannelId: string = data.params.id;
@@ -257,17 +257,6 @@ const getMutelist = async (relays: string[], pubkey: string) => {
 
 let loginPubkey: string;
 $: loginPubkey = loginPubkey;
-const login = async() => {
-	if (browser && (window as any).nostr?.getPublicKey) {
-		loginPubkey = await (window as any).nostr.getPublicKey();
-		storedLoginpubkey.set(loginPubkey);
-		getMutelist(relaysToRead, loginPubkey);
-	}
-};
-const logout = () => {
-	storedLoginpubkey.set('');
-	muteList = [];
-};
 storedLoginpubkey.subscribe((value) => {
 	loginPubkey = value;
 });
@@ -406,44 +395,7 @@ afterUpdate(() => {
 	<title>{channelObjects[currentChannelId]?.name} | うにゅうハウス</title>
 </svelte:head>
 <div id="container">
-<header>
-	<h1><a href="/">うにゅうハウス</a></h1>
-	<p>以下のリレーに接続しています</p>
-	<table>
-		<tr>
-			<th>r</th>
-			<th>w</th>
-			<th>relay</th>
-		</tr>
-		{#each Object.entries(relaysToUse) as relay}
-		<tr>
-			<td><input type="checkbox" checked={relay[1].read} disabled /></td>
-			<td><input type="checkbox" checked={relay[1].write} disabled /></td>
-			<td>{relay[0]}</td>
-		</tr>
-		{/each}
-	</table>
-	{#if loginPubkey}
-	<button on:click={logout}>logout</button>
-	<dl>
-		<dt><label for="useRelaysInNIP07">Use relays in NIP-07</label></dt>
-		<dd><input id="use-relay-nip07" name="useRelaysInNIP07" type="checkbox" on:change={importRelays} bind:checked={useRelaysNIP07} /></dd>
-	</dl>
-	{:else}
-	<button on:click={login}>login with NIP-07</button>
-	{/if}
-	<h2>GitHub</h2>
-	<p><a href="https://github.com/nikolat/unyu-house">nikolat/unyu-house</a></p>
-	<nav>
-		<h2>チャンネル</h2>
-		<p>チャンネル取得数: {channels.length}</p>
-		<ul>
-			{#each channels as channel}
-			<li><a href="/channels/{nip19.neventEncode({id:channel.id, relays:[channelObjects[channel.id].recommendedRelay], author:channelObjects[channel.id].pubkey})}">{channel.name}</a></li>
-			{/each}
-		</ul>
-	</nav>
-</header>
+<Sidebar {relaysToUse} {loginPubkey} {importRelays} {useRelaysNIP07} {channels} {getMutelist} {muteList} />
 <main>
 	<h2>{channelObjects[currentChannelId]?.name}</h2>
 	{#if channelObjects[currentChannelId]}
@@ -531,12 +483,6 @@ afterUpdate(() => {
 	height: 100%;
 	display: flex;
 	overflow: hidden;
-}
-header {
-	width: 20%;
-	height: 100%;
-	background-color: #ccc;
-	overflow-y: scroll;
 }
 main {
 	width: 80%;
