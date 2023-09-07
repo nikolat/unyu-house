@@ -9,7 +9,6 @@ import {
 } from 'nostr-tools';
 import { afterUpdate } from 'svelte';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
-import { browser } from '$app/environment';
 import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse } from '../store';
 import Sidebar from '../Sidebar.svelte';
 
@@ -246,17 +245,23 @@ const getProfile = async (relays: string[], pubkeys: string[]) => {
 	});
 };
 
+let muteList: string[] = [];
+$: muteList = muteList;
+// ミュートリストを取得する
+const getMutelist = async (relays: string[], pubkey: string) => {
+	const sub = pool.sub(relays, [{kinds: [10000], authors: [pubkey]}]);
+	sub.on('event', (ev: NostrEvent) => {
+		muteList = ev.tags.filter(v => v[0] === 'p').map(v => v[1]);
+	});
+	sub.on('eose', () => {
+		console.log('getMutelist * EOSE *');
+		//取得できたらもう用済みなのでunsubする
+		sub.unsub();
+	});
+};
+
 let loginPubkey: string;
 $: loginPubkey = loginPubkey;
-const login = async() => {
-	if (browser && (window as any).nostr?.getPublicKey) {
-		loginPubkey = await (window as any).nostr.getPublicKey();
-		storedLoginpubkey.set(loginPubkey);
-	}
-};
-const logout = () => {
-	storedLoginpubkey.set('');
-};
 storedLoginpubkey.subscribe((value) => {
 	loginPubkey = value;
 });
@@ -310,6 +315,8 @@ const applyRelays = async() => {
 	getChannels(relaysToRead).catch((e) => console.error(e));
 	// 投稿の取得
 	getNotes(relaysToRead).catch((e) => console.error(e));
+	if (loginPubkey)
+		getMutelist(relaysToRead, loginPubkey);
 }
 
 const sendFav = async(noteid: string, targetPubkey: string) => {
@@ -356,7 +363,7 @@ afterUpdate(() => {
 	<title>{profs[pubkey]?.name} | うにゅうハウス</title>
 </svelte:head>
 <div id="container">
-<Sidebar relaysToUse={relaysToUse} loginPubkey={loginPubkey} logout={logout} importRelays={importRelays} useRelaysNIP07={useRelaysNIP07} login={login} channels={channels} channelObjects={channelObjects} />
+<Sidebar {relaysToUse} {loginPubkey} {importRelays} {useRelaysNIP07} {channels} {getMutelist} {muteList} />
 <main>
 	<h2>{profs[pubkey]?.display_name ?? ''} @{profs[pubkey]?.name ?? ''}</h2>
 	<p class="about"><img src="{profs[pubkey]?.picture || './default.png'}" alt="avatar of {nip19.npubEncode(pubkey)}" width="32" height="32">

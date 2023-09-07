@@ -2,6 +2,8 @@
 import {
 	nip19,
 } from 'nostr-tools';
+import { browser } from '$app/environment';
+import { storedLoginpubkey } from './store';
 
 interface Channel {
 	name: string
@@ -15,12 +17,24 @@ interface Channel {
 
 export let relaysToUse: object;
 export let loginPubkey: string;
-export let logout: () => void;
 export let importRelays: () => Promise<void>;
 export let useRelaysNIP07: boolean;
-export let login: () => Promise<void>;;
-export let channels: Channel[] = [];
-export let channelObjects: {[key: string]: Channel};
+export let channels: Channel[];
+export let getMutelist: (relays: string[], pubkey: string) => Promise<void>;
+export let muteList: string[];
+
+const login = async() => {
+	if (browser && (window as any).nostr?.getPublicKey) {
+		loginPubkey = await (window as any).nostr.getPublicKey();
+		storedLoginpubkey.set(loginPubkey);
+		const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
+		getMutelist(relaysToRead, loginPubkey);
+	}
+};
+const logout = () => {
+	storedLoginpubkey.set('');
+	muteList = [];
+};
 </script>
 
 <header>
@@ -56,7 +70,7 @@ export let channelObjects: {[key: string]: Channel};
 		<p>チャンネル取得数: {channels.length}</p>
 		<ul>
 			{#each channels as channel}
-			<li><a href="/channels/{nip19.neventEncode({id:channel.id, relays:[channelObjects[channel.id].recommendedRelay], author:channelObjects[channel.id].pubkey})}">{channel.name}</a></li>
+			<li><a href="/channels/{nip19.neventEncode({id:channel.id, relays:[channel.recommendedRelay], author:channel.pubkey})}">{channel.name}</a></li>
 			{/each}
 		</ul>
 	</nav>

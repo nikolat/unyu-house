@@ -8,7 +8,6 @@ import {
 	type Sub,
 } from 'nostr-tools';
 import { afterUpdate, onDestroy, onMount } from 'svelte';
-import { browser } from '$app/environment';
 import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse } from './store';
 import Sidebar from './Sidebar.svelte';
 
@@ -256,17 +255,6 @@ const getMutelist = async (relays: string[], pubkey: string) => {
 
 let loginPubkey: string;
 $: loginPubkey = loginPubkey;
-const login = async() => {
-	if (browser && (window as any).nostr?.getPublicKey) {
-		loginPubkey = await (window as any).nostr.getPublicKey();
-		storedLoginpubkey.set(loginPubkey);
-		getMutelist(relaysToRead, loginPubkey);
-	}
-};
-const logout = () => {
-	storedLoginpubkey.set('');
-	muteList = [];
-};
 storedLoginpubkey.subscribe((value) => {
 	loginPubkey = value;
 });
@@ -361,7 +349,7 @@ afterUpdate(() => {
 	<title>うにゅうハウス</title>
 </svelte:head>
 <div id="container">
-<Sidebar relaysToUse={relaysToUse} loginPubkey={loginPubkey} logout={logout} importRelays={importRelays} useRelaysNIP07={useRelaysNIP07} login={login} channels={channels} channelObjects={channelObjects} />
+<Sidebar {relaysToUse} {loginPubkey} {importRelays} {useRelaysNIP07} {channels} {getMutelist} {muteList} />
 <main>
 	<p>投稿取得数: {notes.length}</p>
 	<dl>
