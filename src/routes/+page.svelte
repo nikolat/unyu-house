@@ -10,6 +10,7 @@ import {
 import { afterUpdate, onDestroy, onMount } from 'svelte';
 import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse } from './store';
 import Sidebar from './Sidebar.svelte';
+import Timeline from './Timeline.svelte';
 
 // とりあえずリレーは固定
 const defaultRelays = {
@@ -126,38 +127,6 @@ const getSortedChannels = () => {
 		return 0;
 	});
 	return channelArray;
-};
-
-const getChannelName = (noteEvent: NostrEvent) => {
-	for (const tag of noteEvent.tags) {
-		if (tag[0] === 'e' && tag[3] === 'root') {
-			if (channelObjects[tag[1]]) {
-				return channelObjects[tag[1]].name;
-			}
-			return 'チャンネル情報不明';
-		}
-	}
-	return 'チャンネル情報不明';
-};
-const getChannelId = (noteEvent: NostrEvent) => {
-	for (const tag of noteEvent.tags) {
-		if (tag[0] === 'e' && tag[3] === 'root') {
-			if (channelObjects[tag[1]]) {
-				const id = channelObjects[tag[1]].id;
-				return nip19.neventEncode({id:id, relays:[channelObjects[id].recommendedRelay], author:channelObjects[id].pubkey});
-			}
-			return null;
-		}
-	}
-	return null;
-};
-const getImagesUrls = (content: string) => {
-	const matchesIterator = content.matchAll(/https?:\/\/.+\.(jpe?g|png|gif)/g);
-	const urls = [];
-	for (const match of matchesIterator) {
-		urls.push(match[0]);
-	}
-	return urls;
 };
 
 // kind:42, 43, 44を取得する
@@ -342,7 +311,6 @@ afterUpdate(() => {
 	const main = document.getElementsByTagName('main')[0];
 	main.scroll(0, main.scrollHeight);
 });
-
 </script>
 
 <svelte:head>
@@ -351,54 +319,7 @@ afterUpdate(() => {
 <div id="container">
 <Sidebar {relaysToUse} {loginPubkey} {importRelays} {useRelaysNIP07} {channels} {getMutelist} {muteList} />
 <main>
-	<p>投稿取得数: {notes.length}</p>
-	<dl>
-	{#each notes as note}
-		{#if !muteList.includes(note.pubkey)}
-			<dt id="{note.id}">
-			{#if profs[note.pubkey]}
-				<img src="{profs[note.pubkey].picture || './default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} | <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name}</a>
-			{:else}
-				<a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name}</a>
-			{/if}
-				| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {#if getChannelId(note)}<a href="/channels/{getChannelId(note)}">{getChannelName(note)}</a>{:else}{getChannelName(note)}{/if}
-			</dt>
-			<dd>
-				<div class="info-header">
-				{#if note.tags.filter(v => v[0] === 'e' && v[3] === 'reply').length}
-					<a href="#{note.tags.filter(v => v[0] === 'e' && v[3] === 'reply')[0][1]}">&gt;&gt;</a>
-				{/if}
-				{#each note.tags.filter(v => v[0] === 'p').map(v => v[1]) as pubkey}
-					&nbsp;@{profs[pubkey]?.name}
-				{/each}
-				</div>
-			{#if true}
-				{@const regMatch = /(https?:\/\/\S+)|(nostr:(npub\w{59}))/g}
-				{@const regSplit = /https?:\/\/\S+|nostr:npub\w{59}/}
-				{@const plainTexts = note.content.split(regSplit)}
-				{plainTexts.shift()}
-				{#each note.content.matchAll(regMatch) as match}
-					{#if /https?:\/\/\S+/.test(match[1]) }
-						<a href="{match[1]}">{match[1]}</a>
-					{:else if /npub\w{59}/.test(match[3])}
-						{@const d = nip19.decode(match[3])}
-						{#if d.type === 'npub'}
-							<a href="/{match[3]}">@{profs[d.data]?.name}</a>
-						{:else}
-							{match[3]}
-						{/if}
-					{/if}
-					{plainTexts.shift()}
-				{/each}
-			{/if}
-			{#each getImagesUrls(note.content) as imageUrl}
-				<a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a>
-			{/each}
-				<div class="action-bar"><button on:click={() => sendFav(note.id, note.pubkey)} disabled={!loginPubkey}>☆ふぁぼる</button></div>
-			</dd>
-		{/if}
-	{/each}
-	</dl>
+<Timeline {notes} {profs} {channelObjects} {sendFav} {loginPubkey} {muteList} />
 </main>
 </div>
 
@@ -423,18 +344,5 @@ main {
 	height: calc(100% - 7em);
 	overflow-y: scroll;
 	word-break: break-all;
-}
-main dt {
-	border-top: 1px solid #666;
-}
-main dd {
-	border-top: 1px dashed #999;
-	white-space: pre-wrap;
-}
-main dd .info-header {
-	color: #999;
-}
-main dd img {
-	max-height: 200px;
 }
 </style>

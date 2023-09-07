@@ -11,6 +11,7 @@ import { afterUpdate } from 'svelte';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
 import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse } from '../store';
 import Sidebar from '../Sidebar.svelte';
+import Timeline from '../Timeline.svelte';
 
 export let data: any;
 let npub: string = data.params.id;
@@ -356,7 +357,6 @@ afterUpdate(() => {
 	const main = document.getElementsByTagName('main')[0];
 	main.scroll(0, main.scrollHeight);
 });
-
 </script>
 
 <svelte:head>
@@ -368,52 +368,7 @@ afterUpdate(() => {
 	<h2>{profs[pubkey]?.display_name ?? ''} @{profs[pubkey]?.name ?? ''}</h2>
 	<p class="about"><img src="{profs[pubkey]?.picture || './default.png'}" alt="avatar of {nip19.npubEncode(pubkey)}" width="32" height="32">
 		{profs[pubkey]?.about ?? ''}</p>
-	<p>投稿取得数: {notes.length}</p>
-	<dl>
-	{#each notes as note}
-		<dt id="{note.id}">
-		{#if profs[note.pubkey]}
-			<img src="{profs[note.pubkey].picture || './default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} | @{profs[note.pubkey].name}
-		{:else}
-			@{nip19.npubEncode(note.pubkey)}
-		{/if}
-			| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {#if getChannelId(note)}<a href="/channels/{getChannelId(note)}">{getChannelName(note)}</a>{:else}{getChannelName(note)}{/if}
-		</dt>
-		<dd>
-			<div class="info-header">
-			{#if note.tags.filter(v => v[0] === 'e' && v[3] === 'reply').length}
-				<a href="#{note.tags.filter(v => v[0] === 'e' && v[3] === 'reply')[0][1]}">&gt;&gt;</a>
-			{/if}
-			{#each note.tags.filter(v => v[0] === 'p').map(v => v[1]) as pubkey}
-				&nbsp;@{profs[pubkey]?.name}
-			{/each}
-			</div>
-		{#if true}
-			{@const regMatch = /(https?:\/\/\S+)|(nostr:(npub\w{59}))/g}
-			{@const regSplit = /https?:\/\/\S+|nostr:npub\w{59}/}
-			{@const plainTexts = note.content.split(regSplit)}
-			{plainTexts.shift()}
-			{#each note.content.matchAll(regMatch) as match}
-				{#if /https?:\/\/\S+/.test(match[1]) }
-					<a href="{match[1]}">{match[1]}</a>
-				{:else if /npub\w{59}/.test(match[3])}
-					{@const d = nip19.decode(match[3])}
-					{#if d.type === 'npub'}
-						<a href="/{match[3]}">@{profs[d.data]?.name}</a>
-					{:else}
-						{match[3]}
-					{/if}
-				{/if}
-				{plainTexts.shift()}
-			{/each}
-		{/if}
-		{#each getImagesUrls(note.content) as imageUrl}
-			<a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a>
-		{/each}
-			<div class="action-bar"><button on:click={() => sendFav(note.id, note.pubkey)} disabled={!loginPubkey}>☆ふぁぼる</button></div>
-		</dd>
-	{/each}
-	</dl>
+	<Timeline {notes} {profs} {channelObjects} {sendFav} {loginPubkey} {muteList} />
 </main>
 </div>
 
@@ -441,18 +396,5 @@ main {
 }
 .about {
 	white-space: pre-wrap;
-}
-main dt {
-	border-top: 1px solid #666;
-}
-main dd {
-	border-top: 1px dashed #999;
-	white-space: pre-wrap;
-}
-main dd .info-header {
-	color: #999;
-}
-main dd img {
-	max-height: 200px;
 }
 </style>
