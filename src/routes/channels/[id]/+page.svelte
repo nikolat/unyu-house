@@ -46,6 +46,7 @@ interface Profile {
 	display_name: string
 	about: string
 	picture: string
+	created_at: number
 }
 
 // kind:40を溜めておく keyはid
