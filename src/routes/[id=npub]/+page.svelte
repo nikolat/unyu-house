@@ -133,7 +133,7 @@ const applyRelays = async() => {
 }
 
 beforeNavigate(() => {
-	subNotes.unsub();
+	subNotes?.unsub();
 });
 afterNavigate(() => {
 	npub = data.params.id;

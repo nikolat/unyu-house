@@ -172,7 +172,7 @@ const sendMessage = async() => {
 }
 
 beforeNavigate(() => {
-	subNotes.unsub();
+	subNotes?.unsub();
 });
 afterNavigate(() => {
 	currentChannelId = data.params.id;
