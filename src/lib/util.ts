@@ -23,6 +23,7 @@ interface Profile {
 	display_name: string
 	about: string
 	picture: string
+	created_at: number
 }
 
 // kind:40を取得する
@@ -71,7 +72,7 @@ const updateChannels = async(metadataEvents: NostrEvent[], channelEvents: NostrE
 		channelEvents.forEach(c => {
 			if (m.pubkey === c.pubkey) {
 				m.tags.forEach(tag => {
-					if (tag[0] === 'e' && tag[1] === c.id) {
+					if ((tag[0] === 'e') && (tag[1] === c.id) && (channelObjects[c.id].updated_at < m.created_at)) {
 //						console.log('kind:41 replace', channelObjects[c.id], JSON.parse(m.content));
 						const savedRecommendedRelay = channelObjects[c.id].recommendedRelay;
 						channelObjects[c.id] = JSON.parse(m.content);
@@ -167,8 +168,11 @@ export const getNotes = async (pool: SimplePool, relays: string[], subNotes: Sub
 export const getProfile = async (pool: SimplePool, relays: string[], pubkeys: string[], profs: {[key: string]: Profile}, callbackProfile: Function) => {
 	const sub = pool.sub(relays, [{kinds: [0], authors: pubkeys}]);
 	sub.on('event', (ev: NostrEvent) => {
-		profs[ev.pubkey] = JSON.parse(ev.content);
-//		console.log(ev);
+		if ((profs[ev.pubkey] && profs[ev.pubkey].created_at < ev.created_at) || !profs[ev.pubkey]) {
+			profs[ev.pubkey] = JSON.parse(ev.content);
+			profs[ev.pubkey].created_at = ev.created_at;
+		}
+		console.log(ev);
 	});
 	sub.on('eose', () => {
 		console.log('getProfile * EOSE *');
