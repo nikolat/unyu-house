@@ -155,14 +155,18 @@ afterUpdate(() => {
 </script>
 
 <svelte:head>
-	<title>{profs[pubkey]?.name} | うにゅうハウス</title>
+	<title>{profs[pubkey]?.name ?? 'プロフィール情報不明'} | うにゅうハウス</title>
 </svelte:head>
 <div id="container">
 <Sidebar {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {importRelays} {useRelaysNIP07} {channels} {getMutelist} />
 <main>
+	{#if profs[pubkey]}
 	<h2>{profs[pubkey]?.display_name ?? ''} @{profs[pubkey]?.name ?? ''}</h2>
 	<p class="about"><img src="{profs[pubkey]?.picture || './default.png'}" alt="avatar of {nip19.npubEncode(pubkey)}" width="32" height="32">
 		{profs[pubkey]?.about ?? ''}</p>
+	{:else}
+	<h2>Now Loading...</h2>
+	{/if}
 	<Timeline {pool} {relaysToWrite} {notes} {profs} {channelObjects} {sendFav} {loginPubkey} {muteList} />
 </main>
 </div>

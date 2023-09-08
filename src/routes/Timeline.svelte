@@ -70,9 +70,9 @@ const getImagesUrls = (content: string) => {
 	{#if !muteList.includes(note.pubkey)}
 		<dt id="{note.id}">
 		{#if profs[note.pubkey]}
-			<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} | <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name}</a>
+			<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} | <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>
 		{:else}
-			<a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name}</a>
+			<img src="/default.png" alt="" width="32" height="32"><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
 		{/if}
 			| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {#if getChannelId(note)}<a href="/channels/{getChannelId(note)}">{getChannelName(note)}</a>{:else}{getChannelName(note)}{/if}
 		</dt>
@@ -96,7 +96,7 @@ const getImagesUrls = (content: string) => {
 				{:else if /npub\w{59}/.test(match[3])}
 					{@const d = nip19.decode(match[3])}
 					{#if d.type === 'npub'}
-						<a href="/{match[3]}">@{profs[d.data]?.name}</a>
+						<a href="/{match[3]}">@{profs[d.data]?.name ?? (match[3].slice(0, 10) + '...')}</a>
 					{:else}
 						{match[3]}
 					{/if}
