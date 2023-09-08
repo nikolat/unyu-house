@@ -104,7 +104,11 @@ const getImagesUrls = (content: string) => {
 		{#each getImagesUrls(note.content) as imageUrl}
 			<a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a>
 		{/each}
-			<div class="action-bar"><button on:click={() => sendFav(note.id, note.pubkey)} disabled={!loginPubkey}>☆ふぁぼる</button></div>
+			<div class="action-bar">
+				<button on:click={() => sendFav(note.id, note.pubkey)} disabled={!loginPubkey}>☆ふぁぼる</button>
+				<span class="json-view-button">[...]</span>
+				<div class="json-view">{JSON.stringify(note, undefined, 2)}</div>
+			</div>
 		</dd>
 	{/if}
 {/each}
@@ -123,5 +127,19 @@ dd .info-header {
 }
 dd img {
 	max-height: 200px;
+}
+.action-bar > * {
+	vertical-align: top;
+}
+.json-view-button:hover + .json-view,
+.json-view:hover {
+	display: inline-block;
+}
+.json-view {
+	font-size: x-small;
+	border: 1px solid #333;
+	background-color: #eee;
+	display: none;
+	margin: -0.5em 0 0 -0.5em;
 }
 </style>
