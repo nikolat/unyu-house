@@ -27,7 +27,8 @@ interface Profile {
 }
 
 // kind:40を取得する
-export const getChannels = async (pool: SimplePool, channelEvents: NostrEvent[], channelObjects: {[key: string]: Channel}, relays: string[], metadataEvents: NostrEvent[], channels: Channel[], callbackChannels: Function) => {
+export const getChannels = async (pool: SimplePool, channelEvents: NostrEvent[], channelObjects: {[key: string]: Channel}, relays: string[], metadataEvents: NostrEvent[], channels: Channel[], profs: {[key: string]: Profile}, callbackChannels: Function, callbackProfile: Function) => {
+	const pubkeys: Set<string> = new Set();
 	const sub = pool.sub(relays, [{kinds: [40]}]);
 	sub.on('event', (ev: NostrEvent) => {
 		channelEvents.push(ev);
@@ -36,6 +37,7 @@ export const getChannels = async (pool: SimplePool, channelEvents: NostrEvent[],
 		channelObjects[ev.id].id = ev.id;
 		channelObjects[ev.id].pubkey = ev.pubkey;
 		channelObjects[ev.id].recommendedRelay = pool.seenOn(ev.id)[0];
+		pubkeys.add(ev.pubkey);
 //		console.log(ev);
 	});
 	sub.on('eose', () => {
@@ -44,6 +46,8 @@ export const getChannels = async (pool: SimplePool, channelEvents: NostrEvent[],
 		sub.unsub();
 		// kind:41を取得する
 		getMetadata(pool, relays, metadataEvents, channels, channelEvents, channelObjects, callbackChannels);
+		// チャンネル作成者のプロフィールを取得しに行く
+		getProfile(pool, relays, Array.from(pubkeys), profs, callbackProfile);
 	});
 };
 

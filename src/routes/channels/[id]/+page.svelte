@@ -126,14 +126,26 @@ const applyRelays = async() => {
 	relaysToRead = Array.from(relaysToReadSet);
 	relaysToWrite = Array.from(relaysToWriteSet);
 	// チャンネルの取得
-	getChannels(pool, channelEvents, channelObjects, relaysToRead, metadataEvents, channels, (channelsRetuen: Channel[]) => {
+	getChannels(pool, channelEvents, channelObjects, relaysToRead, metadataEvents, channels, profs, (channelsRetuen: Channel[]) => {
 		channels = channelsRetuen;
+	}, (profileReturn: {[key: string]: Profile}) => {
+		for (const k of Object.keys(profileReturn)) {
+			if (!(k in profs)) {
+				profs.k = profileReturn.k;
+			}
+		}
+		profs = profs;
 	}).catch((e) => console.error(e));
 	// 投稿の取得
 	getNotes(pool, relaysToRead, subNotes, [{kinds: [42, 43, 44], limit: 100, '#e': [currentChannelId]}], notes, profs, (notesReturn: NostrEvent[]) => {
 		notes = notesReturn;
 	}, (profileReturn: {[key: string]: Profile}) => {
-		profs = profileReturn;
+		for (const k of Object.keys(profileReturn)) {
+			if (!(k in profs)) {
+				profs.k = profileReturn.k;
+			}
+		}
+		profs = profs;
 	}).catch((e) => console.error(e));
 	if (loginPubkey)
 		getMutelist(pool, relaysToRead, loginPubkey, callbackMuteList);
@@ -202,7 +214,7 @@ afterUpdate(() => {
 	<title>{channels.filter(v => v.id === currentChannelId)[0]?.name ?? 'チャンネル情報不明'} | うにゅうハウス</title>
 </svelte:head>
 <div id="container">
-<Sidebar {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {importRelays} {useRelaysNIP07} {channels} {getMutelist} />
+<Sidebar {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {importRelays} {useRelaysNIP07} {channels} {getMutelist} {profs} />
 <main>
 	{#if true}
 		{@const channel = channels.filter(v => v.id === currentChannelId)[0]}
