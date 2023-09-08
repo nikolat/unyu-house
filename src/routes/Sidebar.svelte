@@ -16,6 +16,13 @@ interface Channel {
 	recommendedRelay: string
 }
 
+interface Profile {
+	name: string
+	display_name: string
+	about: string
+	picture: string
+}
+
 export let pool: SimplePool;
 export let relaysToUse: object;
 export let loginPubkey: string;
@@ -24,6 +31,7 @@ export let importRelays: () => Promise<void>;
 export let useRelaysNIP07: boolean;
 export let channels: Channel[];
 export let getMutelist: (pool: SimplePool, relays: string[], pubkey: string, callbackMuteList: Function) => Promise<void>;
+export let profs: {[key: string]: Profile};
 
 const login = async() => {
 	if (browser && (window as any).nostr?.getPublicKey) {
@@ -72,7 +80,10 @@ const logout = () => {
 		<p>チャンネル取得数: {channels.length}</p>
 		<ul>
 			{#each channels as channel}
-			<li><a href="/channels/{nip19.neventEncode({id:channel.id, relays:[channel.recommendedRelay], author:channel.pubkey})}">{channel.name}</a></li>
+			<li>
+				<img src="{profs[channel.pubkey]?.picture || '/default.png'}" alt="" width="16" height="16">
+				<a href="/channels/{nip19.neventEncode({id:channel.id, relays:[channel.recommendedRelay], author:channel.pubkey})}">{channel.name}</a>
+			</li>
 			{/each}
 		</ul>
 	</nav>
