@@ -198,17 +198,20 @@ afterUpdate(() => {
 </script>
 
 <svelte:head>
-	<title>{channelObjects[currentChannelId]?.name} | うにゅうハウス</title>
+	<title>{channels.filter(v => v.id === currentChannelId)[0]?.name ?? 'チャンネル情報不明'} | うにゅうハウス</title>
 </svelte:head>
 <div id="container">
 <Sidebar {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {importRelays} {useRelaysNIP07} {channels} {getMutelist} />
 <main>
-	<h2>{channelObjects[currentChannelId]?.name}</h2>
-	{#if channelObjects[currentChannelId]}
-	<p id="channel-about">{#if channelObjects[currentChannelId]?.picture}<img src="{channelObjects[currentChannelId]?.picture}" width="100" height="100" alt="banner" />{/if}{channelObjects[currentChannelId]?.about}</p>
-	{/if}
-	{#if profs[channelObjects[currentChannelId]?.pubkey]}
-	<p id="channel-owner">owner: <img src="{profs[channelObjects[currentChannelId]?.pubkey]?.picture}" width="32" height="32" alt="{profs[channelObjects[currentChannelId]?.pubkey]?.display_name}" />@{profs[channelObjects[currentChannelId]?.pubkey]?.name}</p>
+	{#if true}
+		{@const channel = channels.filter(v => v.id === currentChannelId)[0]}
+		<h2>{channel?.name ?? 'Now Loading...'}</h2>
+		{#if channel}
+		<p id="channel-about">{#if channel.picture}<img src="{channel.picture}" width="100" height="100" alt="banner" />{/if}{channel.about ?? ''}</p>
+		{/if}
+		{#if profs[channel?.pubkey]}
+		<p id="channel-owner">owner: <img src="{profs[channel.pubkey].picture}" width="32" height="32" alt="{profs[channel.pubkey].display_name}" />@{profs[channel.pubkey].name}</p>
+		{/if}
 	{/if}
 	<Timeline {pool} {relaysToWrite} {notes} {profs} {channelObjects} {sendFav} {loginPubkey} {muteList} />
 	<div id="input">
