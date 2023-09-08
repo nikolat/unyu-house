@@ -9,9 +9,10 @@ import {
 } from 'nostr-tools';
 import { afterUpdate } from 'svelte';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
-import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse } from '../../store';
+import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse, storedMuteList } from '$lib/store';
 import Sidebar from '../../Sidebar.svelte';
 import Timeline from '../../Timeline.svelte';
+import { getChannels, getNotes, getMutelist, sendFav } from '$lib/util';
 
 export let data: any;
 let currentChannelId: string = data.params.id;
@@ -64,197 +65,11 @@ $: profs = profs;
 let pool = new SimplePool();
 let subNotes: Sub<42 | 43 | 44>;
 
-// kind:40を取得する
-const getChannels = async (relays: string[]) => {
-	const sub = pool.sub(relays, [{kinds: [40]}]);
-	sub.on('event', (ev: NostrEvent) => {
-		channelEvents.push(ev);
-		channelObjects[ev.id] = JSON.parse(ev.content);
-		channelObjects[ev.id].updated_at = ev.created_at;
-		channelObjects[ev.id].id = ev.id;
-		channelObjects[ev.id].pubkey = ev.pubkey;
-		channelObjects[ev.id].recommendedRelay = pool.seenOn(ev.id)[0];
-//		console.log(ev);
-		if (typeof currentChannelOwner === 'undefined' && currentChannelId === ev.id)
-			currentChannelOwner = ev.pubkey;
-	});
-	sub.on('eose', () => {
-		console.log('getChannels * EOSE *');
-		//取得できたらもう用済みなのでunsubする
-		sub.unsub();
-		// kind:41を取得する
-		getMetadata(relays);
-	});
-};
-
-// kind:41を取得する
-const getMetadata = async (relays: string[]) => {
-	const sub = pool.sub(relays, [{kinds: [41]}]);
-	sub.on('event', (ev: NostrEvent) => {
-		metadataEvents.push(ev);
-//		console.log(ev);
-	});
-	sub.on('eose', () => {
-		console.log('getMetadata * EOSE *');
-		//取得できたらもう用済みなのでunsubする
-		sub.unsub();
-		// 更新すべきkind:41を適用する
-		updateChannels();
-		// 表示を反映させる
-		channels = getSortedChannels();
-	});
-};
-
-// 更新すべきkind:41を適用する
-const updateChannels = () => {
-	metadataEvents.forEach(m => {
-		channelEvents.forEach(c => {
-			if (m.pubkey === c.pubkey) {
-				m.tags.forEach(tag => {
-					if (tag[0] === 'e' && tag[1] === c.id) {
-//						console.log('kind:41 replace', channelObjects[c.id], JSON.parse(m.content));
-						const savedRecommendedRelay = channelObjects[c.id].recommendedRelay;
-						channelObjects[c.id] = JSON.parse(m.content);
-						channelObjects[c.id].updated_at = m.created_at;
-						channelObjects[c.id].id = c.id;
-						channelObjects[c.id].pubkey = c.pubkey;
-						channelObjects[c.id].recommendedRelay = savedRecommendedRelay;
-					}
-				});
-			}
-		})
-	});
-};
-
-// 降順にソートされたチャンネル情報の配列を返す
-const getSortedChannels = () => {
-	const channelArray: Channel[] = Object.values(channelObjects);
-	channelArray.sort((a, b) => {
-		if (a.updated_at < b.updated_at) {
-			return 1;
-		}
-		if (a.updated_at > b.updated_at) {
-			return -1;
-		}
-		return 0;
-	});
-	return channelArray;
-};
-
-const getChannelName = (noteEvent: NostrEvent) => {
-	for (const tag of noteEvent.tags) {
-		if (tag[0] === 'e' && tag[3] === 'root') {
-			if (channelObjects[tag[1]]) {
-				return channelObjects[tag[1]].name;
-			}
-			return 'チャンネル情報不明';
-		}
-	}
-	return 'チャンネル情報不明';
-};
-const getImagesUrls = (content: string) => {
-	const matchesIterator = content.matchAll(/https?:\/\/.+\.(jpe?g|png|gif)/g);
-	const urls = [];
-	for (const match of matchesIterator) {
-		urls.push(match[0]);
-	}
-	return urls;
-};
-
-// kind:42, 43, 44を取得する
-const getNotes = async (relays: string[]) => {
-	subNotes = pool.sub(relays, [{kinds: [42, 43, 44], limit: 100, '#e': [currentChannelId]}]);
-	const pubkeys: Set<string> = new Set();
-	let getEOSE = false;
-	const update = () => {
-		// 時系列順にソートする
-		notes.sort((a, b) => {
-			if (a.created_at < b.created_at) {
-				return -1;
-			}
-			if (a.created_at > b.created_at) {
-				return 1;
-			}
-			return 0;
-		});
-		// 表示を反映させる
-		notes = notes;
-	};
-	subNotes.on('event', (ev: NostrEvent) => {
-		notes.push(ev);
-		if (getEOSE) {
-			update();
-			const pubkeysToGet: Set<string> = new Set();
-			pubkeysToGet.add(ev.pubkey);
-			for (const pubkey of ev.tags.filter(v => v[0] === 'p').map(v => v[1])) {
-				pubkeysToGet.add(pubkey);
-			}
-			const matchesIterator = ev.content.matchAll(/nostr:(npub\w{59})/g);
-			for (const match of matchesIterator) {
-				const d = nip19.decode(match[1]);
-				if (d.type === 'npub')
-					pubkeysToGet.add(d.data);
-			}
-			const pubkeysToGetArray = Array.from(pubkeysToGet).filter(v => !(v in profs))
-			if (pubkeysToGetArray.length > 0) {
-				getProfile(relays, Array.from(pubkeysToGetArray));
-			}
-		}
-		else {
-			pubkeys.add(ev.pubkey);
-			for (const pubkey of ev.tags.filter(v => v[0] === 'p').map(v => v[1])) {
-				pubkeys.add(pubkey);
-			}
-			const matchesIterator = ev.content.matchAll(/nostr:(npub\w{59})/g);
-			for (const match of matchesIterator) {
-				const d = nip19.decode(match[1]);
-				if (d.type === 'npub')
-					pubkeys.add(d.data);
-			}
-		}
-//		console.log(ev);
-	});
-	subNotes.on('eose', () => {
-		console.log('getNotes * EOSE *');
-		getEOSE = true;
-		update();
-		// 投稿の取得が終わったらプロフィールを取得しに行く
-		if (currentChannelOwner)
-			pubkeys.add(currentChannelOwner);
-		getProfile(relays, Array.from(pubkeys));
-	});
-};
-
-// プロフィールを取得する
-const getProfile = async (relays: string[], pubkeys: string[]) => {
-	const sub = pool.sub(relays, [{kinds: [0], authors: pubkeys}]);
-	sub.on('event', (ev: NostrEvent) => {
-		profs[ev.pubkey] = JSON.parse(ev.content);
-//		console.log(ev);
-	});
-	sub.on('eose', () => {
-		console.log('getProfile * EOSE *');
-		//取得できたらもう用済みなのでunsubする
-		sub.unsub();
-		// 表示を反映させる
-		profs = profs;
-	});
-};
-
-let muteList: string[] = [];
+let muteList: string[];
 $: muteList = muteList;
-// ミュートリストを取得する
-const getMutelist = async (relays: string[], pubkey: string) => {
-	const sub = pool.sub(relays, [{kinds: [10000], authors: [pubkey]}]);
-	sub.on('event', (ev: NostrEvent) => {
-		muteList = ev.tags.filter(v => v[0] === 'p').map(v => v[1]);
-	});
-	sub.on('eose', () => {
-		console.log('getMutelist * EOSE *');
-		//取得できたらもう用済みなのでunsubする
-		sub.unsub();
-	});
-};
+storedMuteList.subscribe((value) => {
+	muteList = value;
+})
 
 let loginPubkey: string;
 $: loginPubkey = loginPubkey;
@@ -288,6 +103,8 @@ const importRelays = async() => {
 	applyRelays();
 };
 
+const callbackMuteList = (muteListReturn: string[]) => {muteList = muteListReturn;};
+
 const applyRelays = async() => {
 	channelEvents = [];
 	channelObjects = {};
@@ -308,28 +125,17 @@ const applyRelays = async() => {
 	relaysToRead = Array.from(relaysToReadSet);
 	relaysToWrite = Array.from(relaysToWriteSet);
 	// チャンネルの取得
-	getChannels(relaysToRead).catch((e) => console.error(e));
+	getChannels(pool, channelEvents, channelObjects, relaysToRead, metadataEvents, channels, (channelsRetuen: Channel[]) => {
+		channels = channelsRetuen;
+	}).catch((e) => console.error(e));
 	// 投稿の取得
-	getNotes(relaysToRead).catch((e) => console.error(e));
+	getNotes(pool, relaysToRead, subNotes, [{kinds: [42, 43, 44], limit: 100, '#e': [currentChannelId]}], notes, profs, (notesReturn: NostrEvent[]) => {
+		notes = notesReturn;
+	}, (profileReturn: {[key: string]: Profile}) => {
+		profs = profileReturn;
+	}).catch((e) => console.error(e));
 	if (loginPubkey)
-		getMutelist(relaysToRead, loginPubkey);
-}
-
-const sendFav = async(noteid: string, targetPubkey: string) => {
-	const savedloginPubkey = loginPubkey;
-	storedLoginpubkey.set('');
-	const tags = [['p', targetPubkey, ''], ['e', noteid, '', '']];
-	const baseEvent: UnsignedEvent = {
-		kind: 7,
-		pubkey: '',
-		created_at: Math.floor(Date.now() / 1000),
-		tags: tags,
-		content: '+'
-	};
-	const newEvent: NostrEvent = await (window as any).nostr.signEvent(baseEvent);
-	const pubs = pool.publish(relaysToWrite, newEvent);
-	await Promise.all(pubs);
-	storedLoginpubkey.set(savedloginPubkey);
+		getMutelist(pool, relaysToRead, loginPubkey, callbackMuteList);
 }
 
 let inputText = '';
@@ -395,7 +201,7 @@ afterUpdate(() => {
 	<title>{channelObjects[currentChannelId]?.name} | うにゅうハウス</title>
 </svelte:head>
 <div id="container">
-<Sidebar {relaysToUse} {loginPubkey} {importRelays} {useRelaysNIP07} {channels} {getMutelist} {muteList} />
+<Sidebar {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {importRelays} {useRelaysNIP07} {channels} {getMutelist} />
 <main>
 	<h2>{channelObjects[currentChannelId]?.name}</h2>
 	{#if channelObjects[currentChannelId]}
@@ -404,7 +210,7 @@ afterUpdate(() => {
 	{#if profs[channelObjects[currentChannelId]?.pubkey]}
 	<p id="channel-owner">owner: <img src="{profs[channelObjects[currentChannelId]?.pubkey]?.picture}" width="32" height="32" alt="{profs[channelObjects[currentChannelId]?.pubkey]?.display_name}" />@{profs[channelObjects[currentChannelId]?.pubkey]?.name}</p>
 	{/if}
-	<Timeline {notes} {profs} {channelObjects} {sendFav} {loginPubkey} {muteList} />
+	<Timeline {pool} {relaysToWrite} {notes} {profs} {channelObjects} {sendFav} {loginPubkey} {muteList} />
 	<div id="input">
 		{#if loginPubkey}
 		<textarea id="input-text" bind:value={inputText}></textarea>

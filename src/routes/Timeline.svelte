@@ -1,6 +1,7 @@
 <script lang='ts'>
 import {
 	nip19,
+	SimplePool,
 	type Event as NostrEvent,
 } from 'nostr-tools';
 
@@ -21,10 +22,12 @@ interface Profile {
 	picture: string
 }
 
+export let pool: SimplePool;
+export let relaysToWrite: string[];
 export let notes: NostrEvent[];
 export let profs: {[key: string]: Profile};
 export let channelObjects: {[key: string]: Channel};
-export let sendFav: (noteid: string, targetPubkey: string) => Promise<void>
+export let sendFav: (pool: SimplePool, relaysToWrite: string[], noteid: string, targetPubkey: string) => Promise<void>
 export let loginPubkey: string;
 export let muteList: string[];
 
@@ -105,7 +108,7 @@ const getImagesUrls = (content: string) => {
 			<a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a>
 		{/each}
 			<div class="action-bar">
-				<button on:click={() => sendFav(note.id, note.pubkey)} disabled={!loginPubkey}>☆ふぁぼる</button>
+				<button on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey)} disabled={!loginPubkey}>☆ふぁぼる</button>
 				<span class="json-view-button">[...]</span>
 				<div class="json-view">{JSON.stringify(note, undefined, 2)}</div>
 			</div>

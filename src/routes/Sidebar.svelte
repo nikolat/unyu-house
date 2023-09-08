@@ -1,9 +1,10 @@
 <script lang='ts'>
 import {
+	SimplePool,
 	nip19,
 } from 'nostr-tools';
 import { browser } from '$app/environment';
-import { storedLoginpubkey } from './store';
+import { storedLoginpubkey, storedMuteList } from '$lib/store';
 
 interface Channel {
 	name: string
@@ -15,25 +16,26 @@ interface Channel {
 	recommendedRelay: string
 }
 
+export let pool: SimplePool;
 export let relaysToUse: object;
 export let loginPubkey: string;
+export let callbackMuteList: Function;
 export let importRelays: () => Promise<void>;
 export let useRelaysNIP07: boolean;
 export let channels: Channel[];
-export let getMutelist: (relays: string[], pubkey: string) => Promise<void>;
-export let muteList: string[];
+export let getMutelist: (pool: SimplePool, relays: string[], pubkey: string, callbackMuteList: Function) => Promise<void>;
 
 const login = async() => {
 	if (browser && (window as any).nostr?.getPublicKey) {
 		loginPubkey = await (window as any).nostr.getPublicKey();
 		storedLoginpubkey.set(loginPubkey);
 		const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
-		getMutelist(relaysToRead, loginPubkey);
+		getMutelist(pool, relaysToRead, loginPubkey, callbackMuteList);
 	}
 };
 const logout = () => {
 	storedLoginpubkey.set('');
-	muteList = [];
+	storedMuteList.set([]);
 };
 </script>
 
