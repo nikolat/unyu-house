@@ -82,7 +82,7 @@ const getImagesUrls = (content: string) => {
 				<a href="#{note.tags.filter(v => v[0] === 'e' && v[3] === 'reply')[0][1]}">&gt;&gt;</a>
 			{/if}
 			{#each note.tags.filter(v => v[0] === 'p').map(v => v[1]) as pubkey}
-				&nbsp;@{profs[pubkey]?.name}
+				&nbsp;@{profs[pubkey]?.name ?? (nip19.npubEncode(pubkey).slice(0, 10) + '...')}
 			{/each}
 			</div>
 		{#if true}
