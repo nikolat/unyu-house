@@ -172,7 +172,7 @@ export const getProfile = async (pool: SimplePool, relays: string[], pubkeys: st
 			profs[ev.pubkey] = JSON.parse(ev.content);
 			profs[ev.pubkey].created_at = ev.created_at;
 		}
-		console.log(ev);
+//		console.log(ev);
 	});
 	sub.on('eose', () => {
 		console.log('getProfile * EOSE *');
@@ -186,9 +186,13 @@ export const getProfile = async (pool: SimplePool, relays: string[], pubkeys: st
 // ミュートリストを取得する
 export const getMutelist = async (pool: SimplePool, relays: string[], pubkey: string, callbackMuteList: Function) => {
 	let muteList: string[];
+	let created_at = 0;
 	const sub = pool.sub(relays, [{kinds: [10000], authors: [pubkey]}]);
 	sub.on('event', (ev: NostrEvent) => {
-		muteList = ev.tags.filter(v => v[0] === 'p').map(v => v[1]);
+		if (created_at < ev.created_at) {
+			muteList = ev.tags.filter(v => v[0] === 'p').map(v => v[1]);
+			created_at = ev.created_at;
+		}
 	});
 	sub.on('eose', () => {
 		console.log('getMutelist * EOSE *');
