@@ -39,7 +39,6 @@ interface Profile {
 
 // kind:40を溜めておく keyはid
 let channelEvents: NostrEvent[] = [];
-let channelObjects: {[key: string]: Channel} = {};
 let channels: Channel[] = [];
 $: channels = channels;
 // kind:41を溜めておく
@@ -96,7 +95,6 @@ const callbackMuteList = (muteListReturn: string[]) => {muteList = muteListRetur
 
 const applyRelays = async() => {
 	channelEvents = [];
-	channelObjects = {};
 	channels = [];
 	metadataEvents = [];
 	notes = [];
@@ -114,7 +112,7 @@ const applyRelays = async() => {
 	relaysToRead = Array.from(relaysToReadSet);
 	relaysToWrite = Array.from(relaysToWriteSet);
 	// チャンネルの取得
-	getChannels(pool, channelEvents, channelObjects, relaysToRead, metadataEvents, channels, profs, (channelsRetuen: Channel[]) => {
+	getChannels(pool, channelEvents, relaysToRead, metadataEvents, channels, profs, (channelsRetuen: Channel[]) => {
 		channels = channelsRetuen;
 	}, (profileReturn: {[key: string]: Profile}) => {
 		for (const k of Object.keys(profileReturn)) {
@@ -161,7 +159,7 @@ afterUpdate(() => {
 <div id="container">
 <Sidebar {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {importRelays} {useRelaysNIP07} {channels} {getMutelist} {profs} />
 <main>
-<Timeline {pool} {relaysToWrite} {notes} {profs} {channelObjects} {sendFav} {loginPubkey} {muteList} />
+<Timeline {pool} {relaysToWrite} {notes} {profs} {channels} {sendFav} {loginPubkey} {muteList} />
 </main>
 </div>
 
