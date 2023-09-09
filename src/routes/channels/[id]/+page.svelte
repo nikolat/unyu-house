@@ -12,6 +12,7 @@ import { afterNavigate, beforeNavigate } from '$app/navigation';
 import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse, storedMuteList } from '$lib/store';
 import Sidebar from '../../Sidebar.svelte';
 import Timeline from '../../Timeline.svelte';
+import Header from '../../Header.svelte';
 import { getChannels, getNotes, getMutelist, sendFav } from '$lib/util';
 
 export let data: any;
@@ -211,8 +212,9 @@ afterUpdate(() => {
 	<title>{channels.filter(v => v.id === currentChannelId)[0]?.name ?? 'チャンネル情報不明'} | うにゅうハウス</title>
 </svelte:head>
 <div id="container">
-<Sidebar {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {importRelays} {useRelaysNIP07} {channels} {getMutelist} {profs} />
-<main>
+	<Header />
+	<Sidebar {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {importRelays} {useRelaysNIP07} {channels} {getMutelist} {profs} />
+	<main>
 	{#if true}
 		{@const channel = channels.filter(v => v.id === currentChannelId)[0]}
 		<h2>{channel?.name ?? 'Now Loading...'}</h2>
@@ -223,21 +225,21 @@ afterUpdate(() => {
 		<p id="channel-owner">owner: <img src="{profs[channel.pubkey].picture}" width="32" height="32" alt="{profs[channel.pubkey].display_name}" />@{profs[channel.pubkey].name}</p>
 		{/if}
 	{/if}
-	<Timeline {pool} {relaysToWrite} {notes} {profs} {channels} {sendFav} {loginPubkey} {muteList} />
-	<div id="input">
-		{#if loginPubkey}
-		<textarea id="input-text" bind:value={inputText}></textarea>
-			{#if inputText !== ''}
-			<button on:click={sendMessage}>投稿</button>
+		<Timeline {pool} {relaysToWrite} {notes} {profs} {channels} {sendFav} {loginPubkey} {muteList} />
+		<div id="input">
+			{#if loginPubkey}
+			<textarea id="input-text" bind:value={inputText}></textarea>
+				{#if inputText !== ''}
+				<button on:click={sendMessage}>投稿</button>
+				{:else}
+				<button disabled>投稿</button>
+				{/if}
 			{:else}
-			<button disabled>投稿</button>
+				<textarea id="input-text" disabled></textarea>
+				<button disabled>投稿</button>
 			{/if}
-		{:else}
-		<textarea id="input-text" disabled></textarea>
-		<button disabled>投稿</button>
-		{/if}
-	</div>
-</main>
+		</div>
+	</main>
 </div>
 
 <style>
@@ -257,8 +259,9 @@ afterUpdate(() => {
 	overflow: hidden;
 }
 main {
-	width: calc(80% - 2em);
-	height: calc(100% - 7em);
+	margin-top: 2em;
+	width: calc(100% - 2em);
+	height: calc(100% - 9em);
 	overflow-x: hidden;
 	overflow-y: scroll;
 	word-break: break-all;
@@ -274,7 +277,7 @@ main {
 }
 #input {
 	position: absolute;
-	width: calc(80% - 30px);
+	width: calc(100% - 30px);
 	height: 7em;
 	bottom: 0%;
 }

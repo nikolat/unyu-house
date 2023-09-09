@@ -9,6 +9,7 @@ import { afterUpdate, onDestroy, onMount } from 'svelte';
 import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse, storedMuteList } from '$lib/store';
 import Sidebar from './Sidebar.svelte';
 import Timeline from './Timeline.svelte';
+import Header from './Header.svelte';
 import { getChannels, getNotes, getMutelist, sendFav } from '$lib/util';
 
 // とりあえずリレーは固定
@@ -157,10 +158,11 @@ afterUpdate(() => {
 	<title>うにゅうハウス</title>
 </svelte:head>
 <div id="container">
-<Sidebar {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {importRelays} {useRelaysNIP07} {channels} {getMutelist} {profs} />
-<main>
-<Timeline {pool} {relaysToWrite} {notes} {profs} {channels} {sendFav} {loginPubkey} {muteList} />
-</main>
+	<Header />
+	<Sidebar {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {importRelays} {useRelaysNIP07} {channels} {getMutelist} {profs} />
+	<main>
+		<Timeline {pool} {relaysToWrite} {notes} {profs} {channels} {sendFav} {loginPubkey} {muteList} />
+	</main>
 </div>
 
 <style>
@@ -180,8 +182,9 @@ afterUpdate(() => {
 	overflow: hidden;
 }
 main {
-	width: calc(80% - 2em);
-	height: calc(100% - 7em);
+	margin-top: 2em;
+	width: calc(100% - 2em);
+	height: calc(100% - 9em);
 	overflow-x: hidden;
 	overflow-y: scroll;
 	word-break: break-all;

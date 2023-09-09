@@ -45,60 +45,39 @@ const logout = () => {
 	storedLoginpubkey.set('');
 	storedMuteList.set([]);
 };
-const expandSidebar = () => {
-	const handle = document.getElementById('handle');
-	const header = document.querySelector('header');
-	const main = document.querySelector('main');
-	const input = document.getElementById('input');
-	if (handle && header && main) {
-		if (handle.textContent === '▶') {
-			header.style.width = '80%';
-			handle.textContent = '◀';
-			main.style.width = '20%';
-			if (input) {
-				input.style.width = 'calc(20% - 30px)';
-			}
-		}
-		else {
-			header.style.width = '20%';
-			handle.textContent = '▶';
-			main.style.width = '80%';
-			if (input) {
-				input.style.width = 'calc(80% - 30px)';
-			}
-		}
-	}
-}
 </script>
 
-<header>
-	<h1><a href="/">うにゅうハウス</a></h1>
-	<p>以下のリレーに接続しています</p>
-	<table>
-		<tr>
-			<th>r</th>
-			<th>w</th>
-			<th>relay</th>
-		</tr>
-		{#each Object.entries(relaysToUse) as relay}
-		<tr>
-			<td><input type="checkbox" checked={relay[1].read} disabled /></td>
-			<td><input type="checkbox" checked={relay[1].write} disabled /></td>
-			<td>{relay[0]}</td>
-		</tr>
-		{/each}
-	</table>
-	{#if loginPubkey}
-	<button on:click={logout}>logout</button>
-	<dl>
-		<dt><label for="useRelaysInNIP07">Use relays in NIP-07</label></dt>
-		<dd><input id="use-relay-nip07" name="useRelaysInNIP07" type="checkbox" on:change={importRelays} bind:checked={useRelaysNIP07} /></dd>
-	</dl>
-	{:else}
-	<button on:click={login}>login with NIP-07</button>
-	{/if}
-	<h2>GitHub</h2>
-	<p><a href="https://github.com/nikolat/unyu-house">nikolat/unyu-house</a></p>
+<div id="sidebar">
+	<section>
+		<h2>接続リレー</h2>
+		<table>
+			<tr>
+				<th>r</th>
+				<th>w</th>
+				<th>relay</th>
+			</tr>
+			{#each Object.entries(relaysToUse) as relay}
+			<tr>
+				<td><input type="checkbox" checked={relay[1].read} disabled /></td>
+				<td><input type="checkbox" checked={relay[1].write} disabled /></td>
+				<td>{relay[0]}</td>
+			</tr>
+			{/each}
+		</table>
+		{#if loginPubkey}
+		<button on:click={logout}>logout</button>
+		<dl>
+			<dt><label for="useRelaysInNIP07">Use relays in NIP-07</label></dt>
+			<dd><input id="use-relay-nip07" name="useRelaysInNIP07" type="checkbox" on:change={importRelays} bind:checked={useRelaysNIP07} /></dd>
+		</dl>
+		{:else}
+		<button on:click={login}>login with NIP-07</button>
+		{/if}
+	</section>
+	<section>
+		<h2>GitHub</h2>
+		<p><a href="https://github.com/nikolat/unyu-house">nikolat/unyu-house</a></p>
+	</section>
 	<nav>
 		<h2>チャンネル</h2>
 		<p>チャンネル取得数: {channels.length}</p>
@@ -111,20 +90,14 @@ const expandSidebar = () => {
 			{/each}
 		</ul>
 	</nav>
-</header>
-<button id="handle" on:click={expandSidebar}>▶</button>
+</div>
 
 <style>
-header {
-	width: 20%;
-	height: 100%;
-	background-color: #ccc;
+#sidebar {
+	margin-top: 2em;
+	width: 0%;
+	height: calc(100% - 2em);
 	overflow-y: scroll;
 	transition: width 0.1s;
-}
-#handle {
-	display: block;
-	width: 2em;
-	height: 100%;
 }
 </style>
