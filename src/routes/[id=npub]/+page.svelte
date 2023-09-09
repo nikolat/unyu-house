@@ -203,6 +203,7 @@ afterUpdate(() => {
 main {
 	width: calc(80% - 2em);
 	height: calc(100% - 7em);
+	overflow-x: hidden;
 	overflow-y: scroll;
 	word-break: break-all;
 }
