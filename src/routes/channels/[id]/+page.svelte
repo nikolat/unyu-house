@@ -51,7 +51,6 @@ interface Profile {
 
 // kind:40を溜めておく keyはid
 let channelEvents: NostrEvent[] = [];
-let channelObjects: {[key: string]: Channel} = {};
 let channels: Channel[] = [];
 $: channels = channels;
 // kind:41を溜めておく
@@ -108,7 +107,6 @@ const callbackMuteList = (muteListReturn: string[]) => {muteList = muteListRetur
 
 const applyRelays = async() => {
 	channelEvents = [];
-	channelObjects = {};
 	channels = [];
 	metadataEvents = [];
 	notes = [];
@@ -126,7 +124,7 @@ const applyRelays = async() => {
 	relaysToRead = Array.from(relaysToReadSet);
 	relaysToWrite = Array.from(relaysToWriteSet);
 	// チャンネルの取得
-	getChannels(pool, channelEvents, channelObjects, relaysToRead, metadataEvents, channels, profs, (channelsRetuen: Channel[]) => {
+	getChannels(pool, channelEvents, relaysToRead, metadataEvents, channels, profs, (channelsRetuen: Channel[]) => {
 		channels = channelsRetuen;
 	}, (profileReturn: {[key: string]: Profile}) => {
 		for (const k of Object.keys(profileReturn)) {
@@ -158,7 +156,7 @@ const sendMessage = async() => {
 	inputText = '';
 	const savedloginPubkey = loginPubkey;
 	storedLoginpubkey.set('');
-	const recommendedRelay: string = channelObjects[currentChannelId].recommendedRelay;
+	const recommendedRelay: string = channels.filter(v => v.id === currentChannelId)[0].recommendedRelay;
 	const tags = [['e', currentChannelId, recommendedRelay, 'root']];
 	const matchesIterator = content.matchAll(/(^|\W|\b)(nostr:(npub\w{59}))($|\W|\b)/g);
 	const mentionPubkeys: Set<string> = new Set();
@@ -195,7 +193,6 @@ afterNavigate(() => {
 		currentChannelOwner = (d.data as nip19.EventPointer).author;
 	}
 	channelEvents = [];
-	channelObjects = {};
 	channels = [];
 	metadataEvents = [];
 	notes = [];
@@ -226,7 +223,7 @@ afterUpdate(() => {
 		<p id="channel-owner">owner: <img src="{profs[channel.pubkey].picture}" width="32" height="32" alt="{profs[channel.pubkey].display_name}" />@{profs[channel.pubkey].name}</p>
 		{/if}
 	{/if}
-	<Timeline {pool} {relaysToWrite} {notes} {profs} {channelObjects} {sendFav} {loginPubkey} {muteList} />
+	<Timeline {pool} {relaysToWrite} {notes} {profs} {channels} {sendFav} {loginPubkey} {muteList} />
 	<div id="input">
 		{#if loginPubkey}
 		<textarea id="input-text" bind:value={inputText}></textarea>

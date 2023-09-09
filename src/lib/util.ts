@@ -27,7 +27,8 @@ interface Profile {
 }
 
 // kind:40を取得する
-export const getChannels = async (pool: SimplePool, channelEvents: NostrEvent[], channelObjects: {[key: string]: Channel}, relays: string[], metadataEvents: NostrEvent[], channels: Channel[], profs: {[key: string]: Profile}, callbackChannels: Function, callbackProfile: Function) => {
+export const getChannels = async (pool: SimplePool, channelEvents: NostrEvent[], relays: string[], metadataEvents: NostrEvent[], channels: Channel[], profs: {[key: string]: Profile}, callbackChannels: Function, callbackProfile: Function) => {
+	const channelObjects: {[key: string]: Channel} = {};
 	const pubkeys: Set<string> = new Set();
 	const sub = pool.sub(relays, [{kinds: [40]}]);
 	sub.on('event', (ev: NostrEvent) => {

@@ -26,34 +26,11 @@ export let pool: SimplePool;
 export let relaysToWrite: string[];
 export let notes: NostrEvent[];
 export let profs: {[key: string]: Profile};
-export let channelObjects: {[key: string]: Channel};
+export let channels: Channel[];
 export let sendFav: (pool: SimplePool, relaysToWrite: string[], noteid: string, targetPubkey: string) => Promise<void>
 export let loginPubkey: string;
 export let muteList: string[];
 
-const getChannelId = (noteEvent: NostrEvent) => {
-	for (const tag of noteEvent.tags) {
-		if (tag[0] === 'e' && tag[3] === 'root') {
-			if (channelObjects[tag[1]]) {
-				const id = channelObjects[tag[1]].id;
-				return nip19.neventEncode({id:id, relays:[channelObjects[id].recommendedRelay], author:channelObjects[id].pubkey});
-			}
-			return null;
-		}
-	}
-	return null;
-};
-const getChannelName = (noteEvent: NostrEvent) => {
-	for (const tag of noteEvent.tags) {
-		if (tag[0] === 'e' && tag[3] === 'root') {
-			if (channelObjects[tag[1]]) {
-				return channelObjects[tag[1]].name;
-			}
-			return 'チャンネル情報不明';
-		}
-	}
-	return 'チャンネル情報不明';
-};
 const getImagesUrls = (content: string) => {
 	const matchesIterator = content.matchAll(/https?:\/\/.+\.(jpe?g|png|gif)/g);
 	const urls = [];
@@ -74,7 +51,13 @@ const getImagesUrls = (content: string) => {
 		{:else}
 			<img src="/default.png" alt="" width="32" height="32"><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
 		{/if}
-			| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {#if getChannelId(note)}<a href="/channels/{getChannelId(note)}">{getChannelName(note)}</a>{:else}{getChannelName(note)}{/if}
+		{#if true}
+			{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root')[0][1]}
+			{@const channel = channels.filter(v => v.id === rootId)[0]}
+			{@const channelId = nip19.neventEncode({id:rootId, relays:[channel?.recommendedRelay], author:channel?.pubkey})}
+			{@const channelName = (channels.filter(v => v.id === rootId)[0])?.name ?? 'チャンネル情報不明'}
+			| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {#if channelId}<a href="/channels/{channelId}">{channelName}</a>{:else}{channelName}{/if}
+		{/if}
 		</dt>
 		<dd>
 			<div class="info-header">

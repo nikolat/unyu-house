@@ -120,7 +120,7 @@ const applyRelays = async() => {
 	relaysToRead = Array.from(relaysToReadSet);
 	relaysToWrite = Array.from(relaysToWriteSet);
 	// チャンネルの取得
-	getChannels(pool, channelEvents, channelObjects, relaysToRead, metadataEvents, channels, profs, (channelsRetuen: Channel[]) => {
+	getChannels(pool, channelEvents, relaysToRead, metadataEvents, channels, profs, (channelsRetuen: Channel[]) => {
 		channels = channelsRetuen;
 	}, (profileReturn: {[key: string]: Profile}) => {
 		for (const k of Object.keys(profileReturn)) {
@@ -180,7 +180,7 @@ afterUpdate(() => {
 	{:else}
 	<h2>Now Loading...</h2>
 	{/if}
-	<Timeline {pool} {relaysToWrite} {notes} {profs} {channelObjects} {sendFav} {loginPubkey} {muteList} />
+	<Timeline {pool} {relaysToWrite} {notes} {profs} {channels} {sendFav} {loginPubkey} {muteList} />
 </main>
 </div>
 
