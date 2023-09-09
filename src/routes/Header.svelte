@@ -31,7 +31,7 @@ const expandSidebar = () => {
 header {
 	position: fixed;
 	width: 100%;
-	height: 2em;
+	height: 3em;
 	background-color: #ccc;
 	display: inline-flex;
 	flex-direction: row-reverse;
@@ -40,9 +40,9 @@ header {
 h1 {
 	font-size: medium;
 	display: inline-block;
-	width: calc(100% - 2em);
+	width: calc(100% - 3em);
 }
 #toggle {
-	width: 2em;
+	width: 3em;
 }
 </style>

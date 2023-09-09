@@ -259,9 +259,9 @@ afterUpdate(() => {
 	overflow: hidden;
 }
 main {
-	margin-top: 2em;
-	width: calc(100% - 2em);
-	height: calc(100% - 9em);
+	margin-top: 3em;
+	width: calc(100% - 3em);
+	height: calc(100% - 10em);
 	overflow-x: hidden;
 	overflow-y: scroll;
 	word-break: break-all;

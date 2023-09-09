@@ -94,9 +94,9 @@ const logout = () => {
 
 <style>
 #sidebar {
-	margin-top: 2em;
+	margin-top: 3em;
 	width: 0%;
-	height: calc(100% - 2em);
+	height: calc(100% - 3em);
 	overflow-y: scroll;
 	transition: width 0.1s;
 }
