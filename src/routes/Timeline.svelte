@@ -88,7 +88,7 @@ const getImagesUrls = (content: string) => {
 			{/each}
 		{/if}
 		{#each getImagesUrls(note.content) as imageUrl}
-			<a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a>
+			<div class="image-holder"><a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a></div>
 		{/each}
 			<div class="action-bar">
 				<button on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey)} disabled={!loginPubkey}>☆ふぁぼる</button>
@@ -113,6 +113,7 @@ dd .info-header {
 }
 dd img {
 	max-height: 200px;
+	max-width: 100%;
 }
 .action-bar > * {
 	vertical-align: top;
