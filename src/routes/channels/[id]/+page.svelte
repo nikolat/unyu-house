@@ -260,8 +260,8 @@ afterUpdate(() => {
 }
 main {
 	margin-top: 3em;
-	width: calc(100% - 3em);
-	height: calc(100% - 10em);
+	width: calc(100vw - calc(100vw - 100%));
+	height: calc(100% - 11em);
 	overflow-x: hidden;
 	overflow-y: scroll;
 	word-break: break-all;
@@ -276,13 +276,18 @@ main {
 	clear: left;
 }
 #input {
-	position: absolute;
-	width: calc(100% - 30px);
-	height: 7em;
-	bottom: 0%;
+	position: fixed;
+	width: 100%;
+	height: 8em;
+	bottom: 0;
+	background-color: #ccc;
 }
 #input > textarea {
-	width: 100%;
+	margin: 1em 1em 0 1em;
+	width: calc(100% - 2em);
 	height: 5em;
+}
+#input > button {
+	margin-left: 1em;
 }
 </style>

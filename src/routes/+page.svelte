@@ -183,8 +183,8 @@ afterUpdate(() => {
 }
 main {
 	margin-top: 3em;
-	width: calc(100% - 3em);
-	height: calc(100% - 10em);
+	width: calc(100vw - calc(100vw - 100%));
+	height: calc(100% - 3em);
 	overflow-x: hidden;
 	overflow-y: scroll;
 	word-break: break-all;

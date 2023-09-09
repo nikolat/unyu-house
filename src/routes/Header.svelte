@@ -5,7 +5,7 @@ const expandSidebar = () => {
 	const input = document.getElementById('input');
 	if (sidebar && main) {
 		if (main.style.width !== '0%') {
-			sidebar.style.width = 'calc(100% - 2em)';
+			sidebar.style.width = 'calc(100% - 10px)';
 			main.style.width = '0%';
 			if (input) {
 				input.style.display = 'none';
@@ -13,9 +13,9 @@ const expandSidebar = () => {
 		}
 		else {
 			sidebar.style.width = '0%';
-			main.style.width = 'calc(100% - 2em)';
+			main.style.width = 'calc(100% - 10px)';
 			if (input) {
-				input.style.display = 'inline-block';
+				input.style.display = 'block';
 			}
 		}
 	}
