@@ -45,6 +45,30 @@ const logout = () => {
 	storedLoginpubkey.set('');
 	storedMuteList.set([]);
 };
+const expandSidebar = () => {
+	const handle = document.getElementById('handle');
+	const header = document.querySelector('header');
+	const main = document.querySelector('main');
+	const input = document.getElementById('input');
+	if (handle && header && main) {
+		if (handle.textContent === '▶') {
+			header.style.width = '80%';
+			handle.textContent = '◀';
+			main.style.width = '20%';
+			if (input) {
+				input.style.width = 'calc(20% - 30px)';
+			}
+		}
+		else {
+			header.style.width = '20%';
+			handle.textContent = '▶';
+			main.style.width = '80%';
+			if (input) {
+				input.style.width = 'calc(80% - 30px)';
+			}
+		}
+	}
+}
 </script>
 
 <header>
@@ -88,6 +112,7 @@ const logout = () => {
 		</ul>
 	</nav>
 </header>
+<button id="handle" on:click={expandSidebar}>▶</button>
 
 <style>
 header {
@@ -95,5 +120,11 @@ header {
 	height: 100%;
 	background-color: #ccc;
 	overflow-y: scroll;
+	transition: width 0.1s;
+}
+#handle {
+	display: block;
+	width: 2em;
+	height: 100%;
 }
 </style>
