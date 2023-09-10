@@ -57,7 +57,7 @@ const getImagesUrls = (content: string) => {
 			{@const channel = channels.filter(v => v.id === rootId)[0]}
 			{@const channelId = nip19.neventEncode({id:rootId, relays:[channel?.recommendedRelay], author:channel?.pubkey})}
 			{@const channelName = (channels.filter(v => v.id === rootId)[0])?.name ?? 'チャンネル情報不明'}
-			| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {#if channelId}<a href="/channels/{channelId}">{channelName}</a>{:else}{channelName}{/if}
+			| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {#if channel}<a href="/channels/{channelId}">{channelName}</a>{:else}{channelName}{/if}
 		{/if}
 		</dt>
 		<dd>
