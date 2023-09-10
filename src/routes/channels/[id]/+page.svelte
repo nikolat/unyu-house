@@ -115,9 +115,6 @@ const callbackFavList = (favListReturn: string[]) => {
 	if (JSON.stringify(favList.toSorted()) !== JSON.stringify(favListReturn.toSorted())) {
 		favList = favListReturn;
 	}
-	else {
-		console.log('same fav list');
-	}
 };
 const callbackProfile = (profileReturn: {[key: string]: Profile}) => {
 	if (JSON.stringify(Object.keys(profs).toSorted()) !== JSON.stringify(Object.keys(profileReturn).toSorted())) {
