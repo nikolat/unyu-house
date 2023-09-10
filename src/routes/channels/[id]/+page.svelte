@@ -7,7 +7,7 @@ import {
 	type UnsignedEvent,
 	type Sub,
 } from 'nostr-tools';
-import { afterUpdate } from 'svelte';
+import { afterUpdate, onMount } from 'svelte';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
 import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse, storedMuteList } from '$lib/store';
 import Sidebar from '../../Sidebar.svelte';
@@ -183,6 +183,21 @@ const sendMessage = async() => {
 	storedLoginpubkey.set(savedloginPubkey);
 }
 
+let scrollPosition = 0;
+onMount(() => {
+	const main = document.querySelector('main');
+	const input = document.getElementById('input');
+	main?.addEventListener('scroll', (e) => {
+		if (scrollPosition < main.scrollTop) {
+			input?.classList.add('hide');
+		}
+		else {
+			input?.classList.remove('hide');
+		}
+		scrollPosition = main.scrollTop;
+	});
+});
+
 beforeNavigate(() => {
 	subNotes?.unsub();
 });
@@ -226,7 +241,7 @@ afterUpdate(() => {
 		{/if}
 	{/if}
 		<Timeline {pool} {relaysToWrite} {notes} {profs} {channels} {sendFav} {loginPubkey} {muteList} />
-		<div id="input">
+		<div id="input" class="hide">
 			{#if loginPubkey}
 			<textarea id="input-text" bind:value={inputText}></textarea>
 				{#if inputText !== ''}
@@ -261,7 +276,7 @@ afterUpdate(() => {
 main {
 	margin-top: 3em;
 	width: calc(100vw - calc(100vw - 100%));
-	height: calc(100% - 11em);
+	height: calc(100% - 3em);
 	overflow-x: hidden;
 	overflow-y: scroll;
 	word-break: break-all;
@@ -281,6 +296,10 @@ main {
 	height: 8em;
 	bottom: 0;
 	background-color: #ccc;
+	transition: bottom 0.1s;
+}
+#input.hide {
+	bottom: -8em;
 }
 #input > textarea {
 	margin: 1em 1em 0 1em;
