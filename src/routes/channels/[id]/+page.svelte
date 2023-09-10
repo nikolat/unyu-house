@@ -176,16 +176,30 @@ const sendMessage = async() => {
 	storedLoginpubkey.set('');
 	const recommendedRelay: string = channels.filter(v => v.id === currentChannelId)[0].recommendedRelay;
 	const tags = [['e', currentChannelId, recommendedRelay, 'root']];
-	const matchesIterator = content.matchAll(/(^|\W|\b)(nostr:(npub\w{59}))($|\W|\b)/g);
+	const matchesIteratorPubkey = content.matchAll(/(^|\W|\b)(nostr:(npub\w{59}))($|\W|\b)/g);
 	const mentionPubkeys: Set<string> = new Set();
-	for (const match of matchesIterator) {
-		const pubkey = nip19.decode(match[3]).data;
-		if (typeof pubkey !== 'string')
-			continue;
-		mentionPubkeys.add(pubkey);
+	for (const match of matchesIteratorPubkey) {
+		const d = nip19.decode(match[3]);
+		if (d.type === 'npub') {
+			mentionPubkeys.add(d.data);
+		}
 	}
 	for (const p of mentionPubkeys) {
 		tags.push(['p', p, '']);
+	}
+	const matchesIteratorId = content.matchAll(/(^|\W|\b)(nostr:(note\w{59}|nevent\w+))($|\W|\b)/g);
+	const mentionIds: Set<string> = new Set();
+	for (const match of matchesIteratorId) {
+		const d = nip19.decode(match[3]);
+		if (d.type === 'note') {
+			mentionIds.add(d.data);
+		}
+		else if (d.type === 'nevent') {
+			mentionIds.add(d.data.id);
+		}
+	}
+	for (const id of mentionIds) {
+		tags.push(['e', id, '', 'mention']);
 	}
 	const baseEvent: UnsignedEvent = {
 		kind: 42,
