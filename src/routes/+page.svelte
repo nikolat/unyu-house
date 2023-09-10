@@ -108,7 +108,7 @@ const callbackProfile = (profileReturn: {[key: string]: Profile}) => {
 	if (JSON.stringify(Object.keys(profs).toSorted()) !== JSON.stringify(Object.keys(profileReturn).toSorted())) {
 		for (const k of Object.keys(profileReturn)) {
 			if (!(k in profs)) {
-				profs.k = profileReturn.k;
+				profs[k] = profileReturn[k];
 			}
 		}
 		profs = profs;
