@@ -107,8 +107,8 @@ const getSortedChannels = (channelObjects: {[key: string]: Channel}) => {
 	return channelArray;
 };
 
-// kind:42, 43, 44を取得する
-export const getNotes = async (pool: SimplePool, relays: string[], subNotes: Sub<42 | 43 | 44>, filter: Filter<42 | 43 | 44>[], notes: NostrEvent[], profs: {[key: string]: Profile}, callbackNotes: Function, callbackProfile: Function) => {
+// kind:42を取得する
+export const getNotes = async (pool: SimplePool, relays: string[], subNotes: Sub<42>, filter: Filter<42>[], notes: NostrEvent[], profs: {[key: string]: Profile}, callbackNotes: Function, callbackProfile: Function) => {
 	subNotes = pool.sub(relays, filter);
 	const pubkeys: Set<string> = new Set();
 	let getEOSE = false;
@@ -209,9 +209,9 @@ export const getMuteList = async (pool: SimplePool, relays: string[], pubkey: st
 };
 
 // ふぁぼを取得する
-export const getFavList = async (pool: SimplePool, relays: string[], pubkey: string, callbackFav: Function) => {
+export const getFavList = async (pool: SimplePool, relays: string[], pubkey: string, ids: string[], callbackFav: Function) => {
 	const favEvents: NostrEvent[] = [];
-	const sub = pool.sub(relays, [{kinds: [7], authors: [pubkey], limit: 500}]);
+	const sub = pool.sub(relays, [{kinds: [7], authors: [pubkey], '#e': ids}]);
 	sub.on('event', (ev: NostrEvent) => {
 		favEvents.push(ev);
 	});
@@ -220,7 +220,8 @@ export const getFavList = async (pool: SimplePool, relays: string[], pubkey: str
 		//取得できたらもう用済みなのでunsubする
 		sub.unsub();
 		// 表示を反映させる
-		callbackFav(favEvents.map(ev => ev.tags.filter(tag => tag[0] === 'e')[0][1]));
+		const favList = new Set<string>(favEvents.map(ev => ev.tags.filter(tag => tag[0] === 'e')[0][1]));
+		callbackFav(Array.from(favList));
 	});
 };
 

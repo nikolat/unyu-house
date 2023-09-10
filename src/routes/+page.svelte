@@ -4,6 +4,7 @@ import {
 	SimplePool,
 	type Event as NostrEvent,
 	type Sub,
+	type Filter,
 } from 'nostr-tools';
 import { afterUpdate, onDestroy, onMount } from 'svelte';
 import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse, storedMuteList, storedFavList } from '$lib/store';
@@ -44,7 +45,7 @@ let channels: Channel[] = [];
 $: channels = channels;
 // kind:41を溜めておく
 let metadataEvents: NostrEvent[] = [];
-// kind:42, 43, 44を溜めておく(43,44は未対応だけど)
+// kind:42を溜めておく
 let notes: NostrEvent[] = [];
 $: notes = notes;
 // kind:0 プロフィール情報を溜めておく keyは公開鍵
@@ -52,7 +53,7 @@ let profs: {[key: string]: Profile} = {};
 $: profs = profs;
 
 let pool = new SimplePool();
-let subNotes: Sub<42 | 43 | 44>;
+let subNotes: Sub<42>;
 
 let muteList: string[];
 $: muteList = muteList;
@@ -98,7 +99,21 @@ const importRelays = async() => {
 };
 
 const callbackMuteList = (muteListReturn: string[]) => {muteList = muteListReturn;};
-const callbackFavList = (favListReturn: string[]) => {favList = favListReturn;};
+const callbackFavList = (favListReturn: string[]) => {
+	if (JSON.stringify(favList.toSorted()) !== JSON.stringify(favListReturn.toSorted())) {
+		favList = favListReturn;
+	}
+};
+const callbackProfile = (profileReturn: {[key: string]: Profile}) => {
+	if (JSON.stringify(Object.keys(profs).toSorted()) !== JSON.stringify(Object.keys(profileReturn).toSorted())) {
+		for (const k of Object.keys(profileReturn)) {
+			if (!(k in profs)) {
+				profs.k = profileReturn.k;
+			}
+		}
+		profs = profs;
+	}
+};
 
 const applyRelays = async() => {
 	channelEvents = [];
@@ -118,31 +133,20 @@ const applyRelays = async() => {
 	}
 	relaysToRead = Array.from(relaysToReadSet);
 	relaysToWrite = Array.from(relaysToWriteSet);
+	const filter: Filter<42>[] = [{kinds: [42], limit: 100}];
 	// チャンネルの取得
 	getChannels(pool, channelEvents, relaysToRead, metadataEvents, channels, profs, (channelsRetuen: Channel[]) => {
 		channels = channelsRetuen;
-	}, (profileReturn: {[key: string]: Profile}) => {
-		for (const k of Object.keys(profileReturn)) {
-			if (!(k in profs)) {
-				profs.k = profileReturn.k;
-			}
-		}
-		profs = profs;
-	}).catch((e) => console.error(e));
+	}, callbackProfile).catch((e) => console.error(e));
 	// 投稿の取得
-	getNotes(pool, relaysToRead, subNotes, [{kinds: [42, 43, 44], limit: 100}], notes, profs, (notesReturn: NostrEvent[]) => {
+	getNotes(pool, relaysToRead, subNotes, filter, notes, profs, (notesReturn: NostrEvent[]) => {
 		notes = notesReturn;
-	}, (profileReturn: {[key: string]: Profile}) => {
-		for (const k of Object.keys(profileReturn)) {
-			if (!(k in profs)) {
-				profs.k = profileReturn.k;
-			}
+		if (loginPubkey) {
+			getFavList(pool, relaysToRead, loginPubkey, notes.map(v => v.id), callbackFavList);
 		}
-		profs = profs;
-	}).catch((e) => console.error(e));
+	}, callbackProfile).catch((e) => console.error(e));
 	if (loginPubkey) {
 		getMuteList(pool, relaysToRead, loginPubkey, callbackMuteList);
-		getFavList(pool, relaysToRead, loginPubkey, callbackFavList);
 	}
 }
 
@@ -166,7 +170,7 @@ afterUpdate(() => {
 </svelte:head>
 <div id="container">
 	<Header />
-	<Sidebar {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {callbackFavList} {importRelays} {useRelaysNIP07} {channels} {getMuteList} {getFavList} {profs} />
+	<Sidebar {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {callbackFavList} {importRelays} {useRelaysNIP07} {channels} {getMuteList} {getFavList} ids={notes.map(v => v.id)} {profs} />
 	<main>
 		<Timeline {pool} {relaysToWrite} {notes} {profs} {channels} {sendFav} {loginPubkey} {muteList} {favList} />
 	</main>

@@ -4,7 +4,7 @@ import {
 	nip19,
 } from 'nostr-tools';
 import { browser } from '$app/environment';
-import { storedLoginpubkey, storedMuteList } from '$lib/store';
+import { storedLoginpubkey, storedMuteList, storedFavList } from '$lib/store';
 
 interface Channel {
 	name: string
@@ -31,8 +31,9 @@ export let callbackFavList: Function;
 export let importRelays: () => Promise<void>;
 export let useRelaysNIP07: boolean;
 export let channels: Channel[];
+export let ids: string[];
 export let getMuteList: (pool: SimplePool, relays: string[], pubkey: string, callbackMuteList: Function) => Promise<void>;
-export let getFavList: (pool: SimplePool, relays: string[], pubkey: string, callbackFavList: Function) => Promise<void>;
+export let getFavList: (pool: SimplePool, relays: string[], pubkey: string, ids: string[], callbackFavList: Function) => Promise<void>;
 export let profs: {[key: string]: Profile};
 
 const login = async() => {
@@ -41,12 +42,13 @@ const login = async() => {
 		storedLoginpubkey.set(loginPubkey);
 		const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
 		getMuteList(pool, relaysToRead, loginPubkey, callbackMuteList);
-		getFavList(pool, relaysToRead, loginPubkey, callbackFavList);
+		getFavList(pool, relaysToRead, loginPubkey, ids, callbackFavList);
 	}
 };
 const logout = () => {
 	storedLoginpubkey.set('');
 	storedMuteList.set([]);
+	storedFavList.set([]);
 };
 </script>
 
