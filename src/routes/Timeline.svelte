@@ -70,8 +70,8 @@ const getImagesUrls = (content: string) => {
 			{/each}
 			</div>
 		{#if true}
-			{@const regMatch = /(https?:\/\/\S+)|(nostr:(npub\w{59}))/g}
-			{@const regSplit = /https?:\/\/\S+|nostr:npub\w{59}/}
+			{@const regMatch = /(https?:\/\/\S+)|(nostr:(npub\w{59}))|(nostr:(note\w{59}))|(nostr:(nevent\w+))/g }
+			{@const regSplit = /https?:\/\/\S+|nostr:npub\w{59}|nostr:note\w{59}|nostr:nevent\w+/}
 			{@const plainTexts = note.content.split(regSplit)}
 			{plainTexts.shift()}
 			{#each note.content.matchAll(regMatch) as match}
@@ -83,6 +83,58 @@ const getImagesUrls = (content: string) => {
 						<a href="/{match[3]}">@{profs[d.data]?.name ?? (match[3].slice(0, 10) + '...')}</a>
 					{:else}
 						{match[3]}
+					{/if}
+				{:else if /note\w{59}/.test(match[5])}
+					{@const d = nip19.decode(match[5])}
+					{#if d.type === 'note' && notes.filter(v => v.id === d.data).length > 0}
+						{@const note = notes.filter(v => v.id === d.data)[0]}
+						<blockquote>
+							<dl>
+								<dt>
+								{#if profs[note.pubkey]}
+									<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} | <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>
+								{:else}
+									<img src="/default.png" alt="" width="32" height="32"><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
+								{/if}
+								{#if note.tags.filter(v => v[0] === 'e' && v[3] === 'root').length > 0}
+									{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root')[0][1]}
+									{@const channel = channels.filter(v => v.id === rootId)[0]}
+									{@const channelId = nip19.neventEncode({id:rootId, relays:[channel?.recommendedRelay], author:channel?.pubkey})}
+									{@const channelName = (channels.filter(v => v.id === rootId)[0])?.name ?? 'チャンネル情報不明'}
+									| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {#if channel}<a href="/channels/{channelId}">{channelName}</a>{:else}{channelName}{/if}
+								{/if}
+								</dt>
+								<dd>{note.content}</dd>
+							</dl>
+						</blockquote>
+					{:else}
+						{match[5]}
+					{/if}
+				{:else if /nevent\w+/.test(match[7])}
+					{@const d = nip19.decode(match[7])}
+					{#if d.type === 'nevent' && notes.filter(v => v.id === d.data.id).length > 0}
+						{@const note = notes.filter(v => v.id === d.data.id)[0]}
+						<blockquote>
+							<dl>
+								<dt>
+								{#if profs[note.pubkey]}
+									<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} | <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>
+								{:else}
+									<img src="/default.png" alt="" width="32" height="32"><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
+								{/if}
+								{#if note.tags.filter(v => v[0] === 'e' && v[3] === 'root').length > 0}
+									{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root')[0][1]}
+									{@const channel = channels.filter(v => v.id === rootId)[0]}
+									{@const channelId = nip19.neventEncode({id:rootId, relays:[channel?.recommendedRelay], author:channel?.pubkey})}
+									{@const channelName = (channels.filter(v => v.id === rootId)[0])?.name ?? 'チャンネル情報不明'}
+									| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {#if channel}<a href="/channels/{channelId}">{channelName}</a>{:else}{channelName}{/if}
+								{/if}
+								</dt>
+								<dd>{note.content}</dd>
+							</dl>
+						</blockquote>
+					{:else}
+						{match[7]}
 					{/if}
 				{/if}
 				{plainTexts.shift()}
@@ -119,6 +171,10 @@ dd .info-header {
 dd img {
 	max-height: 200px;
 	max-width: 100%;
+}
+blockquote {
+	border: 1px dashed #666;
+	background-color: #eee;
 }
 .action-bar > * {
 	vertical-align: top;
