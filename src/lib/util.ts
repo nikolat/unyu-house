@@ -189,7 +189,7 @@ export const getProfile = async (pool: SimplePool, relays: string[], pubkeys: st
 };
 
 // ミュートリストを取得する
-export const getMutelist = async (pool: SimplePool, relays: string[], pubkey: string, callbackMuteList: Function) => {
+export const getMuteList = async (pool: SimplePool, relays: string[], pubkey: string, callbackMuteList: Function) => {
 	let muteList: string[];
 	let created_at = 0;
 	const sub = pool.sub(relays, [{kinds: [10000], authors: [pubkey]}]);
@@ -200,11 +200,27 @@ export const getMutelist = async (pool: SimplePool, relays: string[], pubkey: st
 		}
 	});
 	sub.on('eose', () => {
-		console.log('getMutelist * EOSE *');
+		console.log('getMuteList * EOSE *');
 		//取得できたらもう用済みなのでunsubする
 		sub.unsub();
 		// 表示を反映させる
 		callbackMuteList(muteList);
+	});
+};
+
+// ふぁぼを取得する
+export const getFavList = async (pool: SimplePool, relays: string[], pubkey: string, callbackFav: Function) => {
+	const favEvents: NostrEvent[] = [];
+	const sub = pool.sub(relays, [{kinds: [7], authors: [pubkey], limit: 500}]);
+	sub.on('event', (ev: NostrEvent) => {
+		favEvents.push(ev);
+	});
+	sub.on('eose', () => {
+		console.log('getFavList * EOSE *');
+		//取得できたらもう用済みなのでunsubする
+		sub.unsub();
+		// 表示を反映させる
+		callbackFav(favEvents.map(ev => ev.tags.filter(tag => tag[0] === 'e')[0][1]));
 	});
 };
 

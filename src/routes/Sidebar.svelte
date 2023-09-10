@@ -27,10 +27,12 @@ export let pool: SimplePool;
 export let relaysToUse: object;
 export let loginPubkey: string;
 export let callbackMuteList: Function;
+export let callbackFavList: Function;
 export let importRelays: () => Promise<void>;
 export let useRelaysNIP07: boolean;
 export let channels: Channel[];
-export let getMutelist: (pool: SimplePool, relays: string[], pubkey: string, callbackMuteList: Function) => Promise<void>;
+export let getMuteList: (pool: SimplePool, relays: string[], pubkey: string, callbackMuteList: Function) => Promise<void>;
+export let getFavList: (pool: SimplePool, relays: string[], pubkey: string, callbackFavList: Function) => Promise<void>;
 export let profs: {[key: string]: Profile};
 
 const login = async() => {
@@ -38,7 +40,8 @@ const login = async() => {
 		loginPubkey = await (window as any).nostr.getPublicKey();
 		storedLoginpubkey.set(loginPubkey);
 		const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
-		getMutelist(pool, relaysToRead, loginPubkey, callbackMuteList);
+		getMuteList(pool, relaysToRead, loginPubkey, callbackMuteList);
+		getFavList(pool, relaysToRead, loginPubkey, callbackFavList);
 	}
 };
 const logout = () => {

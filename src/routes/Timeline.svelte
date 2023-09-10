@@ -30,6 +30,7 @@ export let channels: Channel[];
 export let sendFav: (pool: SimplePool, relaysToWrite: string[], noteid: string, targetPubkey: string) => Promise<void>
 export let loginPubkey: string;
 export let muteList: string[];
+export let favList: string[];
 
 const getImagesUrls = (content: string) => {
 	const matchesIterator = content.matchAll(/https?:\/\/.+\.(jpe?g|png|gif)/g);
@@ -91,7 +92,11 @@ const getImagesUrls = (content: string) => {
 			<div class="image-holder"><a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a></div>
 		{/each}
 			<div class="action-bar">
-				<button on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey)} disabled={!loginPubkey}>☆ふぁぼる</button>
+				{#if !favList.includes(note.id)}
+					<button on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey)} disabled={!loginPubkey}>☆ふぁぼる</button>
+				{:else}
+					<button disabled>★ふぁぼ済</button>
+				{/if}
 				<span class="json-view-button">[...]</span>
 				<div class="json-view">{JSON.stringify(note, undefined, 2)}</div>
 			</div>

@@ -8,11 +8,11 @@ import {
 } from 'nostr-tools';
 import { afterUpdate } from 'svelte';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
-import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse, storedMuteList } from '$lib/store';
+import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse, storedMuteList, storedFavList } from '$lib/store';
 import Sidebar from '../Sidebar.svelte';
 import Timeline from '../Timeline.svelte';
 import Header from '../Header.svelte';
-import { getChannels, getNotes, getMutelist, sendFav } from '$lib/util';
+import { getChannels, getNotes, getMuteList, getFavList, sendFav } from '$lib/util';
 
 export let data: any;
 let npub: string = data.params.id;
@@ -66,6 +66,11 @@ $: muteList = muteList;
 storedMuteList.subscribe((value) => {
 	muteList = value;
 })
+let favList: string[];
+$: favList = favList;
+storedFavList.subscribe((value) => {
+	favList = value;
+});
 
 let loginPubkey: string;
 $: loginPubkey = loginPubkey;
@@ -100,6 +105,7 @@ const importRelays = async() => {
 };
 
 const callbackMuteList = (muteListReturn: string[]) => {muteList = muteListReturn;};
+const callbackFavList = (favListReturn: string[]) => {favList = favListReturn;};
 
 const applyRelays = async() => {
 	channelEvents = [];
@@ -142,8 +148,10 @@ const applyRelays = async() => {
 		}
 		profs = profs;
 	}).catch((e) => console.error(e));
-	if (loginPubkey)
-		getMutelist(pool, relaysToRead, loginPubkey, callbackMuteList);
+	if (loginPubkey) {
+		getMuteList(pool, relaysToRead, loginPubkey, callbackMuteList);
+		getFavList(pool, relaysToRead, loginPubkey, callbackFavList);
+	}
 }
 
 beforeNavigate(() => {
@@ -173,7 +181,7 @@ afterUpdate(() => {
 </svelte:head>
 <div id="container">
 	<Header />
-	<Sidebar {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {importRelays} {useRelaysNIP07} {channels} {getMutelist} {profs} />
+	<Sidebar {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {callbackFavList} {importRelays} {useRelaysNIP07} {channels} {getMuteList} {getFavList} {profs} />
 	<main>
 	{#if profs[pubkey]}
 		<h2>{profs[pubkey]?.display_name ?? ''} @{profs[pubkey]?.name ?? ''}</h2>
@@ -181,7 +189,7 @@ afterUpdate(() => {
 	{:else}
 		<h2>Now Loading...</h2>
 	{/if}
-	<Timeline {pool} {relaysToWrite} {notes} {profs} {channels} {sendFav} {loginPubkey} {muteList} />
+	<Timeline {pool} {relaysToWrite} {notes} {profs} {channels} {sendFav} {loginPubkey} {muteList} {favList} />
 	</main>
 </div>
 
