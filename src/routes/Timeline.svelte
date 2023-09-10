@@ -25,6 +25,7 @@ interface Profile {
 export let pool: SimplePool;
 export let relaysToWrite: string[];
 export let notes: NostrEvent[];
+export let notesQuoted: NostrEvent[];
 export let profs: {[key: string]: Profile};
 export let channels: Channel[];
 export let sendFav: (pool: SimplePool, relaysToWrite: string[], noteid: string, targetPubkey: string) => Promise<void>
@@ -82,12 +83,12 @@ const getImagesUrls = (content: string) => {
 					{#if d.type === 'npub'}
 						<a href="/{match[3]}">@{profs[d.data]?.name ?? (match[3].slice(0, 10) + '...')}</a>
 					{:else}
-						{match[3]}
+						{match[2]}
 					{/if}
 				{:else if /note\w{59}/.test(match[5])}
 					{@const d = nip19.decode(match[5])}
-					{#if d.type === 'note' && notes.filter(v => v.id === d.data).length > 0}
-						{@const note = notes.filter(v => v.id === d.data)[0]}
+					{#if d.type === 'note' && (notes.filter(v => v.id === d.data).length > 0 || notesQuoted.filter(v => v.id === d.data).length > 0)}
+						{@const note = notes.filter(v => v.id === d.data)[0] ?? notesQuoted.filter(v => v.id === d.data)[0]}
 						<blockquote>
 							<dl>
 								<dt>
@@ -95,20 +96,20 @@ const getImagesUrls = (content: string) => {
 									<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} | <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>
 								{:else}
 									<img src="/default.png" alt="" width="32" height="32"><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
-								{/if}
+								{/if}| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} 
 								{#if note.tags.filter(v => v[0] === 'e' && v[3] === 'root').length > 0}
 									{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root')[0][1]}
 									{@const channel = channels.filter(v => v.id === rootId)[0]}
 									{@const channelId = nip19.neventEncode({id:rootId, relays:[channel?.recommendedRelay], author:channel?.pubkey})}
 									{@const channelName = (channels.filter(v => v.id === rootId)[0])?.name ?? 'チャンネル情報不明'}
-									| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {#if channel}<a href="/channels/{channelId}">{channelName}</a>{:else}{channelName}{/if}
+									| {#if channel}<a href="/channels/{channelId}">{channelName}</a>{:else}{channelName}{/if}
 								{/if}
 								</dt>
 								<dd>{note.content}</dd>
 							</dl>
 						</blockquote>
 					{:else}
-						{match[5]}
+						{match[4]}
 					{/if}
 				{:else if /nevent\w+/.test(match[7])}
 					{@const d = nip19.decode(match[7])}
@@ -121,20 +122,20 @@ const getImagesUrls = (content: string) => {
 									<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} | <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>
 								{:else}
 									<img src="/default.png" alt="" width="32" height="32"><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
-								{/if}
+								{/if}| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} 
 								{#if note.tags.filter(v => v[0] === 'e' && v[3] === 'root').length > 0}
 									{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root')[0][1]}
 									{@const channel = channels.filter(v => v.id === rootId)[0]}
 									{@const channelId = nip19.neventEncode({id:rootId, relays:[channel?.recommendedRelay], author:channel?.pubkey})}
 									{@const channelName = (channels.filter(v => v.id === rootId)[0])?.name ?? 'チャンネル情報不明'}
-									| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {#if channel}<a href="/channels/{channelId}">{channelName}</a>{:else}{channelName}{/if}
+									| {#if channel}<a href="/channels/{channelId}">{channelName}</a>{:else}{channelName}{/if}
 								{/if}
 								</dt>
 								<dd>{note.content}</dd>
 							</dl>
 						</blockquote>
 					{:else}
-						{match[7]}
+						{match[6]}
 					{/if}
 				{/if}
 				{plainTexts.shift()}

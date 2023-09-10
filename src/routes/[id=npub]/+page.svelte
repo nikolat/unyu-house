@@ -55,6 +55,9 @@ let metadataEvents: NostrEvent[] = [];
 // kind:42を溜めておく
 let notes: NostrEvent[] = [];
 $: notes = notes;
+// 引用されたnoteを溜めておく
+let notesQuoted: NostrEvent[] = [];
+$: notesQuoted = notesQuoted;
 // kind:0 プロフィール情報を溜めておく keyは公開鍵
 let profs: {[key: string]: Profile} = {};
 $: profs = profs;
@@ -152,7 +155,9 @@ const applyRelays = async() => {
 		if (loginPubkey) {
 			getFavList(pool, relaysToRead, loginPubkey, notes.map(v => v.id), callbackFavList);
 		}
-	}, callbackProfile).catch((e) => console.error(e));
+	}, callbackProfile, (notesReturn: NostrEvent[]) => {
+		notesQuoted = notesReturn;
+	}).catch((e) => console.error(e));
 	if (loginPubkey) {
 		getMuteList(pool, relaysToRead, loginPubkey, callbackMuteList);
 	}
@@ -193,7 +198,7 @@ afterUpdate(() => {
 	{:else}
 		<h2>Now Loading...</h2>
 	{/if}
-	<Timeline {pool} {relaysToWrite} {notes} {profs} {channels} {sendFav} {loginPubkey} {muteList} {favList} />
+	<Timeline {pool} {relaysToWrite} {notes} {notesQuoted} {profs} {channels} {sendFav} {loginPubkey} {muteList} {favList} />
 	</main>
 </div>
 
