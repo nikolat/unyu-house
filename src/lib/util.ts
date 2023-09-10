@@ -108,9 +108,10 @@ const getSortedChannels = (channelObjects: {[key: string]: Channel}) => {
 };
 
 // kind:42を取得する
-export const getNotes = async (pool: SimplePool, relays: string[], subNotes: Sub<42>, filter: Filter<42>[], notes: NostrEvent[], profs: {[key: string]: Profile}, callbackNotes: Function, callbackProfile: Function) => {
+export const getNotes = async (pool: SimplePool, relays: string[], subNotes: Sub<42>, filter: Filter<42>[], notes: NostrEvent[], profs: {[key: string]: Profile}, callbackNotes: Function, callbackProfile: Function, callbackNotesQuoted: Function) => {
 	subNotes = pool.sub(relays, filter);
 	const pubkeys: Set<string> = new Set();
+	const eventkeys: Set<string> = new Set();
 	let getEOSE = false;
 	const update = () => {
 		// 時系列順にソートする
@@ -130,13 +131,14 @@ export const getNotes = async (pool: SimplePool, relays: string[], subNotes: Sub
 		notes.push(ev);
 		if (getEOSE) {
 			update();
+			//プロフィールを取得
 			const pubkeysToGet: Set<string> = new Set();
 			pubkeysToGet.add(ev.pubkey);
 			for (const pubkey of ev.tags.filter(v => v[0] === 'p').map(v => v[1])) {
 				pubkeysToGet.add(pubkey);
 			}
-			const matchesIterator = ev.content.matchAll(/nostr:(npub\w{59})/g);
-			for (const match of matchesIterator) {
+			const matchesIteratorNpub = ev.content.matchAll(/nostr:(npub\w{59})/g);
+			for (const match of matchesIteratorNpub) {
 				const d = nip19.decode(match[1]);
 				if (d.type === 'npub')
 					pubkeysToGet.add(d.data);
@@ -145,17 +147,39 @@ export const getNotes = async (pool: SimplePool, relays: string[], subNotes: Sub
 			if (pubkeysToGetArray.length > 0) {
 				getProfile(pool, relays, Array.from(pubkeysToGetArray), profs, callbackProfile);
 			}
+			//引用を取得
+			const eventkeysToGet: Set<string> = new Set();
+			const matchesIteratorNevent = ev.content.matchAll(/nostr:(note\w{59}|nevent\w+)/g);
+			for (const match of matchesIteratorNevent) {
+				const d = nip19.decode(match[1]);
+				if (d.type === 'note')
+					eventkeysToGet.add(d.data);
+				else if (d.type === 'nevent')
+					eventkeysToGet.add(d.data.id);
+			}
+			const eventkeysToGetArray = Array.from(eventkeysToGet);//暫定
+			if (eventkeysToGetArray.length > 0) {
+				getNotesQuoted(pool, relays, Array.from(eventkeysToGetArray), callbackNotesQuoted);
+			}
 		}
 		else {
 			pubkeys.add(ev.pubkey);
 			for (const pubkey of ev.tags.filter(v => v[0] === 'p').map(v => v[1])) {
 				pubkeys.add(pubkey);
 			}
-			const matchesIterator = ev.content.matchAll(/nostr:(npub\w{59})/g);
-			for (const match of matchesIterator) {
+			const matchesIteratorNpub = ev.content.matchAll(/nostr:(npub\w{59})/g);
+			for (const match of matchesIteratorNpub) {
 				const d = nip19.decode(match[1]);
 				if (d.type === 'npub')
 					pubkeys.add(d.data);
+			}
+			const matchesIteratorNevent = ev.content.matchAll(/nostr:(note\w{59}|nevent\w+)/g);
+			for (const match of matchesIteratorNevent) {
+				const d = nip19.decode(match[1]);
+				if (d.type === 'note')
+					eventkeys.add(d.data);
+				else if (d.type === 'nevent')
+					eventkeys.add(d.data.id);
 			}
 		}
 //		console.log(ev);
@@ -164,8 +188,9 @@ export const getNotes = async (pool: SimplePool, relays: string[], subNotes: Sub
 		console.log('getNotes * EOSE *');
 		getEOSE = true;
 		update();
-		// 投稿の取得が終わったらプロフィールを取得しに行く
+		// 投稿の取得が終わったらプロフィールと引用を取得しに行く
 		getProfile(pool, relays, Array.from(pubkeys), profs, callbackProfile);
+		getNotesQuoted(pool, relays, Array.from(eventkeys), callbackNotesQuoted);
 	});
 };
 
@@ -185,6 +210,22 @@ export const getProfile = async (pool: SimplePool, relays: string[], pubkeys: st
 		sub.unsub();
 		// 表示を反映させる
 		callbackProfile(profs);
+	});
+};
+
+const getNotesQuoted = async (pool: SimplePool, relays: string[], ids: string[], callbackNotesQuoted: Function) => {
+	const notes: NostrEvent[] = [];
+	const sub = pool.sub(relays, [{ids: ids}]);
+	sub.on('event', (ev: NostrEvent) => {
+		notes.push(ev);
+//		console.log(ev);
+	});
+	sub.on('eose', () => {
+		console.log('getProfile * EOSE *');
+		//取得できたらもう用済みなのでunsubする
+		sub.unsub();
+		// 表示を反映させる
+		callbackNotesQuoted(notes);
 	});
 };
 
