@@ -51,7 +51,7 @@ const getImagesUrls = (content: string) => {
 		{:else}
 			<img src="/default.png" alt="" width="32" height="32"><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
 		{/if}
-		{#if true}
+		{#if note.tags.filter(v => v[0] === 'e' && v[3] === 'root').length > 0}
 			{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root')[0][1]}
 			{@const channel = channels.filter(v => v.id === rootId)[0]}
 			{@const channelId = nip19.neventEncode({id:rootId, relays:[channel?.recommendedRelay], author:channel?.pubkey})}
@@ -61,7 +61,7 @@ const getImagesUrls = (content: string) => {
 		</dt>
 		<dd>
 			<div class="info-header">
-			{#if note.tags.filter(v => v[0] === 'e' && v[3] === 'reply').length}
+			{#if note.tags.filter(v => v[0] === 'e' && v[3] === 'reply').length > 0}
 				<a href="#{note.tags.filter(v => v[0] === 'e' && v[3] === 'reply')[0][1]}">&gt;&gt;</a>
 			{/if}
 			{#each note.tags.filter(v => v[0] === 'p').map(v => v[1]) as pubkey}
