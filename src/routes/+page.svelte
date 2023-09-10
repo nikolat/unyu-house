@@ -7,7 +7,7 @@ import {
 	type Filter,
 } from 'nostr-tools';
 import { afterUpdate, onDestroy, onMount } from 'svelte';
-import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse, storedMuteList, storedFavList } from '$lib/store';
+import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse, storedMuteList, storedFavList, storedFavedList } from '$lib/store';
 import Sidebar from './Sidebar.svelte';
 import Timeline from './Timeline.svelte';
 import Header from './Header.svelte';
@@ -70,6 +70,9 @@ storedFavList.subscribe((value) => {
 });
 let favedList: NostrEvent[] = [];
 $: favedList = favedList;
+storedFavedList.subscribe((value) => {
+	favedList = value;
+})
 
 let loginPubkey: string;
 $: loginPubkey = loginPubkey;

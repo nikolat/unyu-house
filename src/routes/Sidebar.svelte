@@ -4,7 +4,7 @@ import {
 	nip19,
 } from 'nostr-tools';
 import { browser } from '$app/environment';
-import { storedLoginpubkey, storedMuteList, storedFavList } from '$lib/store';
+import { storedLoginpubkey, storedMuteList, storedFavList, storedFavedList } from '$lib/store';
 
 interface Channel {
 	name: string
@@ -53,6 +53,7 @@ const logout = () => {
 	storedLoginpubkey.set('');
 	storedMuteList.set([]);
 	storedFavList.set([]);
+	storedFavedList.set([]);
 };
 </script>
 
