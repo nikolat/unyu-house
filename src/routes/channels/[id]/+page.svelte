@@ -218,6 +218,14 @@ afterNavigate(() => {
 	if (!useRelaysNIP07)
 		storedRelaysToUse.set(defaultRelays);
 	applyRelays();
+	const sidebar = document.getElementById('sidebar');
+	const main = document.querySelector('main');
+	const input = document.getElementById('input');
+	if (sidebar && main && input) {
+		sidebar.style.width = '0%';
+		main.style.width = 'calc(100vw - calc(100vw - 100%))';
+		input.style.visibility = 'visible';
+	}
 });
 afterUpdate(() => {
 	if (document.activeElement?.tagName.toLowerCase() === 'textarea')

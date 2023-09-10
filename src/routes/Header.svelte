@@ -8,14 +8,14 @@ const expandSidebar = () => {
 			sidebar.style.width = 'calc(100vw - calc(100vw - 100%))';
 			main.style.width = '0%';
 			if (input) {
-				input.style.display = 'none';
+				input.style.visibility = 'hidden';
 			}
 		}
 		else {
 			sidebar.style.width = '0%';
 			main.style.width = 'calc(100vw - calc(100vw - 100%))';
 			if (input) {
-				input.style.display = 'block';
+				input.style.visibility = 'visible';
 			}
 		}
 	}
