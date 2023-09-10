@@ -113,8 +113,8 @@ const getImagesUrls = (content: string) => {
 					{/if}
 				{:else if /nevent\w+/.test(match[7])}
 					{@const d = nip19.decode(match[7])}
-					{#if d.type === 'nevent' && notes.filter(v => v.id === d.data.id).length > 0}
-						{@const note = notes.filter(v => v.id === d.data.id)[0]}
+					{#if d.type === 'nevent' && (notes.filter(v => v.id === d.data.id).length > 0 || notesQuoted.filter(v => v.id === d.data.id).length > 0)}
+						{@const note = notes.filter(v => v.id === d.data.id)[0] ?? notesQuoted.filter(v => v.id === d.data.id)[0]}
 						<blockquote>
 							<dl>
 								<dt>
