@@ -32,6 +32,7 @@ export let sendFav: (pool: SimplePool, relaysToWrite: string[], noteid: string, 
 export let loginPubkey: string;
 export let muteList: string[];
 export let favList: string[];
+export let favedList: NostrEvent[];
 
 const getImagesUrls = (content: string) => {
 	const matchesIterator = content.matchAll(/https?:\/\/.+\.(jpe?g|png|gif)/g);
@@ -119,7 +120,7 @@ const getImagesUrls = (content: string) => {
 							<dl>
 								<dt>
 								{#if profs[note.pubkey]}
-									<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} | <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>
+									<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32" /> {profs[note.pubkey].display_name ?? ''} | <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>
 								{:else}
 									<img src="/default.png" alt="" width="32" height="32"><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
 								{/if}| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} 
@@ -144,6 +145,14 @@ const getImagesUrls = (content: string) => {
 		{#each getImagesUrls(note.content) as imageUrl}
 			<div class="image-holder"><a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a></div>
 		{/each}
+			<ul class="fav-holder">
+			{#each favedList as favedEvent}
+				{#if favedEvent.tags.filter(v => v[0] === 'e' && v[1] === note.id).length > 0 && profs[favedEvent.pubkey]}
+					{@const reaction = favedEvent.content.replace(/^\+$/, '❤')}
+					<li>{reaction} <img src="{profs[favedEvent.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(favedEvent.pubkey)}" width="16" height="16" /> {profs[favedEvent.pubkey].display_name} @{profs[favedEvent.pubkey].name} reacted</li>
+				{/if}
+			{/each}
+			</ul>
 			<div class="action-bar">
 				{#if !favList.includes(note.id)}
 					<button on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey)} disabled={!loginPubkey}>☆ふぁぼる</button>

@@ -266,6 +266,26 @@ export const getFavList = async (pool: SimplePool, relays: string[], pubkey: str
 	});
 };
 
+// ふぁぼられを取得する
+export const getFavedList = async (pool: SimplePool, relays: string[], pubkey: string, ids: string[], callbackFavedList: Function, callbackProfile: Function) => {
+	const profs: {[key: string]: Profile} = {};
+	const favedEvents: NostrEvent[] = [];
+	const sub = pool.sub(relays, [{kinds: [7], '#e': ids, '#p': [pubkey]}]);
+	sub.on('event', (ev: NostrEvent) => {
+		favedEvents.push(ev);
+	});
+	sub.on('eose', () => {
+		console.log('getFavedList * EOSE *');
+		//取得できたらもう用済みなのでunsubする
+		sub.unsub();
+		// 表示を反映させる
+		callbackFavedList(favedEvents);
+		// 投稿の取得が終わったらプロフィールと引用を取得しに行く
+		const favedPubkeys = new Set<string>(favedEvents.map(v => v.pubkey));
+		getProfile(pool, relays, Array.from(favedPubkeys), profs, callbackProfile);
+	});
+};
+
 let loginPubkey: string;
 storedLoginpubkey.subscribe((value) => {
 	loginPubkey = value;

@@ -13,7 +13,7 @@ import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse, storedMuteL
 import Sidebar from '../Sidebar.svelte';
 import Timeline from '../Timeline.svelte';
 import Header from '../Header.svelte';
-import { getChannels, getNotes, getMuteList, getFavList, sendFav } from '$lib/util';
+import { getChannels, getNotes, getMuteList, getFavList, getFavedList, sendFav } from '$lib/util';
 
 export let data: any;
 let npub: string = data.params.id;
@@ -75,6 +75,8 @@ $: favList = favList;
 storedFavList.subscribe((value) => {
 	favList = value;
 });
+let favedList: NostrEvent[] = [];
+$: favedList = favedList;
 
 let loginPubkey: string;
 $: loginPubkey = loginPubkey;
@@ -113,6 +115,9 @@ const callbackFavList = (favListReturn: string[]) => {
 	if (JSON.stringify(favList.toSorted()) !== JSON.stringify(favListReturn.toSorted())) {
 		favList = favListReturn;
 	}
+};
+const callbackFavedList = (favedListReturn: NostrEvent[]) => {
+	favedList = favedListReturn;
 };
 const callbackProfile = (profileReturn: {[key: string]: Profile}) => {
 	if (JSON.stringify(Object.keys(profs).toSorted()) !== JSON.stringify(Object.keys(profileReturn).toSorted())) {
@@ -190,7 +195,7 @@ afterUpdate(() => {
 </svelte:head>
 <div id="container">
 	<Header />
-	<Sidebar {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {callbackFavList} {importRelays} {useRelaysNIP07} {channels} {getMuteList} {getFavList} ids={notes.map(v => v.id)} {profs} />
+	<Sidebar {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {callbackFavList} {callbackFavedList} {callbackProfile} {importRelays} {useRelaysNIP07} {channels} {getMuteList} {getFavList} {getFavedList} ids={notes.map(v => v.id)} {profs} />
 	<main>
 	{#if profs[pubkey]}
 		<h2>{profs[pubkey]?.display_name ?? ''} @{profs[pubkey]?.name ?? ''}</h2>
@@ -198,7 +203,7 @@ afterUpdate(() => {
 	{:else}
 		<h2>Now Loading...</h2>
 	{/if}
-	<Timeline {pool} {relaysToWrite} {notes} {notesQuoted} {profs} {channels} {sendFav} {loginPubkey} {muteList} {favList} />
+	<Timeline {pool} {relaysToWrite} {notes} {notesQuoted} {profs} {channels} {sendFav} {loginPubkey} {muteList} {favList} {favedList} />
 	</main>
 </div>
 
