@@ -110,10 +110,7 @@ const importRelays = async() => {
 };
 
 const callbackMuteList = (muteListReturn: string[]) => {muteList = muteListReturn;};
-const callbackFavList = (favListReturn: string[]) => {
-	favList = favListReturn;
-	console.log(favList);
-};
+const callbackFavList = (favListReturn: string[]) => {favList = favListReturn;};
 
 const applyRelays = async() => {
 	channelEvents = [];
