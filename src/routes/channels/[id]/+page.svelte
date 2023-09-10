@@ -188,13 +188,15 @@ onMount(() => {
 	const main = document.querySelector('main');
 	const input = document.getElementById('input');
 	main?.addEventListener('scroll', (e) => {
-		if (scrollPosition < main.scrollTop) {
-			input?.classList.add('hide');
+		const threshold = 200;
+		if (main.scrollTop - scrollPosition > threshold) {
+			input?.classList.remove('show');
+			scrollPosition = main.scrollTop;
 		}
-		else {
-			input?.classList.remove('hide');
+		else if (scrollPosition - main.scrollTop > threshold) {
+			input?.classList.add('show');
+			scrollPosition = main.scrollTop;
 		}
-		scrollPosition = main.scrollTop;
 	});
 });
 
@@ -218,6 +220,8 @@ afterNavigate(() => {
 	applyRelays();
 });
 afterUpdate(() => {
+	if (document.activeElement?.tagName.toLowerCase() === 'textarea')
+		return;
 	const main = document.getElementsByTagName('main')[0];
 	main.scroll(0, main.scrollHeight);
 });
@@ -241,7 +245,7 @@ afterUpdate(() => {
 		{/if}
 	{/if}
 		<Timeline {pool} {relaysToWrite} {notes} {profs} {channels} {sendFav} {loginPubkey} {muteList} />
-		<div id="input" class="hide">
+		<div id="input" class="show">
 			{#if loginPubkey}
 			<textarea id="input-text" bind:value={inputText}></textarea>
 				{#if inputText !== ''}
@@ -294,12 +298,12 @@ main {
 	position: fixed;
 	width: 100%;
 	height: 8em;
-	bottom: 0;
+	bottom: -8em;
 	background-color: #ccc;
 	transition: bottom 0.1s;
 }
-#input.hide {
-	bottom: -8em;
+#input.show {
+	bottom: 0;
 }
 #input > textarea {
 	margin: 1em 1em 0 1em;
