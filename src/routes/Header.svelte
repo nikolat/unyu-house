@@ -24,7 +24,7 @@ const expandSidebar = () => {
 
 <header>
 	<h1><a href="/">うにゅうハウス</a></h1>
-	<button id="toggle" on:click={expandSidebar}>三</button>
+	<button id="toggle" on:click={expandSidebar}><img src="/menu.svg" alt="menu" /></button>
 </header>
 
 <style>
@@ -41,8 +41,15 @@ h1 {
 	font-size: medium;
 	display: inline-block;
 	width: calc(100% - 3em);
+	text-align: center;
 }
 #toggle {
-	width: 3em;
+	background-color: transparent;
+	border: none;
+	cursor: pointer;
+	outline: none;
+	padding: 0;
+	width: 48px;
+	height: 48px;
 }
 </style>
