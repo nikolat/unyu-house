@@ -41,6 +41,7 @@ h1 {
 	font-size: medium;
 	display: inline-block;
 	width: calc(100% - 3em);
+	margin-right: 48px;
 	text-align: center;
 }
 #toggle {
