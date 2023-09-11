@@ -13,7 +13,7 @@ import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse, storedMuteL
 import Sidebar from '../Sidebar.svelte';
 import Timeline from '../Timeline.svelte';
 import Header from '../Header.svelte';
-import { getChannels, getNotes, getMuteList, getFavList, getFavedList, sendFav } from '$lib/util';
+import { getMuteList, getFavList, getFavedList, sendFav, getEventsPhase1 } from '$lib/util';
 
 export let data: any;
 let npub: string = data.params.id;
@@ -46,7 +46,6 @@ interface Profile {
 }
 
 // kind:40を溜めておく keyはid
-let channelEvents: NostrEvent[] = [];
 let channelObjects: {[key: string]: Channel} = {};
 let channels: Channel[] = [];
 $: channels = channels;
@@ -133,8 +132,40 @@ const callbackProfile = (profileReturn: {[key: string]: Profile}) => {
 	}
 };
 
+const callbackPhase1 = (channelsNew: Channel[], notesNew: NostrEvent[]) => {
+	channels = channelsNew;
+	notes = notesNew;
+};
+
+const callbackPhase2 = (profsNew: {[key: string]: Profile}, notesQuotedNew: NostrEvent[]) => {
+	let profAdded = false;
+	for (const k of Object.keys(profsNew)) {
+		if (!(k in profs)) {
+			profs[k] = profsNew[k];
+			profAdded = true;
+		}
+	}
+	if (profAdded) {
+		profs = profs;
+	}
+	let notesQuotedAdded = false;
+	for (const ev of notesQuotedNew) {
+		if (!(ev.id in notesQuoted.map(ev => ev.id))) {
+			notesQuoted.push(ev);
+			notesQuotedAdded = true;
+		}
+	}
+	if (notesQuotedAdded) {
+		notesQuoted = notesQuoted;
+	}
+};
+
+const callbackPhase3 = (ev: NostrEvent) => {
+	notes.push(ev);
+	notes = notes;
+};
+
 const applyRelays = async() => {
-	channelEvents = [];
 	channelObjects = {};
 	channels = [];
 	metadataEvents = [];
@@ -152,20 +183,9 @@ const applyRelays = async() => {
 	}
 	relaysToRead = Array.from(relaysToReadSet);
 	relaysToWrite = Array.from(relaysToWriteSet);
-	const filter: Filter<42>[] = [{kinds: [42], limit: 100, authors: [pubkey]}];
+	const filter: Filter<42> = {kinds: [42], limit: 100, authors: [pubkey]};
 	// チャンネルの取得
-	getChannels(pool, channelEvents, relaysToRead, metadataEvents, channels, profs, (channelsRetuen: Channel[]) => {
-		channels = channelsRetuen;
-	}, callbackProfile).catch((e) => console.error(e));
-	// 投稿の取得
-	getNotes(pool, relaysToRead, subNotes, filter, notes, profs, (notesReturn: NostrEvent[]) => {
-		notes = notesReturn;
-		if (loginPubkey) {
-			getFavList(pool, relaysToRead, loginPubkey, notes.map(v => v.id), callbackFavList);
-		}
-	}, callbackProfile, (notesReturn: NostrEvent[]) => {
-		notesQuoted = notesReturn;
-	}).catch((e) => console.error(e));
+	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3).catch((e) => console.error(e));
 	if (loginPubkey) {
 		getMuteList(pool, relaysToRead, loginPubkey, callbackMuteList);
 	}
@@ -177,7 +197,6 @@ beforeNavigate(() => {
 afterNavigate(() => {
 	npub = data.params.id;
 	pubkey = (nip19.decode(npub).data as string);
-	channelEvents = [];
 	channelObjects = {};
 	channels = [];
 	metadataEvents = [];
