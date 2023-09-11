@@ -133,7 +133,12 @@ const getIdsForFilter = (events: NostrEvent[]): string[] => {
 const getChannelsAndNotes = (pool: SimplePool, events: NostrEvent[]): [Channel[], NostrEvent[]] => {
 	const channelObjects: {[key: string]: Channel} = {};
 	for (const ev of events.filter(ev => ev.kind === 40)) {
-		channelObjects[ev.id] = JSON.parse(ev.content);
+		try {
+			channelObjects[ev.id] = JSON.parse(ev.content);
+		} catch (error) {
+			console.log(error);
+			continue;
+		}
 		channelObjects[ev.id].updated_at = ev.created_at;
 		channelObjects[ev.id].id = ev.id;
 		channelObjects[ev.id].pubkey = ev.pubkey;
@@ -144,7 +149,12 @@ const getChannelsAndNotes = (pool: SimplePool, events: NostrEvent[]): [Channel[]
 			const id = tag[1];
 			if (tag[0] === 'e' && id in Object.keys(channelObjects) && ev.pubkey === channelObjects[id].pubkey && channelObjects[id].updated_at < ev.created_at) {
 				const savedRecommendedRelay = channelObjects[id].recommendedRelay;
-				channelObjects[id] = JSON.parse(ev.content);
+				try {
+					channelObjects[id] = JSON.parse(ev.content);
+				} catch (error) {
+					console.log(error);
+					continue;
+				}
 				channelObjects[id].updated_at = ev.created_at;
 				channelObjects[id].id = id;
 				channelObjects[id].pubkey = ev.pubkey;
@@ -170,7 +180,12 @@ const getFrofilesAndNotesQuoted = (events: NostrEvent[]): [{[key: string]: Profi
 	const profs: {[key: string]: Profile} = {};
 	for (const ev of events.filter(ev => ev.kind === 0)) {
 		if ((profs[ev.pubkey] && profs[ev.pubkey].created_at < ev.created_at) || !profs[ev.pubkey]) {
-			profs[ev.pubkey] = JSON.parse(ev.content);
+			try {
+				profs[ev.pubkey] = JSON.parse(ev.content);
+			} catch (error) {
+				console.log(error);
+				continue;
+			}
 			profs[ev.pubkey].created_at = ev.created_at;
 		}
 	}
