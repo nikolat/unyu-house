@@ -69,7 +69,7 @@ export const getEventsPhase2 = async(pool: SimplePool, relays: string[], filterP
 export const getEventsPhase3 = async(pool: SimplePool, relays: string[], filterPhase3: Filter<42>, profs: {[key: string]: Profile}, notesQuoted: NostrEvent[], callbackPhase2:Function, callbackPhase3: Function) => {
 	const sub = pool.sub(relays, [filterPhase3]);
 	sub.on('event', (ev: NostrEvent) => {
-		callbackPhase3(ev);
+		callbackPhase3(sub, ev);
 		const pubkeysToGet = getPubkeysForFilter([ev]).filter(v => !(v in profs));
 		const idsToGet = getIdsForFilter([ev]).filter(v => !(v in notesQuoted.map(v => v.id)));
 		if (pubkeysToGet.length > 0 || idsToGet.length > 0) {
@@ -193,92 +193,8 @@ const getFrofilesAndNotesQuoted = (events: NostrEvent[]): [{[key: string]: Profi
 	return [profs, notesQuoted];
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// kind:40を取得する
-export const getChannels = async (pool: SimplePool, channelEvents: NostrEvent[], relays: string[], metadataEvents: NostrEvent[], channels: Channel[], profs: {[key: string]: Profile}, callbackChannels: Function, callbackProfile: Function) => {
-	const channelObjects: {[key: string]: Channel} = {};
-	const pubkeys: Set<string> = new Set();
-	const sub = pool.sub(relays, [{kinds: [40]}]);
-	sub.on('event', (ev: NostrEvent) => {
-		channelEvents.push(ev);
-		channelObjects[ev.id] = JSON.parse(ev.content);
-		channelObjects[ev.id].updated_at = ev.created_at;
-		channelObjects[ev.id].id = ev.id;
-		channelObjects[ev.id].pubkey = ev.pubkey;
-		channelObjects[ev.id].recommendedRelay = pool.seenOn(ev.id)[0];
-		pubkeys.add(ev.pubkey);
-//		console.log(ev);
-	});
-	sub.on('eose', () => {
-		console.log('getChannels * EOSE *');
-		//取得できたらもう用済みなのでunsubする
-		sub.unsub();
-		// kind:41を取得する
-		getMetadata(pool, relays, metadataEvents, channels, channelEvents, channelObjects, callbackChannels);
-		// チャンネル作成者のプロフィールを取得しに行く
-		getProfile(pool, relays, Array.from(pubkeys), profs, callbackProfile);
-	});
-};
-
-// kind:41を取得する
-const getMetadata = async (pool: SimplePool, relays: string[], metadataEvents: NostrEvent[], channels: Channel[], channelEvents: NostrEvent[], channelObjects: {[key: string]: Channel}, callbackChannels: Function) => {
-	const sub = pool.sub(relays, [{kinds: [41]}]);
-	sub.on('event', (ev: NostrEvent) => {
-		metadataEvents.push(ev);
-//		console.log(ev);
-	});
-	sub.on('eose', async () => {
-		console.log('getMetadata * EOSE *');
-		//取得できたらもう用済みなのでunsubする
-		sub.unsub();
-		// 更新すべきkind:41を適用する
-		await updateChannels(metadataEvents, channelEvents, channelObjects);
-		// 表示を反映させる
-		channels = getSortedChannels(channelObjects);
-		callbackChannels(channels);
-	});
-};
-
-// 更新すべきkind:41を適用する
-const updateChannels = async(metadataEvents: NostrEvent[], channelEvents: NostrEvent[], channelObjects: {[key: string]: Channel}) => {
-	metadataEvents.forEach(m => {
-		channelEvents.forEach(c => {
-			if (m.pubkey === c.pubkey) {
-				m.tags.forEach(tag => {
-					if ((tag[0] === 'e') && (tag[1] === c.id) && (channelObjects[c.id].updated_at < m.created_at)) {
-//						console.log('kind:41 replace', channelObjects[c.id], JSON.parse(m.content));
-						const savedRecommendedRelay = channelObjects[c.id].recommendedRelay;
-						channelObjects[c.id] = JSON.parse(m.content);
-						channelObjects[c.id].updated_at = m.created_at;
-						channelObjects[c.id].id = c.id;
-						channelObjects[c.id].pubkey = c.pubkey;
-						channelObjects[c.id].recommendedRelay = savedRecommendedRelay;
-					}
-				});
-			}
-		})
-	});
-};
-
 // 降順にソートされたチャンネル情報の配列を返す
-export const getSortedChannels = (channelObjects: {[key: string]: Channel}) => {
+const getSortedChannels = (channelObjects: {[key: string]: Channel}) => {
 	const channelArray: Channel[] = Object.values(channelObjects);
 	channelArray.sort((a, b) => {
 		if (a.updated_at < b.updated_at) {
@@ -290,93 +206,6 @@ export const getSortedChannels = (channelObjects: {[key: string]: Channel}) => {
 		return 0;
 	});
 	return channelArray;
-};
-
-// kind:42を取得する
-export const getNotes = async (pool: SimplePool, relays: string[], subNotes: Sub<42>, filter: Filter<42>[], notes: NostrEvent[], profs: {[key: string]: Profile}, callbackNotes: Function, callbackProfile: Function, callbackNotesQuoted: Function) => {
-	subNotes = pool.sub(relays, filter);
-	const pubkeys: Set<string> = new Set();
-	const eventkeys: Set<string> = new Set();
-	let getEOSE = false;
-	const update = () => {
-		// 時系列順にソートする
-		notes.sort((a, b) => {
-			if (a.created_at < b.created_at) {
-				return -1;
-			}
-			if (a.created_at > b.created_at) {
-				return 1;
-			}
-			return 0;
-		});
-		// 表示を反映させる
-		callbackNotes(notes);
-	};
-	subNotes.on('event', (ev: NostrEvent) => {
-		notes.push(ev);
-		if (getEOSE) {
-			update();
-			//プロフィールを取得
-			const pubkeysToGet: Set<string> = new Set();
-			pubkeysToGet.add(ev.pubkey);
-			for (const pubkey of ev.tags.filter(v => v[0] === 'p').map(v => v[1])) {
-				pubkeysToGet.add(pubkey);
-			}
-			const matchesIteratorNpub = ev.content.matchAll(/nostr:(npub\w{59})/g);
-			for (const match of matchesIteratorNpub) {
-				const d = nip19.decode(match[1]);
-				if (d.type === 'npub')
-					pubkeysToGet.add(d.data);
-			}
-			const pubkeysToGetArray = Array.from(pubkeysToGet).filter(v => !(v in profs))
-			if (pubkeysToGetArray.length > 0) {
-				getProfile(pool, relays, Array.from(pubkeysToGetArray), profs, callbackProfile);
-			}
-			//引用を取得
-			const eventkeysToGet: Set<string> = new Set();
-			const matchesIteratorNevent = ev.content.matchAll(/nostr:(note\w{59}|nevent\w+)/g);
-			for (const match of matchesIteratorNevent) {
-				const d = nip19.decode(match[1]);
-				if (d.type === 'note')
-					eventkeysToGet.add(d.data);
-				else if (d.type === 'nevent')
-					eventkeysToGet.add(d.data.id);
-			}
-			const eventkeysToGetArray = Array.from(eventkeysToGet);//暫定
-			if (eventkeysToGetArray.length > 0) {
-				getNotesQuoted(pool, relays, Array.from(eventkeysToGetArray), callbackNotesQuoted);
-			}
-		}
-		else {
-			pubkeys.add(ev.pubkey);
-			for (const pubkey of ev.tags.filter(v => v[0] === 'p').map(v => v[1])) {
-				pubkeys.add(pubkey);
-			}
-			const matchesIteratorNpub = ev.content.matchAll(/nostr:(npub\w{59})/g);
-			for (const match of matchesIteratorNpub) {
-				const d = nip19.decode(match[1]);
-				if (d.type === 'npub')
-					pubkeys.add(d.data);
-			}
-			const matchesIteratorNevent = ev.content.matchAll(/nostr:(note\w{59}|nevent\w+)/g);
-			for (const match of matchesIteratorNevent) {
-				const d = nip19.decode(match[1]);
-				if (d.type === 'note')
-					eventkeys.add(d.data);
-				else if (d.type === 'nevent')
-					eventkeys.add(d.data.id);
-			}
-		}
-//		console.log(ev);
-	});
-	subNotes.on('eose', () => {
-		console.log('getNotes * EOSE *');
-		getEOSE = true;
-		update();
-		// 投稿の取得が終わったらプロフィールと引用を取得しに行く
-		getProfile(pool, relays, Array.from(pubkeys), profs, callbackProfile);
-		getNotesQuoted(pool, relays, Array.from(eventkeys), callbackNotesQuoted);
-	});
 };
 
 // プロフィールを取得する
@@ -395,22 +224,6 @@ export const getProfile = async (pool: SimplePool, relays: string[], pubkeys: st
 		sub.unsub();
 		// 表示を反映させる
 		callbackProfile(profs);
-	});
-};
-
-const getNotesQuoted = async (pool: SimplePool, relays: string[], ids: string[], callbackNotesQuoted: Function) => {
-	const notes: NostrEvent[] = [];
-	const sub = pool.sub(relays, [{ids: ids}]);
-	sub.on('event', (ev: NostrEvent) => {
-		notes.push(ev);
-//		console.log(ev);
-	});
-	sub.on('eose', () => {
-		console.log('getProfile * EOSE *');
-		//取得できたらもう用済みなのでunsubする
-		sub.unsub();
-		// 表示を反映させる
-		callbackNotesQuoted(notes);
 	});
 };
 

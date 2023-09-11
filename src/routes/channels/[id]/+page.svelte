@@ -165,7 +165,8 @@ const callbackPhase2 = (profsNew: {[key: string]: Profile}, notesQuotedNew: Nost
 	}
 };
 
-const callbackPhase3 = (ev: NostrEvent) => {
+const callbackPhase3 = (subNotesPhase3: Sub<42>, ev: NostrEvent) => {
+	subNotes = subNotesPhase3;
 	notes.push(ev);
 	notes = notes;
 };

@@ -46,7 +46,6 @@ interface Profile {
 }
 
 // kind:40を溜めておく keyはid
-let channelObjects: {[key: string]: Channel} = {};
 let channels: Channel[] = [];
 $: channels = channels;
 // kind:41を溜めておく
@@ -160,13 +159,13 @@ const callbackPhase2 = (profsNew: {[key: string]: Profile}, notesQuotedNew: Nost
 	}
 };
 
-const callbackPhase3 = (ev: NostrEvent) => {
+const callbackPhase3 = (subNotesPhase3: Sub<42>, ev: NostrEvent) => {
+	subNotes = subNotesPhase3;
 	notes.push(ev);
 	notes = notes;
 };
 
 const applyRelays = async() => {
-	channelObjects = {};
 	channels = [];
 	metadataEvents = [];
 	notes = [];
@@ -197,7 +196,6 @@ beforeNavigate(() => {
 afterNavigate(() => {
 	npub = data.params.id;
 	pubkey = (nip19.decode(npub).data as string);
-	channelObjects = {};
 	channels = [];
 	metadataEvents = [];
 	notes = [];
