@@ -24,7 +24,7 @@ const expandSidebar = () => {
 
 <header>
 	<h1><a href="/">うにゅうハウス</a></h1>
-	<button id="toggle" on:click={expandSidebar}><img src="/menu.svg" alt="menu" /></button>
+	<button id="toggle" on:click={expandSidebar}><svg><use xlink:href="/menu.svg#hamburger"></use></svg></button>
 </header>
 
 <style>
@@ -53,5 +53,15 @@ h1 {
 	padding: 0;
 	width: 48px;
 	height: 48px;
+}
+svg {
+	width: 20px;
+	height: 20px;
+}
+:global(#container.dark #toggle) {
+	fill: white;
+}
+:global(#container.light #toggle) {
+	fill: black;
 }
 </style>

@@ -5,7 +5,8 @@ import {
 } from 'nostr-tools';
 import { browser } from '$app/environment';
 import { storedLoginpubkey, storedMuteList, storedFavList, storedFavedList, storedTheme } from '$lib/store';
-import { urlDarkTheme, urlLightTheme } from '$lib/util';
+import { urlDarkTheme, urlLightTheme, urlDefaultTheme } from '$lib/util';
+import { onMount } from 'svelte';
 
 interface Channel {
 	name: string
@@ -58,17 +59,37 @@ const logout = () => {
 };
 
 const changeTheme = () => {
+	const container = document.getElementById('container');
 	if ((<HTMLInputElement>document.getElementById('theme-dark')).checked) {
 		storedTheme.set(urlDarkTheme);
+		container?.classList.remove('light');
+		container?.classList.add('dark');
 	}
 	else if ((<HTMLInputElement>document.getElementById('theme-light')).checked) {
 		storedTheme.set(urlLightTheme);
+		container?.classList.remove('dark');
+		container?.classList.add('light');
 	}
 };
 export let theme: string;
 storedTheme.subscribe((value) => {
 	theme = value;
 });
+onMount(() => {
+	if (!theme) {
+		theme = urlDefaultTheme;
+	}
+	const container = document.getElementById('container');
+	if (theme === urlDarkTheme) {
+		container?.classList.remove('light');
+		container?.classList.add('dark');
+	}
+	else if (theme === urlLightTheme) {
+		container?.classList.remove('dark');
+		container?.classList.add('light');
+	}
+});
+
 </script>
 
 <div id="sidebar">
@@ -102,7 +123,7 @@ storedTheme.subscribe((value) => {
 		<h2>Theme</h2>
 		<form>
 			<label for="theme-dark">Dark theme</label>
-			<input on:change={changeTheme} type="radio" value="dark" name="theme" id="theme-dark" checked={theme !== urlLightTheme}>
+			<input on:change={changeTheme} type="radio" value="dark" name="theme" id="theme-dark" checked={theme === urlDarkTheme}>
 			<label for="theme-light">Light theme</label>
 			<input on:change={changeTheme} type="radio" value="light" name="theme" id="theme-light" checked={theme === urlLightTheme}>
 		</form>
