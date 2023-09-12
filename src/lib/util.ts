@@ -7,7 +7,7 @@ import {
 } from 'nostr-tools';
 import { storedLoginpubkey } from './store';
 
-interface Channel {
+export interface Channel {
 	name: string
 	about: string
 	picture: string
@@ -17,13 +17,17 @@ interface Channel {
 	recommendedRelay: string
 }
 
-interface Profile {
+export interface Profile {
 	name: string
 	display_name: string
 	about: string
 	picture: string
 	created_at: number
 }
+
+export const urlDarkTheme = 'https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css';
+export const urlLightTheme = 'https://cdn.jsdelivr.net/npm/water.css@2/out/light.css';
+export const urlDefaultTheme = urlDarkTheme;
 
 export const getEventsPhase1 = async(pool: SimplePool, relays: string[], filterKind42: Filter<42>, callbackPhase1: Function, callbackPhase2: Function, callbackPhase3: Function) => {
 	const limit = 500;

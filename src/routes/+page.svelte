@@ -7,11 +7,11 @@ import {
 	type Filter,
 } from 'nostr-tools';
 import { afterUpdate, onDestroy, onMount } from 'svelte';
-import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse, storedMuteList, storedFavList, storedFavedList } from '$lib/store';
+import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse, storedMuteList, storedFavList, storedFavedList, storedTheme } from '$lib/store';
 import Sidebar from './Sidebar.svelte';
 import Timeline from './Timeline.svelte';
 import Header from './Header.svelte';
-import { getMuteList, getFavList, getFavedList, sendFav, getEventsPhase1 } from '$lib/util';
+import { getMuteList, getFavList, getFavedList, sendFav, getEventsPhase1, type Channel, type Profile, urlDefaultTheme } from '$lib/util';
 
 // とりあえずリレーは固定
 const defaultRelays = {
@@ -20,24 +20,6 @@ const defaultRelays = {
 }
 let relaysToRead: string[] = [];
 let relaysToWrite: string[] = [];
-
-interface Channel {
-	name: string
-	about: string
-	picture: string
-	updated_at: number
-	id: string
-	pubkey: string
-	recommendedRelay: string
-}
-
-interface Profile {
-	name: string
-	display_name: string
-	about: string
-	picture: string
-	created_at: number
-}
 
 // kind:40を溜めておく keyはid
 let channels: Channel[] = [];
@@ -89,6 +71,12 @@ let relaysToUse: object = {};
 $: relaysToUse = relaysToUse;
 storedRelaysToUse.subscribe((value) => {
 	relaysToUse = value;
+});
+
+let theme: string;
+$: theme = theme;
+storedTheme.subscribe((value) => {
+	theme = value;
 });
 
 const importRelays = async() => {
@@ -201,10 +189,11 @@ afterUpdate(() => {
 
 <svelte:head>
 	<title>うにゅうハウス</title>
+	<link rel="stylesheet" href="{theme || urlDefaultTheme}">
 </svelte:head>
 <div id="container">
 	<Header />
-	<Sidebar {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {callbackFavList} {callbackFavedList} {callbackProfile} {importRelays} {useRelaysNIP07} {channels} {getMuteList} {getFavList} {getFavedList} ids={notes.map(v => v.id)} {profs} />
+	<Sidebar {theme} {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {callbackFavList} {callbackFavedList} {callbackProfile} {importRelays} {useRelaysNIP07} {channels} {getMuteList} {getFavList} {getFavedList} ids={notes.map(v => v.id)} {profs} />
 	<main>
 		<Timeline {pool} {relaysToWrite} {notes} {notesQuoted} {profs} {channels} {sendFav} {loginPubkey} {muteList} {favList} {favedList} />
 	</main>
@@ -215,10 +204,12 @@ afterUpdate(() => {
 	width: 100%;
 	height: 100%;
 }
-:global(body) {
+:global(html > body) {
 	width: 100%;
 	height: 100%;
-	margin: 0;
+	margin-top: 0;
+	padding: 0;
+	max-width: 100%;
 }
 #container {
 	width: 100%;
@@ -228,7 +219,8 @@ afterUpdate(() => {
 }
 main {
 	margin-top: 3em;
-	width: calc(100vw - calc(100vw - 100%));
+	padding-left: 0.5em;
+	width: calc(100vw - (100vw - 100%));
 	height: calc(100% - 3em);
 	overflow-x: hidden;
 	overflow-y: scroll;
