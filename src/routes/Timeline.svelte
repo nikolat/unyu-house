@@ -42,6 +42,25 @@ const getImagesUrls = (content: string) => {
 	}
 	return urls;
 };
+
+const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator<RegExpMatchArray>, string[], {[key: string]: string}] => {
+	const regMatchArray = ['https?://\\S+', 'nostr:(npub\\w{59})', 'nostr:(note\\w{59})', 'nostr:(nevent\\w+)'];
+	const emojiUrls: {[key: string]: string} = {};
+	const emojiRegs = [];
+	for (const tag of tags) {
+		emojiRegs.push(':' + tag[1] + ':');
+		emojiUrls[':' + tag[1] + ':'] = tag[2];
+	}
+	if (emojiRegs.length > 0) {
+		regMatchArray.push(emojiRegs.join('|'));
+	}
+	const regMatch = new RegExp(regMatchArray.map(v => '(' + v + ')').join('|'), 'g');
+	const regSplit = new RegExp(regMatchArray.map(v => v.replace('(', '').replace(')', '')).join('|'));
+	const plainTexts = content.split(regSplit);
+	const matchesIterator = content.matchAll(regMatch);
+	return [matchesIterator, plainTexts, emojiUrls];
+};
+
 </script>
 
 <p>投稿取得数: {notes.length}</p>
@@ -72,11 +91,12 @@ const getImagesUrls = (content: string) => {
 			{/each}
 			</div>
 		{#if true}
-			{@const regMatch = /(https?:\/\/\S+)|(nostr:(npub\w{59}))|(nostr:(note\w{59}))|(nostr:(nevent\w+))/g }
-			{@const regSplit = /https?:\/\/\S+|nostr:npub\w{59}|nostr:note\w{59}|nostr:nevent\w+/}
-			{@const plainTexts = note.content.split(regSplit)}
+			{@const r = getExpandTagsList(note.content, note.tags.filter(v => v[0] === 'emoji'))}
+			{@const matchesIterator = r[0]}
+			{@const plainTexts = r[1]}
+			{@const emojiUrls = r[2]}
 			{plainTexts.shift()}
-			{#each note.content.matchAll(regMatch) as match}
+			{#each matchesIterator as match}
 				{#if /https?:\/\/\S+/.test(match[1]) }
 					<a href="{match[1]}">{match[1]}</a>
 				{:else if /npub\w{59}/.test(match[3])}
@@ -138,6 +158,8 @@ const getImagesUrls = (content: string) => {
 					{:else}
 						{match[6]}
 					{/if}
+				{:else if match[8]}
+					<img src="{emojiUrls[match[8]]}" alt="{match[8]}" height="32" />
 				{/if}
 				{plainTexts.shift()}
 			{/each}
