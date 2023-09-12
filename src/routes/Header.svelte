@@ -5,7 +5,7 @@ const expandSidebar = () => {
 	const input = document.getElementById('input');
 	if (sidebar && main) {
 		if (main.style.width !== '0%') {
-			sidebar.style.width = 'calc(100vw - calc(100vw - 100%))';
+			sidebar.style.width = 'calc(100vw - (100vw - 100%))';
 			main.style.width = '0%';
 			if (input) {
 				input.style.visibility = 'hidden';
@@ -13,7 +13,7 @@ const expandSidebar = () => {
 		}
 		else {
 			sidebar.style.width = '0%';
-			main.style.width = 'calc(100vw - calc(100vw - 100%))';
+			main.style.width = 'calc(100vw - (100vw - 100%))';
 			if (input) {
 				input.style.visibility = 'visible';
 			}
@@ -32,7 +32,7 @@ header {
 	position: fixed;
 	width: 100%;
 	height: 3em;
-	background-color: #ccc;
+	background-color: rgba(64, 32, 128, 0.3);
 	display: inline-flex;
 	flex-direction: row-reverse;
 	justify-content: space-between;
@@ -43,6 +43,7 @@ h1 {
 	width: calc(100% - 3em);
 	margin-right: 48px;
 	text-align: center;
+	margin-top: 1em;
 }
 #toggle {
 	background-color: transparent;

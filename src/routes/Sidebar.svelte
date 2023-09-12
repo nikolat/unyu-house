@@ -4,7 +4,8 @@ import {
 	nip19,
 } from 'nostr-tools';
 import { browser } from '$app/environment';
-import { storedLoginpubkey, storedMuteList, storedFavList, storedFavedList } from '$lib/store';
+import { storedLoginpubkey, storedMuteList, storedFavList, storedFavedList, storedTheme } from '$lib/store';
+import { urlDarkTheme, urlLightTheme } from '$lib/util';
 
 interface Channel {
 	name: string
@@ -55,6 +56,19 @@ const logout = () => {
 	storedFavList.set([]);
 	storedFavedList.set([]);
 };
+
+const changeTheme = () => {
+	if ((<HTMLInputElement>document.getElementById('theme-dark')).checked) {
+		storedTheme.set(urlDarkTheme);
+	}
+	else if ((<HTMLInputElement>document.getElementById('theme-light')).checked) {
+		storedTheme.set(urlLightTheme);
+	}
+};
+export let theme: string;
+storedTheme.subscribe((value) => {
+	theme = value;
+});
 </script>
 
 <div id="sidebar">
@@ -85,8 +99,13 @@ const logout = () => {
 		{/if}
 	</section>
 	<section>
-		<h2>GitHub</h2>
-		<p><a href="https://github.com/nikolat/unyu-house">nikolat/unyu-house</a></p>
+		<h2>Theme</h2>
+		<form>
+			<label for="theme-dark">Dark theme</label>
+			<input on:change={changeTheme} type="radio" value="dark" name="theme" id="theme-dark" checked={theme !== urlLightTheme}>
+			<label for="theme-light">Light theme</label>
+			<input on:change={changeTheme} type="radio" value="light" name="theme" id="theme-light" checked={theme === urlLightTheme}>
+		</form>
 	</section>
 	<nav>
 		<h2>チャンネル</h2>
@@ -100,14 +119,26 @@ const logout = () => {
 			{/each}
 		</ul>
 	</nav>
+	<section>
+		<h2>GitHub</h2>
+		<p><a href="https://github.com/nikolat/unyu-house">nikolat/unyu-house</a></p>
+	</section>
 </div>
 
 <style>
 #sidebar {
 	margin-top: 3em;
+	padding-left: 0.5em;
 	width: 0%;
 	height: calc(100% - 3em);
 	overflow-y: scroll;
 	transition: width 0.1s;
+}
+#sidebar table {
+	table-layout: auto;
+	width: auto;
+}
+#sidebar th {
+	text-align: center;
 }
 </style>

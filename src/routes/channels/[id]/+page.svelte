@@ -10,11 +10,11 @@ import {
 } from 'nostr-tools';
 import { afterUpdate, onMount } from 'svelte';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
-import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse, storedMuteList, storedFavList, storedFavedList } from '$lib/store';
+import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse, storedMuteList, storedFavList, storedFavedList, storedTheme } from '$lib/store';
 import Sidebar from '../../Sidebar.svelte';
 import Timeline from '../../Timeline.svelte';
 import Header from '../../Header.svelte';
-import { getMuteList, getFavList, getFavedList, sendFav, getEventsPhase1 } from '$lib/util';
+import { getMuteList, getFavList, getFavedList, sendFav, getEventsPhase1, type Channel, type Profile, urlDefaultTheme } from '$lib/util';
 
 export let data: any;
 let currentChannelId: string = data.params.id;
@@ -32,24 +32,6 @@ const defaultRelays = {
 }
 let relaysToRead: string[] = [];
 let relaysToWrite: string[] = [];
-
-interface Channel {
-	name: string
-	about: string
-	picture: string
-	updated_at: number
-	id: string
-	pubkey: string
-	recommendedRelay: string
-}
-
-interface Profile {
-	name: string
-	display_name: string
-	about: string
-	picture: string
-	created_at: number
-}
 
 // kind:40を溜めておく keyはid
 let channels: Channel[] = [];
@@ -101,6 +83,12 @@ let relaysToUse: object = {};
 $: relaysToUse = relaysToUse;
 storedRelaysToUse.subscribe((value) => {
 	relaysToUse = value;
+});
+
+let theme: string;
+$: theme = theme;
+storedTheme.subscribe((value) => {
+	theme = value;
 });
 
 const importRelays = async() => {
@@ -282,7 +270,7 @@ afterNavigate(() => {
 	const input = document.getElementById('input');
 	if (sidebar && main && input) {
 		sidebar.style.width = '0%';
-		main.style.width = 'calc(100vw - calc(100vw - 100%))';
+		main.style.width = 'calc(100vw - (100vw - 100%))';
 		input.style.visibility = 'visible';
 	}
 });
@@ -296,10 +284,11 @@ afterUpdate(() => {
 
 <svelte:head>
 	<title>{channels.filter(v => v.id === currentChannelId)[0]?.name ?? 'チャンネル情報不明'} | うにゅうハウス</title>
+	<link rel="stylesheet" href="{theme || urlDefaultTheme}">
 </svelte:head>
 <div id="container">
 	<Header />
-	<Sidebar {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {callbackFavList} {callbackFavedList} {callbackProfile} {importRelays} {useRelaysNIP07} {channels} {getMuteList} {getFavList} {getFavedList} ids={notes.map(v => v.id)} {profs} />
+	<Sidebar {theme} {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {callbackFavList} {callbackFavedList} {callbackProfile} {importRelays} {useRelaysNIP07} {channels} {getMuteList} {getFavList} {getFavedList} ids={notes.map(v => v.id)} {profs} />
 	<main>
 	{#if true}
 		{@const channel = channels.filter(v => v.id === currentChannelId)[0]}
@@ -333,10 +322,12 @@ afterUpdate(() => {
 	width: 100%;
 	height: 100%;
 }
-:global(body) {
+:global(html > body) {
 	width: 100%;
 	height: 100%;
-	margin: 0;
+	margin-top: 0;
+	padding: 0;
+	max-width: 100%;
 }
 #container {
 	width: 100%;
@@ -346,7 +337,8 @@ afterUpdate(() => {
 }
 main {
 	margin-top: 3em;
-	width: calc(100vw - calc(100vw - 100%));
+	padding-left: 0.5em;
+	width: calc(100vw - (100vw - 100%));
 	height: calc(100% - 3em);
 	overflow-x: hidden;
 	overflow-y: scroll;
@@ -366,16 +358,17 @@ main {
 	width: 100%;
 	height: 8em;
 	bottom: -8em;
-	background-color: #ccc;
+	left: -0.5em;
+	background-color: rgba(64, 32, 128, 0.7);
 	transition: bottom 0.1s;
 }
 #input.show {
 	bottom: 0;
 }
 #input > textarea {
-	margin: 1em 1em 0 1em;
+	margin: 1em 1em 0.5em 1em;
 	width: calc(100% - 2em);
-	height: 5em;
+	height: 3.5em;
 }
 #input > button {
 	margin-left: 1em;

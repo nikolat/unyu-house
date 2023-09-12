@@ -69,7 +69,7 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 	{#if !muteList.includes(note.pubkey)}
 		<dt id="{note.id}">
 		{#if profs[note.pubkey]}
-			<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} | <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>
+			<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>
 		{:else}
 			<img src="/default.png" alt="" width="32" height="32"><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
 		{/if}
@@ -78,7 +78,8 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 			{@const channel = channels.filter(v => v.id === rootId)[0]}
 			{@const channelId = nip19.neventEncode({id:rootId, relays:[channel?.recommendedRelay], author:channel?.pubkey})}
 			{@const channelName = (channels.filter(v => v.id === rootId)[0])?.name ?? 'チャンネル情報不明'}
-			| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} | {#if channel}<a href="/channels/{channelId}">{channelName}</a>{:else}{channelName}{/if}
+			{#if channel}<a href="/channels/{channelId}">{channelName}</a>{:else}{channelName}{/if}
+			<br /><time>{(new Date(1000 * note.created_at)).toLocaleString()}</time>
 		{/if}
 		</dt>
 		<dd>
@@ -114,17 +115,18 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 							<dl>
 								<dt>
 								{#if profs[note.pubkey]}
-									<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} | <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>
+									<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>
 								{:else}
 									<img src="/default.png" alt="" width="32" height="32"><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
-								{/if}| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} 
+								{/if} 
 								{#if note.tags.filter(v => v[0] === 'e' && v[3] === 'root').length > 0}
 									{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root')[0][1]}
 									{@const channel = channels.filter(v => v.id === rootId)[0]}
 									{@const channelId = nip19.neventEncode({id:rootId, relays:[channel?.recommendedRelay], author:channel?.pubkey})}
 									{@const channelName = (channels.filter(v => v.id === rootId)[0])?.name ?? 'チャンネル情報不明'}
-									| {#if channel}<a href="/channels/{channelId}">{channelName}</a>{:else}{channelName}{/if}
+									{#if channel}<a href="/channels/{channelId}">{channelName}</a>{:else}{channelName}{/if}
 								{/if}
+								<br /><time>{(new Date(1000 * note.created_at)).toLocaleString()}</time> kind:{note.kind}
 								</dt>
 								<dd>{note.content}</dd>
 							</dl>
@@ -159,7 +161,7 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 						{match[6]}
 					{/if}
 				{:else if match[8]}
-					<img src="{emojiUrls[match[8]]}" alt="{match[8]}" height="32" />
+					<img src="{emojiUrls[match[8]]}" alt="{match[8]}" class="emoji" />
 				{/if}
 				{plainTexts.shift()}
 			{/each}
@@ -181,8 +183,10 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 				{:else}
 					<button disabled>★ふぁぼ済</button>
 				{/if}
-				<span class="json-view-button">[...]</span>
-				<div class="json-view">{JSON.stringify(note, undefined, 2)}</div>
+				<details>
+					<summary>JSON</summary>
+					<div class="json-view">{JSON.stringify(note, undefined, 2)}</div>
+				</details>
 			</div>
 		</dd>
 	{/if}
@@ -204,22 +208,20 @@ dd img {
 	max-height: 200px;
 	max-width: 100%;
 }
-blockquote {
-	border: 1px dashed #666;
-	background-color: #eee;
+.emoji {
+	height: 32px;
 }
 .action-bar > * {
 	vertical-align: top;
 }
-.json-view-button:hover + .json-view,
-.json-view:hover {
+details {
 	display: inline-block;
+	margin: 0;
 }
 .json-view {
 	font-size: x-small;
-	border: 1px solid #333;
-	background-color: #eee;
-	display: none;
-	margin: -0.5em 0 0 -0.5em;
+}
+time {
+	margin-left: 32px;
 }
 </style>
