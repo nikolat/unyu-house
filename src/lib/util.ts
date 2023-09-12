@@ -3,7 +3,6 @@ import {
 	nip19,
 	type Event as NostrEvent,
 	type UnsignedEvent,
-	type Sub,
 	type Filter,
 } from 'nostr-tools';
 import { storedLoginpubkey } from './store';
