@@ -1,4 +1,5 @@
 <script lang='ts'>
+export let title: string;
 const expandSidebar = () => {
 	const sidebar = document.getElementById('sidebar');
 	const main = document.querySelector('main');
@@ -23,7 +24,7 @@ const expandSidebar = () => {
 </script>
 
 <header>
-	<h1><a href="/">うにゅうハウス</a></h1>
+	<h1><a href="/">{title}</a></h1>
 	<button id="toggle" on:click={expandSidebar}><svg><use xlink:href="/menu.svg#hamburger"></use></svg></button>
 </header>
 

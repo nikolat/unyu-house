@@ -94,7 +94,7 @@ onMount(() => {
 
 <div id="sidebar">
 	<section>
-		<h2>接続リレー</h2>
+		<h2>Relays</h2>
 		<table>
 			<tr>
 				<th>r</th>
@@ -129,8 +129,8 @@ onMount(() => {
 		</form>
 	</section>
 	<nav>
-		<h2>チャンネル</h2>
-		<p>チャンネル取得数: {channels.length}</p>
+		<h2>Channels</h2>
+		<p>Total: {channels.length} channels</p>
 		<ul>
 			{#each channels as channel}
 			<li>

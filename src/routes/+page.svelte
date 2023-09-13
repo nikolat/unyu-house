@@ -1,117 +1,55 @@
 <script lang='ts'>
-
-import {
-	SimplePool,
-	type Event as NostrEvent,
-	type Sub,
-	type Filter,
-} from 'nostr-tools';
 import { afterUpdate, onDestroy, onMount } from 'svelte';
-import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse, storedMuteList, storedFavList, storedFavedList, storedTheme } from '$lib/store';
-import Sidebar from './Sidebar.svelte';
-import Timeline from './Timeline.svelte';
-import Header from './Header.svelte';
-import { getMuteList, getFavList, getFavedList, sendFav, getEventsPhase1, type Channel, type Profile, urlDefaultTheme } from '$lib/util';
+import { SimplePool, type Sub, type Event as NostrEvent, type Filter } from 'nostr-tools';
+import { title, defaultRelays, type Channel, type Profile, getEventsPhase1, getMuteList, urlDefaultTheme } from '$lib/util';
+import { storedLoginpubkey, storedMuteList, storedRelaysToUse, storedTheme, storedUseRelaysNIP07 } from '$lib/store';
+import Page from './Page.svelte';
 
-// とりあえずリレーは固定
-const defaultRelays = {
-	'wss://relay-jp.nostr.wirednet.jp': {'read': true, 'write': true},
-	'wss://yabu.me': {'read': true, 'write': true},
-}
+const currentChannelId = null;
+const inputText = null
+const sendMessage = async() => {};
+const currentPubkey = null;
+
 let relaysToRead: string[] = [];
 let relaysToWrite: string[] = [];
 
-// kind:40を溜めておく keyはid
-let channels: Channel[] = [];
-$: channels = channels;
-// kind:41を溜めておく
-let metadataEvents: NostrEvent[] = [];
-// kind:42を溜めておく
-let notes: NostrEvent[] = [];
-$: notes = notes;
-// 引用されたnoteを溜めておく
-let notesQuoted: NostrEvent[] = [];
-$: notesQuoted = notesQuoted;
-// kind:0 プロフィール情報を溜めておく keyは公開鍵
-let profs: {[key: string]: Profile} = {};
-$: profs = profs;
-
 let pool = new SimplePool();
 let subNotes: Sub<42>;
-
-let muteList: string[];
-$: muteList = muteList;
-storedMuteList.subscribe((value) => {
-	muteList = value;
-});
-let favList: string[];
-$: favList = favList;
-storedFavList.subscribe((value) => {
-	favList = value;
-});
-let favedList: NostrEvent[] = [];
-$: favedList = favedList;
-storedFavedList.subscribe((value) => {
-	favedList = value;
-})
-
-let loginPubkey: string;
-$: loginPubkey = loginPubkey;
-storedLoginpubkey.subscribe((value) => {
-	loginPubkey = value;
-});
 
 let useRelaysNIP07: boolean;
 $: useRelaysNIP07 = useRelaysNIP07;
 storedUseRelaysNIP07.subscribe((value) => {
 	useRelaysNIP07 = value;
 });
-
-let relaysToUse: object = {};
+let relaysToUse: object;
 $: relaysToUse = relaysToUse;
 storedRelaysToUse.subscribe((value) => {
 	relaysToUse = value;
 });
-
+let loginPubkey: string;
+$: loginPubkey = loginPubkey;
+storedLoginpubkey.subscribe((value) => {
+	loginPubkey = value;
+});
+let muteList: string[];
+$: muteList = muteList;
+storedMuteList.subscribe((value) => {
+	muteList = value;
+});
 let theme: string;
 $: theme = theme;
 storedTheme.subscribe((value) => {
 	theme = value;
 });
 
-const importRelays = async() => {
-	storedUseRelaysNIP07.set((<HTMLInputElement>document.getElementById('use-relay-nip07')).checked);
-	if (useRelaysNIP07) {
-		storedRelaysToUse.set(await (window as any).nostr.getRelays());
-	}
-	else {
-		storedRelaysToUse.set(defaultRelays);
-	}
-	subNotes?.unsub();
-	pool.close(relaysToRead);
-	pool = new SimplePool();
-	applyRelays();
-};
-
-const callbackMuteList = (muteListReturn: string[]) => {muteList = muteListReturn;};
-const callbackFavList = (favListReturn: string[]) => {
-	if (JSON.stringify(favList.toSorted()) !== JSON.stringify(favListReturn.toSorted())) {
-		favList = favListReturn;
-	}
-};
-const callbackFavedList = (favedListReturn: NostrEvent[]) => {
-	favedList = favedListReturn;
-};
-const callbackProfile = (profileReturn: {[key: string]: Profile}) => {
-	if (JSON.stringify(Object.keys(profs).toSorted()) !== JSON.stringify(Object.keys(profileReturn).toSorted())) {
-		for (const k of Object.keys(profileReturn)) {
-			if (!(k in profs)) {
-				profs[k] = profileReturn[k];
-			}
-		}
-		profs = profs;
-	}
-};
+let channels: Channel[] = [];
+$: channels = channels;
+let notes: NostrEvent[] = [];
+$: notes = notes;
+let notesQuoted: NostrEvent[] = [];
+$: notesQuoted = notesQuoted;
+let profs: {[key: string]: Profile} = {};
+$: profs = profs;
 
 const callbackPhase1 = (channelsNew: Channel[], notesNew: NostrEvent[]) => {
 	channels = channelsNew;
@@ -147,10 +85,12 @@ const callbackPhase3 = (subNotesPhase3: Sub<42>, ev: NostrEvent) => {
 	notes = notes;
 };
 
+const callbackMuteList = (muteListReturn: string[]) => {muteList = muteListReturn;};
+
 const applyRelays = async() => {
 	channels = [];
-	metadataEvents = [];
 	notes = [];
+	notesQuoted = [];
 	profs = {};
 	const relaysToReadSet = new Set<string>();
 	const relaysToWriteSet = new Set<string>();
@@ -165,7 +105,6 @@ const applyRelays = async() => {
 	relaysToRead = Array.from(relaysToReadSet);
 	relaysToWrite = Array.from(relaysToWriteSet);
 	const filter: Filter<42> = {kinds: [42], limit: 100};
-	// チャンネルの取得
 	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3).catch((e) => console.error(e));
 	if (loginPubkey) {
 		getMuteList(pool, relaysToRead, loginPubkey, callbackMuteList);
@@ -188,42 +127,9 @@ afterUpdate(() => {
 </script>
 
 <svelte:head>
-	<title>うにゅうハウス</title>
+	<title>{title}</title>
 	<link rel="stylesheet" href="{theme || urlDefaultTheme}">
 </svelte:head>
-<div id="container">
-	<Header />
-	<Sidebar {theme} {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {callbackFavList} {callbackFavedList} {callbackProfile} {importRelays} {useRelaysNIP07} {channels} {getMuteList} {getFavList} {getFavedList} ids={notes.map(v => v.id)} {profs} />
-	<main>
-		<Timeline {pool} {relaysToWrite} {notes} {notesQuoted} {profs} {channels} {sendFav} {loginPubkey} {muteList} {favList} {favedList} />
-	</main>
-</div>
-
-<style>
-:global(html) {
-	width: 100%;
-	height: 100%;
-}
-:global(html > body) {
-	width: 100%;
-	height: 100%;
-	margin-top: 0;
-	padding: 0;
-	max-width: 100%;
-}
-#container {
-	width: 100%;
-	height: 100%;
-	display: flex;
-	overflow: hidden;
-}
-main {
-	margin-top: 3em;
-	padding-left: 0.5em;
-	width: calc(100vw - (100vw - 100%));
-	height: calc(100% - 3em);
-	overflow-x: hidden;
-	overflow-y: scroll;
-	word-break: break-all;
-}
-</style>
+<Page {title} {relaysToRead} {relaysToWrite} {channels} {notes} {notesQuoted} {profs} {pool} {subNotes} {loginPubkey}
+	{applyRelays} {muteList} {callbackMuteList} {useRelaysNIP07} {relaysToUse} {theme}
+	{currentChannelId} {inputText} {sendMessage} {currentPubkey} />

@@ -25,9 +25,14 @@ export interface Profile {
 	created_at: number
 }
 
+export const title = 'うにゅうハウス';
 export const urlDarkTheme = 'https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css';
 export const urlLightTheme = 'https://cdn.jsdelivr.net/npm/water.css@2/out/light.css';
 export const urlDefaultTheme = urlDarkTheme;
+export const defaultRelays = {
+	'wss://relay-jp.nostr.wirednet.jp': {'read': true, 'write': true},
+	'wss://yabu.me': {'read': true, 'write': true},
+}
 
 export const getEventsPhase1 = async(pool: SimplePool, relays: string[], filterKind42: Filter<42>, callbackPhase1: Function, callbackPhase2: Function, callbackPhase3: Function) => {
 	const limit = 500;

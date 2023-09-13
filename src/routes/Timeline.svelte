@@ -63,7 +63,7 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 
 </script>
 
-<p>投稿取得数: {notes.length}</p>
+<p>Total: {notes.length} posts</p>
 <dl>
 {#each notes as note}
 	{#if !muteList.includes(note.pubkey)}
@@ -77,7 +77,7 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 			{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root')[0][1]}
 			{@const channel = channels.filter(v => v.id === rootId)[0]}
 			{@const channelId = nip19.neventEncode({id:rootId, relays:[channel?.recommendedRelay], author:channel?.pubkey})}
-			{@const channelName = (channels.filter(v => v.id === rootId)[0])?.name ?? 'チャンネル情報不明'}
+			{@const channelName = (channels.filter(v => v.id === rootId)[0])?.name ?? '(unknown channel)'}
 			{#if channel}<a href="/channels/{channelId}">{channelName}</a>{:else}{channelName}{/if}
 			<br /><time>{(new Date(1000 * note.created_at)).toLocaleString()}</time>
 		{/if}
@@ -123,7 +123,7 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 									{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root')[0][1]}
 									{@const channel = channels.filter(v => v.id === rootId)[0]}
 									{@const channelId = nip19.neventEncode({id:rootId, relays:[channel?.recommendedRelay], author:channel?.pubkey})}
-									{@const channelName = (channels.filter(v => v.id === rootId)[0])?.name ?? 'チャンネル情報不明'}
+									{@const channelName = (channels.filter(v => v.id === rootId)[0])?.name ?? '(unknown channel)'}
 									{#if channel}<a href="/channels/{channelId}">{channelName}</a>{:else}{channelName}{/if}
 								{/if}
 								<br /><time>{(new Date(1000 * note.created_at)).toLocaleString()}</time> kind:{note.kind}
@@ -150,7 +150,7 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 									{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root')[0][1]}
 									{@const channel = channels.filter(v => v.id === rootId)[0]}
 									{@const channelId = nip19.neventEncode({id:rootId, relays:[channel?.recommendedRelay], author:channel?.pubkey})}
-									{@const channelName = (channels.filter(v => v.id === rootId)[0])?.name ?? 'チャンネル情報不明'}
+									{@const channelName = (channels.filter(v => v.id === rootId)[0])?.name ?? '(unknown channel)'}
 									| {#if channel}<a href="/channels/{channelId}">{channelName}</a>{:else}{channelName}{/if}
 								{/if}
 								</dt>
@@ -179,9 +179,9 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 			</ul>
 			<div class="action-bar">
 				{#if !favList.includes(note.id)}
-					<button on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey)} disabled={!loginPubkey}>☆ふぁぼる</button>
+					<button on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey)} disabled={!loginPubkey}>☆fav</button>
 				{:else}
-					<button disabled>★ふぁぼ済</button>
+					<button disabled>★</button>
 				{/if}
 				<details>
 					<summary>JSON</summary>

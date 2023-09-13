@@ -1,129 +1,65 @@
 <script lang='ts'>
-
-import {
-	SimplePool,
-	nip19,
-	type Event as NostrEvent,
-	type UnsignedEvent,
-	type Sub,
-	type Filter,
-} from 'nostr-tools';
 import { afterUpdate, onMount } from 'svelte';
+import { SimplePool, nip19, type Sub, type Event as NostrEvent, type Filter, type UnsignedEvent } from 'nostr-tools';
+import { title, defaultRelays, type Channel, type Profile, getEventsPhase1, getMuteList, urlDefaultTheme } from '$lib/util';
+import { storedLoginpubkey, storedMuteList, storedRelaysToUse, storedTheme, storedUseRelaysNIP07 } from '$lib/store';
+import Page from '../../Page.svelte';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
-import { storedLoginpubkey, storedUseRelaysNIP07, storedRelaysToUse, storedMuteList, storedFavList, storedFavedList, storedTheme } from '$lib/store';
-import Sidebar from '../../Sidebar.svelte';
-import Timeline from '../../Timeline.svelte';
-import Header from '../../Header.svelte';
-import { getMuteList, getFavList, getFavedList, sendFav, getEventsPhase1, type Channel, type Profile, urlDefaultTheme } from '$lib/util';
+
+const currentPubkey = null;
 
 export let data: any;
-let currentChannelId: string = data.params.id;
+const urlId: string = data.params.id;
+let currentChannelId: string;
 let currentChannelOwner: string | undefined;
-if (/^nevent/.test(currentChannelId)) {
-	const d = nip19.decode(currentChannelId);
-	currentChannelId = (d.data as nip19.EventPointer).id
-	currentChannelOwner = (d.data as nip19.EventPointer).author;
+if (/^nevent/.test(urlId)) {
+	const d = nip19.decode(urlId);
+	if (d.type === 'nevent') {
+		currentChannelId = d.data.id
+		currentChannelOwner = d.data.author;
+	}
 }
 
-// とりあえずリレーは固定
-const defaultRelays = {
-	'wss://relay-jp.nostr.wirednet.jp': {'read': true, 'write': true},
-	'wss://yabu.me': {'read': true, 'write': true},
-}
 let relaysToRead: string[] = [];
 let relaysToWrite: string[] = [];
 
-// kind:40を溜めておく keyはid
-let channels: Channel[] = [];
-$: channels = channels;
-// kind:41を溜めておく
-let metadataEvents: NostrEvent[] = [];
-// kind:42を溜めておく
-let notes: NostrEvent[] = [];
-$: notes = notes;
-// 引用されたnoteを溜めておく
-let notesQuoted: NostrEvent[] = [];
-$: notesQuoted = notesQuoted;
-// kind:0 プロフィール情報を溜めておく keyは公開鍵
-let profs: {[key: string]: Profile} = {};
-$: profs = profs;
-
 let pool = new SimplePool();
 let subNotes: Sub<42>;
-
-let muteList: string[];
-$: muteList = muteList;
-storedMuteList.subscribe((value) => {
-	muteList = value;
-})
-let favList: string[];
-$: favList = favList;
-storedFavList.subscribe((value) => {
-	favList = value;
-});
-let favedList: NostrEvent[] = [];
-$: favedList = favedList;
-storedFavedList.subscribe((value) => {
-	favedList = value;
-});
-
-let loginPubkey: string;
-$: loginPubkey = loginPubkey;
-storedLoginpubkey.subscribe((value) => {
-	loginPubkey = value;
-});
 
 let useRelaysNIP07: boolean;
 $: useRelaysNIP07 = useRelaysNIP07;
 storedUseRelaysNIP07.subscribe((value) => {
 	useRelaysNIP07 = value;
 });
-
-let relaysToUse: object = {};
+let relaysToUse: object;
 $: relaysToUse = relaysToUse;
 storedRelaysToUse.subscribe((value) => {
 	relaysToUse = value;
 });
-
+let loginPubkey: string;
+$: loginPubkey = loginPubkey;
+storedLoginpubkey.subscribe((value) => {
+	loginPubkey = value;
+});
+let muteList: string[];
+$: muteList = muteList;
+storedMuteList.subscribe((value) => {
+	muteList = value;
+});
 let theme: string;
 $: theme = theme;
 storedTheme.subscribe((value) => {
 	theme = value;
 });
 
-const importRelays = async() => {
-	storedUseRelaysNIP07.set((<HTMLInputElement>document.getElementById('use-relay-nip07')).checked);
-	if (useRelaysNIP07) {
-		storedRelaysToUse.set(await (window as any).nostr.getRelays());
-	}
-	else {
-		storedRelaysToUse.set(defaultRelays);
-	}
-	subNotes?.unsub();
-	pool.close(relaysToRead);
-	pool = new SimplePool();
-	applyRelays();
-};
-
-const callbackMuteList = (muteListReturn: string[]) => {muteList = muteListReturn;};
-const callbackFavList = (favListReturn: string[]) => {
-	if (JSON.stringify(favList.toSorted()) !== JSON.stringify(favListReturn.toSorted())) {
-		favList = favListReturn;
-	}
-};
-const callbackFavedList = (favedListReturn: NostrEvent[]) => {
-	favedList = favedListReturn;
-};
-const callbackProfile = (profileReturn: {[key: string]: Profile}) => {
-	if (JSON.stringify(Object.keys(profs).toSorted()) !== JSON.stringify(Object.keys(profileReturn).toSorted())) {
-		for (const k of Object.keys(profileReturn)) {
-			if (!(k in profs)) {
-				profs.k = profileReturn.k;
-			}
-		}
-		profs = profs;
-	}
-};
+let channels: Channel[] = [];
+$: channels = channels;
+let notes: NostrEvent[] = [];
+$: notes = notes;
+let notesQuoted: NostrEvent[] = [];
+$: notesQuoted = notesQuoted;
+let profs: {[key: string]: Profile} = {};
+$: profs = profs;
 
 const callbackPhase1 = (channelsNew: Channel[], notesNew: NostrEvent[]) => {
 	channels = channelsNew;
@@ -159,10 +95,12 @@ const callbackPhase3 = (subNotesPhase3: Sub<42>, ev: NostrEvent) => {
 	notes = notes;
 };
 
+const callbackMuteList = (muteListReturn: string[]) => {muteList = muteListReturn;};
+
 const applyRelays = async() => {
 	channels = [];
-	metadataEvents = [];
 	notes = [];
+	notesQuoted = [];
 	profs = {};
 	const relaysToReadSet = new Set<string>();
 	const relaysToWriteSet = new Set<string>();
@@ -177,7 +115,6 @@ const applyRelays = async() => {
 	relaysToRead = Array.from(relaysToReadSet);
 	relaysToWrite = Array.from(relaysToWriteSet);
 	const filter: Filter<42> = {kinds: [42], limit: 100, '#e': [currentChannelId]};
-	// チャンネルの取得
 	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3).catch((e) => console.error(e));
 	if (loginPubkey) {
 		getMuteList(pool, relaysToRead, loginPubkey, callbackMuteList);
@@ -252,14 +189,15 @@ beforeNavigate(() => {
 	subNotes?.unsub();
 });
 afterNavigate(() => {
-	currentChannelId = data.params.id;
-	if (/^nevent/.test(currentChannelId)) {
-		const d = nip19.decode(currentChannelId);
-		currentChannelId = (d.data as nip19.EventPointer).id
-		currentChannelOwner = (d.data as nip19.EventPointer).author;
+	const urlId: string = data.params.id;
+	if (/^nevent/.test(urlId)) {
+		const d = nip19.decode(urlId);
+		if (d.type === 'nevent') {
+			currentChannelId = d.data.id
+			currentChannelOwner = d.data.author;
+		}
 	}
 	channels = [];
-	metadataEvents = [];
 	notes = [];
 	profs = {};
 	if (!useRelaysNIP07)
@@ -283,94 +221,9 @@ afterUpdate(() => {
 </script>
 
 <svelte:head>
-	<title>{channels.filter(v => v.id === currentChannelId)[0]?.name ?? 'チャンネル情報不明'} | うにゅうハウス</title>
+	<title>{channels.filter(v => v.id === currentChannelId)[0]?.name ?? '(unknown channel)'} | {title}</title>
 	<link rel="stylesheet" href="{theme || urlDefaultTheme}">
 </svelte:head>
-<div id="container">
-	<Header />
-	<Sidebar {theme} {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {callbackFavList} {callbackFavedList} {callbackProfile} {importRelays} {useRelaysNIP07} {channels} {getMuteList} {getFavList} {getFavedList} ids={notes.map(v => v.id)} {profs} />
-	<main>
-	{#if true}
-		{@const channel = channels.filter(v => v.id === currentChannelId)[0]}
-		<h2>{channel?.name ?? 'Now Loading...'}</h2>
-		{#if channel}
-		<p id="channel-about">{#if channel.picture}<img src="{channel.picture}" width="100" height="100" alt="banner" />{/if}{channel.about ?? ''}</p>
-		{/if}
-		{#if profs[channel?.pubkey]}
-		<p id="channel-owner">owner: <img src="{profs[channel.pubkey].picture}" width="32" height="32" alt="{profs[channel.pubkey].display_name}" />@{profs[channel.pubkey].name}</p>
-		{/if}
-	{/if}
-		<Timeline {pool} {relaysToWrite} {notes} {notesQuoted} {profs} {channels} {sendFav} {loginPubkey} {muteList} {favList} {favedList} />
-		<div id="input" class="show">
-			{#if loginPubkey}
-			<textarea id="input-text" bind:value={inputText}></textarea>
-				{#if inputText !== ''}
-				<button on:click={sendMessage}>投稿</button>
-				{:else}
-				<button disabled>投稿</button>
-				{/if}
-			{:else}
-				<textarea id="input-text" disabled></textarea>
-				<button disabled>投稿</button>
-			{/if}
-		</div>
-	</main>
-</div>
-
-<style>
-:global(html) {
-	width: 100%;
-	height: 100%;
-}
-:global(html > body) {
-	width: 100%;
-	height: 100%;
-	margin-top: 0;
-	padding: 0;
-	max-width: 100%;
-}
-#container {
-	width: 100%;
-	height: 100%;
-	display: flex;
-	overflow: hidden;
-}
-main {
-	margin-top: 3em;
-	padding-left: 0.5em;
-	width: calc(100vw - (100vw - 100%));
-	height: calc(100% - 3em);
-	overflow-x: hidden;
-	overflow-y: scroll;
-	word-break: break-all;
-}
-#channel-about {
-	white-space: pre-wrap;
-}
-#channel-about > img {
-	float: left;
-}
-#channel-owner {
-	clear: left;
-}
-#input {
-	position: fixed;
-	width: 100%;
-	height: 8em;
-	bottom: -8em;
-	left: -0.5em;
-	background-color: rgba(64, 32, 128, 0.7);
-	transition: bottom 0.1s;
-}
-#input.show {
-	bottom: 0;
-}
-#input > textarea {
-	margin: 1em 1em 0.5em 1em;
-	width: calc(100% - 2em);
-	height: 3.5em;
-}
-#input > button {
-	margin-left: 1em;
-}
-</style>
+<Page {title} {relaysToRead} {relaysToWrite} {channels} {notes} {notesQuoted} {profs} {pool} {subNotes} {loginPubkey}
+	{applyRelays} {muteList} {callbackMuteList} {useRelaysNIP07} {relaysToUse} {theme}
+	{currentChannelId} {inputText} {sendMessage} {currentPubkey} />
