@@ -91,8 +91,10 @@ const callbackPhase2 = (profsNew: {[key: string]: Profile}, notesQuotedNew: Nost
 
 const callbackPhase3 = (subNotesPhase3: Sub<42>, ev: NostrEvent) => {
 	subNotes = subNotesPhase3;
-	notes.push(ev);
-	notes = notes;
+	if (!notes.map(v => v.id).includes(ev.id)) {
+		notes.push(ev);
+		notes = notes;
+	}
 };
 
 const callbackForLoginPhase1 = (muteListNew: string[], favListNew: string[], favedListNew: NostrEvent[]) => {
