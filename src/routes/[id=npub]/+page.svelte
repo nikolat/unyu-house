@@ -38,17 +38,17 @@ storedLoginpubkey.subscribe((value) => {
 });
 let muteList: string[];
 $: muteList = muteList;
-storedMuteList.subscribe((value) => {
+storedMuteList.subscribe((value: string[]) => {
 	muteList = value;
 });
 let favList: string[];
 $: favList = favList;
-storedFavList.subscribe((value) => {
+storedFavList.subscribe((value: string[]) => {
 	favList = value;
 });
 let favedList: NostrEvent[];
 $: favedList = favedList;
-storedFavedList.subscribe((value) => {
+storedFavedList.subscribe((value: NostrEvent[]) => {
 	favedList = value;
 });
 let theme: string;
@@ -98,17 +98,26 @@ const callbackPhase2 = (profsNew: {[key: string]: Profile}, notesQuotedNew: Nost
 	}
 };
 
-const callbackPhase3 = (subNotesPhase3: Sub<42>, ev: NostrEvent) => {
+const callbackPhase3 = (subNotesPhase3: Sub<7|42>, ev: NostrEvent) => {
 	subNotes = subNotesPhase3;
-	if (!notes.map(v => v.id).includes(ev.id)) {
+	if (ev.kind === 42 && !notes.map(v => v.id).includes(ev.id)) {
 		notes.push(ev);
 		notes = notes;
+	}
+	else if (ev.kind === 7) {
+		if (ev.tags.filter(v => v[0] === 'p' && v[1] === loginPubkey)) {
+			favedList.push(ev);
+			favedList = favedList;
+		}
 	}
 };
 
 const callbackForLoginPhase1 = (muteListNew: string[], favListNew: string[], favedListNew: NostrEvent[]) => {
+	storedMuteList.set(muteListNew);
 	muteList = muteListNew;
+	storedFavList.set(favListNew);
 	favList = favListNew;
+	storedFavedList.set(favedListNew);
 	favedList = favedListNew;
 };
 
@@ -145,7 +154,7 @@ const applyRelays = () => {
 	profs = {};
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
 	const filter: Filter<42> = {kinds: [42], limit: 100, authors: [currentPubkey]};
-	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3).catch((e) => console.error(e));
+	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3, loginPubkey).catch((e) => console.error(e));
 }
 
 beforeNavigate(() => {

@@ -33,7 +33,7 @@ export const defaultRelays = {
 	'wss://yabu.me': {'read': true, 'write': true},
 }
 
-export const getEventsPhase1 = async(pool: SimplePool, relays: string[], filterKind42: Filter<42>, callbackPhase1: Function, callbackPhase2: Function, callbackPhase3: Function) => {
+export const getEventsPhase1 = async(pool: SimplePool, relays: string[], filterKind42: Filter<42>, callbackPhase1: Function, callbackPhase2: Function, callbackPhase3: Function, loginPubkey: string) => {
 	const limit = 500;
 	const sub = pool.sub(relays, [{kinds: [40, 41], limit: limit}, filterKind42]);
 	const events: NostrEvent[] = [];
@@ -46,13 +46,19 @@ export const getEventsPhase1 = async(pool: SimplePool, relays: string[], filterK
 		const [channels, notes] = getChannelsAndNotes(pool, events);
 		callbackPhase1(channels, notes);
 		const filterPhase2 = [{kinds: [0], authors: getPubkeysForFilter(events)}, {ids: getIdsForFilter(events)}];
-		const filterPhase3 = filterKind42;
-		filterPhase3.since = events.filter(ev => ev.kind === 42).map(ev => ev.created_at).reduce((a, b) => Math.max(a, b), 0) + 1;
+		const filterPhase3_1: Filter<42> = filterKind42;
+		filterPhase3_1.since = events.filter(ev => ev.kind === 42).map(ev => ev.created_at).reduce((a, b) => Math.max(a, b), 0) + 1;
+		filterPhase3_1.limit = 1;
+		const filterPhase3: Filter<7|42>[] = [filterPhase3_1];
+		if (loginPubkey) {
+			const filterPhase3_2: Filter<7> = {kinds: [7], '#p': [loginPubkey], limit: 1};
+			filterPhase3.push(filterPhase3_2);
+		}
 		getEventsPhase2(pool, relays, filterPhase2, filterPhase3, callbackPhase2, callbackPhase3, true);
 	});
 };
 
-export const getEventsPhase2 = async(pool: SimplePool, relays: string[], filterPhase2: Filter[], filterPhase3: Filter<42>, callbackPhase2: Function, callbackPhase3: Function, goPhase3: Boolean) => {
+export const getEventsPhase2 = async(pool: SimplePool, relays: string[], filterPhase2: Filter[], filterPhase3: Filter<7|42>[], callbackPhase2: Function, callbackPhase3: Function, goPhase3: Boolean) => {
 	const sub = pool.sub(relays, filterPhase2);
 	const events: NostrEvent[] = [];
 	sub.on('event', (ev: NostrEvent) => {
@@ -65,7 +71,7 @@ export const getEventsPhase2 = async(pool: SimplePool, relays: string[], filterP
 		callbackPhase2(profs, notesQuoted);
 		if (notesQuoted.length > 0) {
 			const filterPhase2 = [{kinds: [0], authors: getPubkeysForFilter(notesQuoted)}];
-			getEventsPhase2(pool, relays, filterPhase2, {}, callbackPhase2, ()=>{}, false);
+			getEventsPhase2(pool, relays, filterPhase2, [], callbackPhase2, ()=>{}, false);
 		}
 		if (goPhase3) {
 			getEventsPhase3(pool, relays, filterPhase3, profs, notesQuoted, callbackPhase2, callbackPhase3);
@@ -73,8 +79,8 @@ export const getEventsPhase2 = async(pool: SimplePool, relays: string[], filterP
 	});
 };
 
-export const getEventsPhase3 = async(pool: SimplePool, relays: string[], filterPhase3: Filter<42>, profs: {[key: string]: Profile}, notesQuoted: NostrEvent[], callbackPhase2:Function, callbackPhase3: Function) => {
-	const sub = pool.sub(relays, [filterPhase3]);
+export const getEventsPhase3 = async(pool: SimplePool, relays: string[], filterPhase3: Filter<7|42>[], profs: {[key: string]: Profile}, notesQuoted: NostrEvent[], callbackPhase2:Function, callbackPhase3: Function) => {
+	const sub = pool.sub(relays, filterPhase3);
 	sub.on('event', (ev: NostrEvent) => {
 		callbackPhase3(sub, ev);
 		const pubkeysToGet = getPubkeysForFilter([ev]).filter(v => !(v in profs));
