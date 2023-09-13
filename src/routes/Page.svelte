@@ -23,7 +23,7 @@ export let useRelaysNIP07: boolean;
 export let relaysToUse: object;
 export let theme: string;
 export let currentChannelId: string | null
-export let sendMessage: () => Promise<void>
+export let sendMessage: (content: string) => Promise<void>
 export let currentPubkey: string | null
 export let applyRelays: Function
 export let favList: string[];
@@ -31,6 +31,13 @@ export let favedList: NostrEvent[];
 
 let inputText: string;
 
+const callSendMessage = () => {
+	const content = inputText;
+	const savedPubkey = loginPubkey;
+	inputText = '';
+	loginPubkey = '';
+	sendMessage(content).then(() => {loginPubkey = savedPubkey;});
+}
 </script>
 
 <div id="container">
@@ -62,7 +69,7 @@ let inputText: string;
 			{#if loginPubkey}
 			<textarea id="input-text" bind:value={inputText}></textarea>
 				{#if inputText !== ''}
-				<button on:click={sendMessage}>Post</button>
+				<button on:click={callSendMessage}>Post</button>
 				{:else}
 				<button disabled>Post</button>
 				{/if}

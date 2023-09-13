@@ -148,12 +148,7 @@ const applyRelays = () => {
 	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3).catch((e) => console.error(e));
 }
 
-const sendMessage = async() => {
-	const input = (<HTMLTextAreaElement>document.getElementById('input-text'));
-	const content = input.value;
-	input.value = '';
-	const savedloginPubkey = loginPubkey;
-	storedLoginpubkey.set('');
+const sendMessage = async(content: string) => {
 	const recommendedRelay: string = channels.filter(v => v.id === currentChannelId)[0].recommendedRelay;
 	const tags = [['e', currentChannelId, recommendedRelay, 'root']];
 	const matchesIteratorPubkey = content.matchAll(/(^|\W|\b)(nostr:(npub\w{59}))($|\W|\b)/g);
@@ -191,7 +186,6 @@ const sendMessage = async() => {
 	const newEvent: NostrEvent = await (window as any).nostr.signEvent(baseEvent);
 	const pubs = pool.publish(Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]), newEvent);
 	await Promise.all(pubs);
-	storedLoginpubkey.set(savedloginPubkey);
 }
 
 let scrollPosition = 0;
