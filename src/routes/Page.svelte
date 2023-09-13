@@ -3,13 +3,12 @@
 import {
 	SimplePool,
 	type Event as NostrEvent,
-	type Sub,
 } from 'nostr-tools';
-import { storedUseRelaysNIP07, storedRelaysToUse, storedFavList, storedFavedList, storedTheme } from '$lib/store';
+import { storedFavList, storedFavedList } from '$lib/store';
 import Sidebar from './Sidebar.svelte';
 import Timeline from './Timeline.svelte';
 import Header from './Header.svelte';
-import { getMuteList, getFavList, getFavedList, sendFav, type Channel, type Profile, urlDefaultTheme, defaultRelays } from '$lib/util';
+import { getMuteList, getFavList, getFavedList, sendFav, type Channel, type Profile } from '$lib/util';
 
 export let title: string;
 export let pool: SimplePool;

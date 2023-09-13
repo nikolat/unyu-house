@@ -216,6 +216,66 @@ const getSortedChannels = (channelObjects: {[key: string]: Channel}) => {
 	return channelArray;
 };
 
+export const getEventsForLoginPhase1 = async(pool: SimplePool, relays: string[], pubkey: string, idsFav: string[], idsFaved: string[], callbackForLoginPhase1: Function, callbackForLoginPhase2: Function) => {
+	const sub = pool.sub(relays, [{kinds: [10000], authors: [pubkey]}, {kinds: [7], authors: [pubkey], '#e': idsFav}, {kinds: [7], '#e': idsFaved, '#p': [pubkey]}]);
+	const events: NostrEvent[] = [];
+	sub.on('event', (ev: NostrEvent) => {
+		events.push(ev);
+	});
+	sub.on('eose', () => {
+		console.log('getEventsForLoginPhase1 * EOSE *');
+		sub.unsub();
+		const [muteList, favList, favedList, profileListToGet] = getMuteListAndFavs(events, pubkey);
+		callbackForLoginPhase1(muteList, favList, favedList);
+		const filterPhase2 = [{kinds: [0], authors: profileListToGet}];
+		getEventsForLoginPhase2(pool, relays, filterPhase2, callbackForLoginPhase2);
+	});
+};
+
+export const getEventsForLoginPhase2 = async(pool: SimplePool, relays: string[], filterPhase2: Filter[], callbackForLoginPhase2: Function) => {
+	const sub = pool.sub(relays, filterPhase2);
+	const events: NostrEvent[] = [];
+	sub.on('event', (ev: NostrEvent) => {
+		events.push(ev);
+	});
+	sub.on('eose', () => {
+		console.log('getEventsForLoginPhase2 * EOSE *');
+		sub.unsub();
+		callbackForLoginPhase2(events);
+	});
+};
+
+const getMuteListAndFavs = (events: NostrEvent[], pubkey: string): [string[], NostrEvent[], NostrEvent[], string[]] => {
+	const favList: NostrEvent[] = [];
+	const favedList: NostrEvent[] = [];
+	const profileListToGet = new Set<string>();
+	let muteList: string[] = [];
+	let muteList_created_at = 0;
+	for (const ev of events) {
+		switch (ev.kind) {
+			case 10000:
+				if (muteList_created_at < ev.created_at) {
+					muteList = ev.tags.filter(v => v[0] === 'p').map(v => v[1]);
+					muteList_created_at = ev.created_at;
+				}
+				break;
+			case 7:
+				if (ev.pubkey === pubkey) {
+					favList.push(ev);
+					profileListToGet.add(ev.tags.filter(v => v[0] === 'p')[0][1]);
+				}
+				if (ev.tags.some(v => v[0] === 'p' && v[1] === pubkey)) {
+					favedList.push(ev);
+					profileListToGet.add(ev.pubkey);
+				}
+				break;
+			default:
+				break;
+		}
+	}
+	return [muteList, favList, favedList, Array.from(profileListToGet)];
+};
+
 // プロフィールを取得する
 export const getProfile = async (pool: SimplePool, relays: string[], pubkeys: string[], profs: {[key: string]: Profile}, callbackProfile: Function) => {
 	const sub = pool.sub(relays, [{kinds: [0], authors: pubkeys}]);
