@@ -1,9 +1,11 @@
 <script lang='ts'>
+
 import {
 	nip19,
 	SimplePool,
 	type Event as NostrEvent,
 } from 'nostr-tools';
+import { sendFav } from '$lib/util';
 
 interface Channel {
 	name: string
@@ -28,7 +30,6 @@ export let notes: NostrEvent[];
 export let notesQuoted: NostrEvent[];
 export let profs: {[key: string]: Profile};
 export let channels: Channel[];
-export let sendFav: (pool: SimplePool, relaysToWrite: string[], noteid: string, targetPubkey: string) => Promise<void>
 export let loginPubkey: string;
 export let muteList: string[];
 export let favList: string[];

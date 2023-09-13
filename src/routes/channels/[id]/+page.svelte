@@ -150,46 +150,6 @@ const applyRelays = () => {
 	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3).catch((e) => console.error(e));
 }
 
-const sendMessage = async(content: string) => {
-	const recommendedRelay: string = channels.filter(v => v.id === currentChannelId)[0].recommendedRelay;
-	const tags = [['e', currentChannelId, recommendedRelay, 'root']];
-	const matchesIteratorPubkey = content.matchAll(/(^|\W|\b)(nostr:(npub\w{59}))($|\W|\b)/g);
-	const mentionPubkeys: Set<string> = new Set();
-	for (const match of matchesIteratorPubkey) {
-		const d = nip19.decode(match[3]);
-		if (d.type === 'npub') {
-			mentionPubkeys.add(d.data);
-		}
-	}
-	for (const p of mentionPubkeys) {
-		tags.push(['p', p, '']);
-	}
-	const matchesIteratorId = content.matchAll(/(^|\W|\b)(nostr:(note\w{59}|nevent\w+))($|\W|\b)/g);
-	const mentionIds: Set<string> = new Set();
-	for (const match of matchesIteratorId) {
-		const d = nip19.decode(match[3]);
-		if (d.type === 'note') {
-			mentionIds.add(d.data);
-		}
-		else if (d.type === 'nevent') {
-			mentionIds.add(d.data.id);
-		}
-	}
-	for (const id of mentionIds) {
-		tags.push(['e', id, '', 'mention']);
-	}
-	const baseEvent: UnsignedEvent = {
-		kind: 42,
-		pubkey: '',
-		created_at: Math.floor(Date.now() / 1000),
-		tags: tags,
-		content: content
-	};
-	const newEvent: NostrEvent = await (window as any).nostr.signEvent(baseEvent);
-	const pubs = pool.publish(Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]), newEvent);
-	await Promise.all(pubs);
-}
-
 let scrollPosition = 0;
 onMount(() => {
 	const main = document.querySelector('main');
@@ -250,4 +210,4 @@ afterUpdate(() => {
 </svelte:head>
 <Page {title} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {channels} {notes} {notesQuoted} {profs} {pool} {loginPubkey}
 	{importRelays} {muteList} {useRelaysNIP07} {relaysToUse} {theme}
-	{currentChannelId} {sendMessage} {currentPubkey} {applyRelays} {favList} {favedList} />
+	{currentChannelId} {currentPubkey} {applyRelays} {favList} {favedList} />

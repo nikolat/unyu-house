@@ -6,7 +6,6 @@ import { storedFavList, storedFavedList, storedLoginpubkey, storedMuteList, stor
 import Page from './Page.svelte';
 
 const currentChannelId = null;
-const sendMessage = async() => {};
 const currentPubkey = null;
 
 let pool = new SimplePool();
@@ -162,4 +161,4 @@ afterUpdate(() => {
 </svelte:head>
 <Page {title} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {channels} {notes} {notesQuoted} {profs} {pool} {loginPubkey}
 	{importRelays} {muteList} {useRelaysNIP07} {relaysToUse} {theme}
-	{currentChannelId} {sendMessage} {currentPubkey} {applyRelays} {favList} {favedList} />
+	{currentChannelId} {currentPubkey} {applyRelays} {favList} {favedList} />

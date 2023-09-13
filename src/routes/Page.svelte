@@ -7,7 +7,7 @@ import {
 import Sidebar from './Sidebar.svelte';
 import Timeline from './Timeline.svelte';
 import Header from './Header.svelte';
-import { sendFav, type Channel, type Profile } from '$lib/util';
+import { sendMessage, type Channel, type Profile } from '$lib/util';
 
 export let title: string;
 export let pool: SimplePool;
@@ -23,7 +23,6 @@ export let useRelaysNIP07: boolean;
 export let relaysToUse: object;
 export let theme: string;
 export let currentChannelId: string | null
-export let sendMessage: (content: string) => Promise<void>
 export let currentPubkey: string | null
 export let applyRelays: Function
 export let favList: string[];
@@ -32,9 +31,12 @@ export let favedList: NostrEvent[];
 let inputText: string;
 
 const callSendMessage = () => {
+	if (!currentChannelId)
+		return;
 	const content = inputText;
 	inputText = '';
-	sendMessage(content);
+	const recommendedRelay = channels.filter(v => v.id === currentChannelId)[0].recommendedRelay;
+	sendMessage(pool, relaysToWrite, content, currentChannelId, recommendedRelay);
 }
 </script>
 
@@ -61,7 +63,7 @@ const callSendMessage = () => {
 	{:else}
 		<h2>Global timeline</h2>
 	{/if}
-		<Timeline {pool} {relaysToWrite} {notes} {notesQuoted} {profs} {channels} {sendFav} {loginPubkey} {muteList} {favList} {favedList} />
+		<Timeline {pool} {relaysToWrite} {notes} {notesQuoted} {profs} {channels} {loginPubkey} {muteList} {favList} {favedList} />
 	{#if currentChannelId}
 		<div id="input" class="show">
 			{#if loginPubkey}

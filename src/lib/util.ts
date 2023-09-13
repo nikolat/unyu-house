@@ -5,7 +5,6 @@ import {
 	type UnsignedEvent,
 	type Filter,
 } from 'nostr-tools';
-import { storedLoginpubkey } from './store';
 
 export interface Channel {
 	name: string
@@ -277,14 +276,46 @@ const getMuteListAndFavs = (events: NostrEvent[], pubkey: string): [string[], st
 	return [muteList, favList, favedList, Array.from(profileListToGet)];
 };
 
-let loginPubkey: string;
-storedLoginpubkey.subscribe((value) => {
-	loginPubkey = value;
-});
+export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], content: string, currentChannelId: string, recommendedRelay: string) => {
+	const tags = [['e', currentChannelId, recommendedRelay, 'root']];
+	const matchesIteratorPubkey = content.matchAll(/(^|\W|\b)(nostr:(npub\w{59}))($|\W|\b)/g);
+	const mentionPubkeys: Set<string> = new Set();
+	for (const match of matchesIteratorPubkey) {
+		const d = nip19.decode(match[3]);
+		if (d.type === 'npub') {
+			mentionPubkeys.add(d.data);
+		}
+	}
+	for (const p of mentionPubkeys) {
+		tags.push(['p', p, '']);
+	}
+	const matchesIteratorId = content.matchAll(/(^|\W|\b)(nostr:(note\w{59}|nevent\w+))($|\W|\b)/g);
+	const mentionIds: Set<string> = new Set();
+	for (const match of matchesIteratorId) {
+		const d = nip19.decode(match[3]);
+		if (d.type === 'note') {
+			mentionIds.add(d.data);
+		}
+		else if (d.type === 'nevent') {
+			mentionIds.add(d.data.id);
+		}
+	}
+	for (const id of mentionIds) {
+		tags.push(['e', id, '', 'mention']);
+	}
+	const baseEvent: UnsignedEvent = {
+		kind: 42,
+		pubkey: '',
+		created_at: Math.floor(Date.now() / 1000),
+		tags: tags,
+		content: content
+	};
+	const newEvent: NostrEvent = await (window as any).nostr.signEvent(baseEvent);
+	const pubs = pool.publish(relaysToWrite, newEvent);
+	await Promise.all(pubs);
+}
 
 export const sendFav = async(pool: SimplePool, relaysToWrite: string[], noteid: string, targetPubkey: string) => {
-	const savedloginPubkey = loginPubkey;
-	storedLoginpubkey.set('');
 	const tags = [['p', targetPubkey, ''], ['e', noteid, '', '']];
 	const baseEvent: UnsignedEvent = {
 		kind: 7,
@@ -296,5 +327,4 @@ export const sendFav = async(pool: SimplePool, relaysToWrite: string[], noteid: 
 	const newEvent: NostrEvent = await (window as any).nostr.signEvent(baseEvent);
 	const pubs = pool.publish(relaysToWrite, newEvent);
 	await Promise.all(pubs);
-	storedLoginpubkey.set(savedloginPubkey);
 }
