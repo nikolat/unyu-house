@@ -150,7 +150,7 @@ const getChannelsAndNotes = (pool: SimplePool, events: NostrEvent[]): [Channel[]
 	for (const ev of events.filter(ev => ev.kind === 41)) {
 		for (const tag of ev.tags) {
 			const id = tag[1];
-			if (tag[0] === 'e' && id in Object.keys(channelObjects) && ev.pubkey === channelObjects[id].pubkey && channelObjects[id].updated_at < ev.created_at) {
+			if (tag[0] === 'e' && id in channelObjects && ev.pubkey === channelObjects[id].pubkey && channelObjects[id].updated_at < ev.created_at) {
 				const savedRecommendedRelay = channelObjects[id].recommendedRelay;
 				try {
 					channelObjects[id] = JSON.parse(ev.content);
