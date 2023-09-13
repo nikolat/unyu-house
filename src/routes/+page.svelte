@@ -95,9 +95,15 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|42>, ev: NostrEvent) => {
 		notes = notes;
 	}
 	else if (ev.kind === 7) {
-		if (ev.tags.filter(v => v[0] === 'p' && v[1] === loginPubkey)) {
+		if (ev.pubkey === loginPubkey && !favList.includes(ev.id)) {
+			favList.push(ev.id);
+			favList = favList;
+			storedFavList.set(favList);
+		}
+		if (ev.tags.filter(v => v[0] === 'p' && v[1] === loginPubkey) && !favedList.map(v => v.id).includes(ev.id)) {
 			favedList.push(ev);
 			favedList = favedList;
+			storedFavedList.set(favedList);
 		}
 	}
 };
@@ -105,10 +111,19 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|42>, ev: NostrEvent) => {
 const callbackForLoginPhase1 = (muteListNew: string[], favListNew: string[], favedListNew: NostrEvent[]) => {
 	storedMuteList.set(muteListNew);
 	muteList = muteListNew;
-	storedFavList.set(favListNew);
-	favList = favListNew;
-	storedFavedList.set(favedListNew);
-	favedList = favedListNew;
+	const favSet = new Set(favList);
+	for (const favId of favListNew) {
+		favSet.add(favId);
+	}
+	favList = Array.from(favSet);
+	storedFavList.set(favList);
+	for (const favedEv of favedListNew) {
+		if (!favedList.map(v => v.id).includes(favedEv.id)) {
+			favedList.push(favedEv);
+		}
+	}
+	favedList = favedList;
+	storedFavedList.set(favedList);
 };
 
 const callbackForLoginPhase2 = (profsNew: {[key: string]: Profile}) => {

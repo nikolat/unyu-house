@@ -52,7 +52,9 @@ export const getEventsPhase1 = async(pool: SimplePool, relays: string[], filterK
 		const filterPhase3: Filter<7|42>[] = [filterPhase3_1];
 		if (loginPubkey) {
 			const filterPhase3_2: Filter<7> = {kinds: [7], '#p': [loginPubkey], limit: 1};
+			const filterPhase3_3: Filter<7> = {kinds: [7], authors: [loginPubkey], limit: 1};
 			filterPhase3.push(filterPhase3_2);
+			filterPhase3.push(filterPhase3_3);
 		}
 		getEventsPhase2(pool, relays, filterPhase2, filterPhase3, callbackPhase2, callbackPhase3, true);
 	});

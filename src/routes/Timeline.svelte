@@ -174,16 +174,14 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 			{#each favedList as favedEvent}
 				{#if favedEvent.tags.filter(v => v[0] === 'e' && v[1] === note.id).length > 0 && profs[favedEvent.pubkey]}
 					{@const reaction = favedEvent.content.replace(/^\+$/, '❤')}
-					<li>{reaction} <img src="{profs[favedEvent.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(favedEvent.pubkey)}" width="16" height="16" /> {profs[favedEvent.pubkey].display_name} @{profs[favedEvent.pubkey].name} reacted</li>
+					<li>{reaction} <img src="{profs[favedEvent.pubkey].picture || '/default.png'}"
+						alt="avatar of {nip19.npubEncode(favedEvent.pubkey)}" width="16" height="16" /> {profs[favedEvent.pubkey].display_name} @{profs[favedEvent.pubkey].name} reacted</li>
 				{/if}
 			{/each}
 			</ul>
 			<div class="action-bar">
-				{#if !favList.includes(note.id)}
-					<button on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey)} disabled={!loginPubkey}>☆fav</button>
-				{:else}
-					<button disabled>★</button>
-				{/if}
+				<button on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey)}
+					disabled={!loginPubkey || favList.includes(note.id)}>{#if favList.includes(note.id)}★faved{:else}☆fav{/if}</button>
 				<details>
 					<summary>JSON</summary>
 					<div class="json-view">{JSON.stringify(note, undefined, 2)}</div>
