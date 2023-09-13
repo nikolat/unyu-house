@@ -44,7 +44,7 @@ h1 {
 	width: calc(100% - 3em);
 	margin-right: 48px;
 	text-align: center;
-	margin-top: 1em;
+	margin-top: 0.8em;
 }
 #toggle {
 	background-color: transparent;

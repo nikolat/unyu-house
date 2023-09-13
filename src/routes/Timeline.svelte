@@ -195,10 +195,9 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 
 <style>
 dt {
-	border-top: 1px solid #666;
+	border-top: 1px dashed #666;
 }
 dd {
-	border-top: 1px dashed #999;
 	white-space: pre-wrap;
 }
 dd .info-header {

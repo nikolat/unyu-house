@@ -139,7 +139,7 @@ const callbackProfile = (profileReturn: {[key: string]: Profile}) => {
 }
 main {
 	margin-top: 3em;
-	padding-left: 0.5em;
+	padding: 0 5px;
 	width: calc(100vw - (100vw - 100%));
 	height: calc(100% - 3em);
 	overflow-x: hidden;
