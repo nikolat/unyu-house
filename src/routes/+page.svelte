@@ -1,8 +1,8 @@
 <script lang='ts'>
 import { afterUpdate, onDestroy, onMount } from 'svelte';
 import { SimplePool, type Sub, type Event as NostrEvent, type Filter } from 'nostr-tools';
-import { title, defaultRelays, type Channel, type Profile, getEventsPhase1, getMuteList, urlDefaultTheme } from '$lib/util';
-import { storedLoginpubkey, storedMuteList, storedRelaysToUse, storedTheme, storedUseRelaysNIP07 } from '$lib/store';
+import { title, defaultRelays, type Channel, type Profile, getEventsPhase1, urlDefaultTheme, getEventsForLoginPhase1 } from '$lib/util';
+import { storedFavList, storedFavedList, storedLoginpubkey, storedMuteList, storedRelaysToUse, storedTheme, storedUseRelaysNIP07 } from '$lib/store';
 import Page from './Page.svelte';
 
 const currentChannelId = null;
@@ -32,6 +32,16 @@ $: muteList = muteList;
 storedMuteList.subscribe((value) => {
 	muteList = value;
 });
+let favList: string[];
+$: favList = favList;
+storedFavList.subscribe((value) => {
+	favList = value;
+});
+let favedList: NostrEvent[];
+$: favedList = favedList;
+storedFavedList.subscribe((value) => {
+	favedList = value;
+});
 let theme: string;
 $: theme = theme;
 storedTheme.subscribe((value) => {
@@ -50,6 +60,10 @@ $: profs = profs;
 const callbackPhase1 = (channelsNew: Channel[], notesNew: NostrEvent[]) => {
 	channels = channelsNew;
 	notes = notesNew;
+	if (loginPubkey) {
+		const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
+		getEventsForLoginPhase1(pool, relaysToRead, loginPubkey, notes.map(v => v.id), callbackForLoginPhase1, callbackForLoginPhase2);
+	}
 };
 
 const callbackPhase2 = (profsNew: {[key: string]: Profile}, notesQuotedNew: NostrEvent[]) => {
@@ -81,7 +95,24 @@ const callbackPhase3 = (subNotesPhase3: Sub<42>, ev: NostrEvent) => {
 	notes = notes;
 };
 
-const callbackMuteList = (muteListReturn: string[]) => {muteList = muteListReturn;};
+const callbackForLoginPhase1 = (muteListNew: string[], favListNew: string[], favedListNew: NostrEvent[]) => {
+	muteList = muteListNew;
+	favList = favListNew;
+	favedList = favedListNew;
+};
+
+const callbackForLoginPhase2 = (profsNew: {[key: string]: Profile}) => {
+	let profAdded = false;
+	for (const k of Object.keys(profsNew)) {
+		if (!(k in profs)) {
+			profs[k] = profsNew[k];
+			profAdded = true;
+		}
+	}
+	if (profAdded) {
+		profs = profs;
+	}
+};
 
 const importRelays = async() => {
 	useRelaysNIP07 = (<HTMLInputElement>document.getElementById('use-relay-nip07')).checked;
@@ -94,18 +125,16 @@ const importRelays = async() => {
 		relaysToUse = defaultRelays;
 		storedRelaysToUse.set(relaysToUse);
 	}
-	applyRelays(Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]));
+	applyRelays();
 };
-const applyRelays = async(relaysToRead: string[]) => {
+const applyRelays = () => {
 	channels = [];
 	notes = [];
 	notesQuoted = [];
 	profs = {};
+	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
 	const filter: Filter<42> = {kinds: [42], limit: 100};
 	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3).catch((e) => console.error(e));
-	if (loginPubkey) {
-		getMuteList(pool, relaysToRead, loginPubkey, callbackMuteList);
-	}
 }
 
 onDestroy(() => {
@@ -117,7 +146,7 @@ onMount(async () => {
 		relaysToUse = defaultRelays;
 		storedRelaysToUse.set(relaysToUse);
 	}
-	applyRelays(Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]));
+	applyRelays();
 });
 afterUpdate(() => {
 	const main = document.getElementsByTagName('main')[0];
@@ -130,5 +159,5 @@ afterUpdate(() => {
 	<link rel="stylesheet" href="{theme || urlDefaultTheme}">
 </svelte:head>
 <Page {title} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {channels} {notes} {notesQuoted} {profs} {pool} {loginPubkey}
-	{importRelays} {muteList} {callbackMuteList} {useRelaysNIP07} {relaysToUse} {theme}
-	{currentChannelId} {sendMessage} {currentPubkey} />
+	{importRelays} {muteList} {useRelaysNIP07} {relaysToUse} {theme}
+	{currentChannelId} {sendMessage} {currentPubkey} {applyRelays} {favList} {favedList} />

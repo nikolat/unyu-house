@@ -4,11 +4,10 @@ import {
 	SimplePool,
 	type Event as NostrEvent,
 } from 'nostr-tools';
-import { storedFavList, storedFavedList } from '$lib/store';
 import Sidebar from './Sidebar.svelte';
 import Timeline from './Timeline.svelte';
 import Header from './Header.svelte';
-import { getMuteList, getFavList, getFavedList, sendFav, type Channel, type Profile } from '$lib/util';
+import { sendFav, type Channel, type Profile } from '$lib/util';
 
 export let title: string;
 export let pool: SimplePool;
@@ -20,50 +19,23 @@ export let profs: {[key: string]: Profile};
 export let loginPubkey: string;
 export let importRelays: Function;
 export let muteList: string[];
-export let callbackMuteList: Function;
 export let useRelaysNIP07: boolean;
 export let relaysToUse: object;
 export let theme: string;
 export let currentChannelId: string | null
 export let sendMessage: () => Promise<void>
 export let currentPubkey: string | null
-
-let favList: string[];
-$: favList = favList;
-storedFavList.subscribe((value) => {
-	favList = value;
-});
-let favedList: NostrEvent[] = [];
-$: favedList = favedList;
-storedFavedList.subscribe((value) => {
-	favedList = value;
-})
+export let applyRelays: Function
+export let favList: string[];
+export let favedList: NostrEvent[];
 
 let inputText: string;
 
-const callbackFavList = (favListReturn: string[]) => {
-	if (JSON.stringify(favList.toSorted()) !== JSON.stringify(favListReturn.toSorted())) {
-		favList = favListReturn;
-	}
-};
-const callbackFavedList = (favedListReturn: NostrEvent[]) => {
-	favedList = favedListReturn;
-};
-const callbackProfile = (profileReturn: {[key: string]: Profile}) => {
-	if (JSON.stringify(Object.keys(profs).toSorted()) !== JSON.stringify(Object.keys(profileReturn).toSorted())) {
-		for (const k of Object.keys(profileReturn)) {
-			if (!(k in profs)) {
-				profs[k] = profileReturn[k];
-			}
-		}
-		profs = profs;
-	}
-};
 </script>
 
 <div id="container">
 	<Header {title} />
-	<Sidebar {theme} {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {callbackFavList} {callbackFavedList} {callbackProfile} {useRelaysNIP07} {channels} {getMuteList} {getFavList} {getFavedList} ids={notes.map(v => v.id)} {profs} {importRelays} />
+	<Sidebar {theme} {relaysToUse} {loginPubkey} {useRelaysNIP07} {channels} {profs} {importRelays} {applyRelays} />
 	<main>
 	{#if currentChannelId}
 		{@const channel = channels.filter(v => v.id === currentChannelId)[0]}
