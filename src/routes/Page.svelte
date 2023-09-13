@@ -13,15 +13,13 @@ import { getMuteList, getFavList, getFavedList, sendFav, type Channel, type Prof
 
 export let title: string;
 export let pool: SimplePool;
-export let subNotes: Sub<42>;
-export let relaysToRead: string[];
 export let relaysToWrite: string[];
 export let channels: Channel[];
 export let notes: NostrEvent[];
 export let notesQuoted: NostrEvent[];
 export let profs: {[key: string]: Profile};
 export let loginPubkey: string;
-export let applyRelays: Function;
+export let importRelays: Function;
 export let muteList: string[];
 export let callbackMuteList: Function;
 export let useRelaysNIP07: boolean;
@@ -42,20 +40,6 @@ $: favedList = favedList;
 storedFavedList.subscribe((value) => {
 	favedList = value;
 })
-
-const importRelays = async() => {
-	storedUseRelaysNIP07.set((<HTMLInputElement>document.getElementById('use-relay-nip07')).checked);
-	if (useRelaysNIP07) {
-		storedRelaysToUse.set(await (window as any).nostr.getRelays());
-	}
-	else {
-		storedRelaysToUse.set(defaultRelays);
-	}
-	subNotes?.unsub();
-	pool.close(relaysToRead);
-	pool = new SimplePool();
-	applyRelays();
-};
 
 const callbackFavList = (favListReturn: string[]) => {
 	if (JSON.stringify(favList.toSorted()) !== JSON.stringify(favListReturn.toSorted())) {
@@ -79,7 +63,7 @@ const callbackProfile = (profileReturn: {[key: string]: Profile}) => {
 
 <div id="container">
 	<Header {title} />
-	<Sidebar {theme} {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {callbackFavList} {callbackFavedList} {callbackProfile} {importRelays} {useRelaysNIP07} {channels} {getMuteList} {getFavList} {getFavedList} ids={notes.map(v => v.id)} {profs} />
+	<Sidebar {theme} {pool} {relaysToUse} {loginPubkey} {callbackMuteList} {callbackFavList} {callbackFavedList} {callbackProfile} {useRelaysNIP07} {channels} {getMuteList} {getFavList} {getFavedList} ids={notes.map(v => v.id)} {profs} {importRelays} />
 	<main>
 	{#if currentChannelId}
 		{@const channel = channels.filter(v => v.id === currentChannelId)[0]}

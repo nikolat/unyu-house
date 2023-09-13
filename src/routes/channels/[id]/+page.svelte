@@ -3,8 +3,8 @@ import { afterUpdate, onMount } from 'svelte';
 import { SimplePool, nip19, type Sub, type Event as NostrEvent, type Filter, type UnsignedEvent } from 'nostr-tools';
 import { title, defaultRelays, type Channel, type Profile, getEventsPhase1, getMuteList, urlDefaultTheme } from '$lib/util';
 import { storedLoginpubkey, storedMuteList, storedRelaysToUse, storedTheme, storedUseRelaysNIP07 } from '$lib/store';
-import Page from '../../Page.svelte';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
+import Page from '../../Page.svelte';
 
 const currentPubkey = null;
 
@@ -19,9 +19,6 @@ if (/^nevent/.test(urlId)) {
 		currentChannelOwner = d.data.author;
 	}
 }
-
-let relaysToRead: string[] = [];
-let relaysToWrite: string[] = [];
 
 let pool = new SimplePool();
 let subNotes: Sub<42>;
@@ -97,23 +94,24 @@ const callbackPhase3 = (subNotesPhase3: Sub<42>, ev: NostrEvent) => {
 
 const callbackMuteList = (muteListReturn: string[]) => {muteList = muteListReturn;};
 
-const applyRelays = async() => {
+const importRelays = async() => {
+	useRelaysNIP07 = (<HTMLInputElement>document.getElementById('use-relay-nip07')).checked;
+	storedUseRelaysNIP07.set(useRelaysNIP07);
+	if (useRelaysNIP07) {
+		relaysToUse = await (window as any).nostr.getRelays();
+		storedRelaysToUse.set(relaysToUse);
+	}
+	else {
+		relaysToUse = defaultRelays;
+		storedRelaysToUse.set(relaysToUse);
+	}
+	applyRelays(Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]));
+};
+const applyRelays = async(relaysToRead: string[]) => {
 	channels = [];
 	notes = [];
 	notesQuoted = [];
 	profs = {};
-	const relaysToReadSet = new Set<string>();
-	const relaysToWriteSet = new Set<string>();
-	for (const relay of Object.entries(relaysToUse)) {
-		if (relay[1].read) {
-			relaysToReadSet.add(relay[0]);
-		}
-		if (relay[1].write) {
-			relaysToWriteSet.add(relay[0]);
-		}
-	}
-	relaysToRead = Array.from(relaysToReadSet);
-	relaysToWrite = Array.from(relaysToWriteSet);
 	const filter: Filter<42> = {kinds: [42], limit: 100, '#e': [currentChannelId]};
 	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3).catch((e) => console.error(e));
 	if (loginPubkey) {
@@ -163,7 +161,7 @@ const sendMessage = async() => {
 		content: content
 	};
 	const newEvent: NostrEvent = await (window as any).nostr.signEvent(baseEvent);
-	const pubs = pool.publish(relaysToWrite, newEvent);
+	const pubs = pool.publish(Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]), newEvent);
 	await Promise.all(pubs);
 	storedLoginpubkey.set(savedloginPubkey);
 }
@@ -200,9 +198,11 @@ afterNavigate(() => {
 	channels = [];
 	notes = [];
 	profs = {};
-	if (!useRelaysNIP07)
-		storedRelaysToUse.set(defaultRelays);
-	applyRelays();
+	if (!useRelaysNIP07) {
+		relaysToUse = defaultRelays;
+		storedRelaysToUse.set(relaysToUse);
+	}
+	applyRelays(Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]));
 	const sidebar = document.getElementById('sidebar');
 	const main = document.querySelector('main');
 	const input = document.getElementById('input');
@@ -224,6 +224,6 @@ afterUpdate(() => {
 	<title>{channels.filter(v => v.id === currentChannelId)[0]?.name ?? '(unknown channel)'} | {title}</title>
 	<link rel="stylesheet" href="{theme || urlDefaultTheme}">
 </svelte:head>
-<Page {title} {relaysToRead} {relaysToWrite} {channels} {notes} {notesQuoted} {profs} {pool} {subNotes} {loginPubkey}
-	{applyRelays} {muteList} {callbackMuteList} {useRelaysNIP07} {relaysToUse} {theme}
+<Page {title} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {channels} {notes} {notesQuoted} {profs} {pool} {loginPubkey}
+	{importRelays} {muteList} {callbackMuteList} {useRelaysNIP07} {relaysToUse} {theme}
 	{currentChannelId} {inputText} {sendMessage} {currentPubkey} />

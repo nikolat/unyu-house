@@ -32,7 +32,6 @@ export let callbackMuteList: Function;
 export let callbackFavList: Function;
 export let callbackFavedList: Function;
 export let callbackProfile: Function;
-export let importRelays: () => Promise<void>;
 export let useRelaysNIP07: boolean;
 export let channels: Channel[];
 export let ids: string[];
@@ -40,6 +39,7 @@ export let getMuteList: (pool: SimplePool, relays: string[], pubkey: string, cal
 export let getFavList: (pool: SimplePool, relays: string[], pubkey: string, ids: string[], callbackFavList: Function) => Promise<void>;
 export let getFavedList: (pool: SimplePool, relays: string[], pubkey: string, ids: string[], callbackFavedList: Function, callbackProfile: Function) => Promise<void>;
 export let profs: {[key: string]: Profile};
+export let importRelays: Function;
 
 const login = async() => {
 	if (browser && (window as any).nostr?.getPublicKey) {
@@ -75,6 +75,7 @@ export let theme: string;
 storedTheme.subscribe((value) => {
 	theme = value;
 });
+
 onMount(() => {
 	if (!theme) {
 		theme = urlDefaultTheme;
@@ -113,7 +114,7 @@ onMount(() => {
 		<button on:click={logout}>logout</button>
 		<dl>
 			<dt><label for="useRelaysInNIP07">Use relays in NIP-07</label></dt>
-			<dd><input id="use-relay-nip07" name="useRelaysInNIP07" type="checkbox" on:change={importRelays} bind:checked={useRelaysNIP07} /></dd>
+			<dd><input id="use-relay-nip07" name="useRelaysInNIP07" type="checkbox" on:change={() => importRelays()} bind:checked={useRelaysNIP07} /></dd>
 		</dl>
 		{:else}
 		<button on:click={login}>login with NIP-07</button>

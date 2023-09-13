@@ -66,7 +66,7 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 <p>Total: {notes.length} posts</p>
 <dl>
 {#each notes as note}
-	{#if !muteList.includes(note.pubkey)}
+	{#if !muteList?.includes(note.pubkey)}
 		<dt id="{note.id}">
 		{#if profs[note.pubkey]}
 			<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>
