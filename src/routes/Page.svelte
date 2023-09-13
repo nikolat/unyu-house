@@ -8,6 +8,7 @@ import Sidebar from './Sidebar.svelte';
 import Timeline from './Timeline.svelte';
 import Header from './Header.svelte';
 import { sendFav, type Channel, type Profile } from '$lib/util';
+import { storedLoginpubkey } from '$lib/store';
 
 export let title: string;
 export let pool: SimplePool;
@@ -36,7 +37,11 @@ const callSendMessage = () => {
 	const savedPubkey = loginPubkey;
 	inputText = '';
 	loginPubkey = '';
-	sendMessage(content).then(() => {loginPubkey = savedPubkey;});
+	storedLoginpubkey.set('');
+	sendMessage(content).then(() => {
+		loginPubkey = savedPubkey;
+		storedLoginpubkey.set(savedPubkey);
+	});
 }
 </script>
 
