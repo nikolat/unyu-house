@@ -119,11 +119,10 @@ const applyRelays = async(relaysToRead: string[]) => {
 	}
 }
 
-let inputText = '';
-$: inputText = inputText;
 const sendMessage = async() => {
-	const content = inputText;
-	inputText = '';
+	const input = (<HTMLTextAreaElement>document.getElementById('input-text'));
+	const content = input.value;
+	input.value = '';
 	const savedloginPubkey = loginPubkey;
 	storedLoginpubkey.set('');
 	const recommendedRelay: string = channels.filter(v => v.id === currentChannelId)[0].recommendedRelay;
@@ -226,4 +225,4 @@ afterUpdate(() => {
 </svelte:head>
 <Page {title} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {channels} {notes} {notesQuoted} {profs} {pool} {loginPubkey}
 	{importRelays} {muteList} {callbackMuteList} {useRelaysNIP07} {relaysToUse} {theme}
-	{currentChannelId} {inputText} {sendMessage} {currentPubkey} />
+	{currentChannelId} {sendMessage} {currentPubkey} />

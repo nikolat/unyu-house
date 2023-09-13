@@ -25,7 +25,6 @@ export let useRelaysNIP07: boolean;
 export let relaysToUse: object;
 export let theme: string;
 export let currentChannelId: string | null
-export let inputText: string | null
 export let sendMessage: () => Promise<void>
 export let currentPubkey: string | null
 
@@ -39,6 +38,8 @@ $: favedList = favedList;
 storedFavedList.subscribe((value) => {
 	favedList = value;
 })
+
+let inputText: string;
 
 const callbackFavList = (favListReturn: string[]) => {
 	if (JSON.stringify(favList.toSorted()) !== JSON.stringify(favListReturn.toSorted())) {

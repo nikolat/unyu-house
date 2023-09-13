@@ -7,7 +7,6 @@ import { afterNavigate, beforeNavigate } from '$app/navigation';
 import Page from '../Page.svelte';
 
 const currentChannelId = null;
-const inputText = null
 const sendMessage = async() => {};
 
 export let data: any;
@@ -151,4 +150,4 @@ afterUpdate(() => {
 </svelte:head>
 <Page {title} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {channels} {notes} {notesQuoted} {profs} {pool} {loginPubkey}
 	{importRelays} {muteList} {callbackMuteList} {useRelaysNIP07} {relaysToUse} {theme}
-	{currentChannelId} {inputText} {sendMessage} {currentPubkey} />
+	{currentChannelId} {sendMessage} {currentPubkey} />
