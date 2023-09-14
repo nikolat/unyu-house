@@ -234,6 +234,9 @@ dd details {
 	display: inline-block;
 	margin: 0;
 }
+dd details[open] {
+	max-width: 100%;
+}
 dd .json-view {
 	font-size: x-small;
 }
