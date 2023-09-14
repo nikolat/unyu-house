@@ -34,8 +34,8 @@ export let loginPubkey: string;
 export let muteList: string[];
 export let favList: NostrEvent[];
 
-const getImagesUrls = (content: string) => {
-	const matchesIterator = content.matchAll(/https?:\/\/.+\.(jpe?g|png|gif)/g);
+const getImageUrls = (content: string) => {
+	const matchesIterator = content.matchAll(/https?:\/\/\S+\.(jpe?g|png|gif|webp)/g);
 	const urls = [];
 	for (const match of matchesIterator) {
 		urls.push(match[0]);
@@ -44,7 +44,7 @@ const getImagesUrls = (content: string) => {
 };
 
 const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator<RegExpMatchArray>, string[], {[key: string]: string}] => {
-	const regMatchArray = ['https?://\\S+', 'nostr:(npub\\w{59})', 'nostr:(note\\w{59})', 'nostr:(nevent\\w+)'];
+	const regMatchArray = ['https?://[\\w!?/=+\\-_~;.,*&@#$%()[\\]]+', 'nostr:(npub\\w{59})', 'nostr:(note\\w{59})', 'nostr:(nevent\\w+)'];
 	const emojiUrls: {[key: string]: string} = {};
 	const emojiRegs = [];
 	for (const tag of tags) {
@@ -171,11 +171,11 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 				{plainTexts.shift()}
 			{/each}
 			</div>
-			{@const imageUrls = getImagesUrls(note.content)}
+			{@const imageUrls = getImageUrls(note.content)}
 			{#if imageUrls.length > 0}
 				<div class="image-holder">
 				{#each imageUrls as imageUrl}
-					<figure><a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a></figure>
+					<figure><a href="{imageUrl}"><img src="{imageUrl}" alt="auto load" /></a></figure>
 				{/each}
 				</div>
 			{/if}
