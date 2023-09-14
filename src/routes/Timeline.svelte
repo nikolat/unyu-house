@@ -183,7 +183,7 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 			{#if imageUrls.length > 0}
 				<div class="image-holder">
 				{#each imageUrls as imageUrl}
-					<figure><a href="{imageUrl}"><img src="{imageUrl}" alt="auto load" /></a></figure>
+					<figure><a href="{imageUrl}" target="_blank" rel="noopener noreferrer"><img src="{imageUrl}" alt="auto load" /></a></figure>
 				{/each}
 				</div>
 			{/if}
