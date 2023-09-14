@@ -4,7 +4,7 @@ import {
 	nip19,
 } from 'nostr-tools';
 import { browser } from '$app/environment';
-import { storedLoginpubkey, storedMuteList, storedFavList, storedFavedList, storedTheme } from '$lib/store';
+import { storedLoginpubkey, storedMuteList, storedFavList, storedTheme } from '$lib/store';
 import { urlDarkTheme, urlLightTheme, urlDefaultTheme } from '$lib/util';
 import { onMount } from 'svelte';
 
@@ -44,7 +44,6 @@ const logout = () => {
 	storedLoginpubkey.set('');
 	storedMuteList.set([]);
 	storedFavList.set([]);
-	storedFavedList.set([]);
 	applyRelays();
 };
 

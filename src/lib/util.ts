@@ -36,26 +36,44 @@ export const defaultRelays = {
 
 export const getEventsPhase1 = async(pool: SimplePool, relays: string[], filterKind42: Filter<42>, callbackPhase1: Function, callbackPhase2: Function, callbackPhase3: Function, loginPubkey: string) => {
 	const limit = 500;
-	const sub: Sub<40|41|42> = pool.sub(relays, [{kinds: [40, 41], limit: limit}, filterKind42]);
-	const events: NostrEvent<40|41|42>[] = [];
-	sub.on('event', (ev: NostrEvent<40|41|42>) => {
-		events.push(ev);
+	const filterPhase1: Filter<40|41|42|10000>[] = [{kinds: [40, 41], limit: limit}, filterKind42];
+	if (loginPubkey) {
+		filterPhase1.push({kinds: [10000], authors: [loginPubkey]});
+	}
+	const sub: Sub<40|41|42|10000> = pool.sub(relays, filterPhase1);
+	const events: {[key: number]: NostrEvent<40|41|42|10000>[]} = {40: [], 41: [], 42: [], 10000: []};
+	sub.on('event', (ev: NostrEvent<40|41|42|10000>) => {
+		events[ev.kind].push(ev);
 	});
 	sub.on('eose', () => {
 		console.log('getEventsPhase1 * EOSE *');
 		sub.unsub();
-		const [channels, notes] = getChannelsAndNotes(pool, events);
-		callbackPhase1(channels, notes);
-		const filterPhase2: Filter[] = [{kinds: [0], authors: getPubkeysForFilter(events)}, {ids: getIdsForFilter(events)}];
-		const filterPhase3_1: Filter<42> = filterKind42;
-		filterPhase3_1.since = events.filter(ev => ev.kind === 42).map(ev => ev.created_at).reduce((a, b) => Math.max(a, b), 0) + 1;
-		filterPhase3_1.limit = 1;
-		const filterPhase3: Filter<7|42>[] = [filterPhase3_1];
+		const channels = getChannels(pool, events[40], events[41]);
+		const notes = getNotes(events[42]);
+		const muteList = getMuteList(events[10000]);
+		callbackPhase1(channels, notes, muteList);
+		const pubkeysToGet: string[] = getPubkeysForFilter(Object.values(events).reduce((a, b) => a.concat(b), []));
+		const idsToGet: string[] = getIdsForFilter(events[42]);
+		const filterPhase2: Filter[] = [];
+		if (pubkeysToGet.length > 0) {
+			filterPhase2.push({kinds: [0], authors: pubkeysToGet});
+		}
+		if (idsToGet.length > 0) {
+			filterPhase2.push({ids: idsToGet});
+		}
+		const filterPhase3Base: Filter<42> = filterKind42;
+		filterPhase3Base.since = events[42].map(ev => ev.created_at).reduce((a, b) => Math.max(a, b), 0) + 1;
+		filterPhase3Base.limit = 1;
+		const filterPhase3: Filter<7|42>[] = [filterPhase3Base];
 		if (loginPubkey) {
-			const filterPhase3_2: Filter<7> = {kinds: [7], '#p': [loginPubkey], limit: 1};
-			const filterPhase3_3: Filter<7> = {kinds: [7], authors: [loginPubkey], limit: 1};
-			filterPhase3.push(filterPhase3_2);
-			filterPhase3.push(filterPhase3_3);
+			filterPhase2.push(
+				{kinds: [7], authors: [loginPubkey], '#e': notes.map(v => v.id)},
+				{kinds: [7], '#p': [loginPubkey], '#e': notes.map(v => v.id)}
+			);
+			filterPhase3.push(
+				{kinds: [7], authors: [loginPubkey], limit: 1},
+				{kinds: [7], '#p': [loginPubkey], limit: 1}
+			);
 		}
 		getEventsPhase2(pool, relays, filterPhase2, filterPhase3, callbackPhase2, callbackPhase3, true);
 	});
@@ -63,33 +81,45 @@ export const getEventsPhase1 = async(pool: SimplePool, relays: string[], filterK
 
 export const getEventsPhase2 = async(pool: SimplePool, relays: string[], filterPhase2: Filter[], filterPhase3: Filter<7|42>[], callbackPhase2: Function, callbackPhase3: Function, goPhase3: Boolean) => {
 	const sub: Sub = pool.sub(relays, filterPhase2);
-	const events: NostrEvent[] = [];
+	const events: {[key: number]: NostrEvent[]} = {0: [], 7: []};
+	const eventsQuoted: NostrEvent[] = [];
 	sub.on('event', (ev: NostrEvent) => {
-		events.push(ev);
+		if ([0, 7].includes(ev.kind)) {
+			events[ev.kind].push(ev);
+		}
+		else {
+			eventsQuoted.push(ev);
+		}
 	});
 	sub.on('eose', () => {
 		console.log('getEventsPhase2 * EOSE *');
 		sub.unsub();
-		const [profs, notesQuoted] = getFrofilesAndNotesQuoted(events);
-		callbackPhase2(profs, notesQuoted);
-		if (notesQuoted.length > 0) {
-			const filterPhase2: Filter[] = [{kinds: [0], authors: getPubkeysForFilter(notesQuoted)}];
+		const profs = getFrofiles(events[0]);
+		callbackPhase2(profs, events[7], eventsQuoted);
+		if (eventsQuoted.length > 0) {
+			const filterPhase2: Filter<0>[] = [{kinds: [0], authors: getPubkeysForFilter(eventsQuoted)}];
 			getEventsPhase2(pool, relays, filterPhase2, [], callbackPhase2, ()=>{}, false);
 		}
 		if (goPhase3) {
-			getEventsPhase3(pool, relays, filterPhase3, profs, notesQuoted, callbackPhase2, callbackPhase3);
+			getEventsPhase3(pool, relays, filterPhase3, profs, eventsQuoted, callbackPhase2, callbackPhase3);
 		}
 	});
 };
 
-export const getEventsPhase3 = async(pool: SimplePool, relays: string[], filterPhase3: Filter<7|42>[], profs: {[key: string]: Profile}, notesQuoted: NostrEvent[], callbackPhase2:Function, callbackPhase3: Function) => {
+export const getEventsPhase3 = async(pool: SimplePool, relays: string[], filterPhase3: Filter<7|42>[], profs: {[key: string]: Profile}, eventsQuoted: NostrEvent[], callbackPhase2:Function, callbackPhase3: Function) => {
 	const sub: Sub<7|42> = pool.sub(relays, filterPhase3);
 	sub.on('event', (ev: NostrEvent<7|42>) => {
 		callbackPhase3(sub, ev);
 		const pubkeysToGet: string[] = getPubkeysForFilter([ev]).filter(v => !(v in profs));
-		const idsToGet: string[] = getIdsForFilter([ev]).filter(v => !(v in notesQuoted.map(v => v.id)));
+		const idsToGet: string[] = getIdsForFilter([ev]).filter(v => !(v in eventsQuoted.map(v => v.id)));
 		if (pubkeysToGet.length > 0 || idsToGet.length > 0) {
-			const filterPhase2: Filter[] = [{kinds: [0], authors: pubkeysToGet}, {ids: idsToGet}];
+			const filterPhase2: Filter[] = [];
+			if (pubkeysToGet.length > 0) {
+				filterPhase2.push({kinds: [0], authors: pubkeysToGet});
+			}
+			if (idsToGet.length > 0) {
+				filterPhase2.push({ids: idsToGet});
+			}
 			getEventsPhase2(pool, relays, filterPhase2, filterPhase3, callbackPhase2, callbackPhase3, false);
 		}
 	});
@@ -101,39 +131,29 @@ export const getEventsPhase3 = async(pool: SimplePool, relays: string[], filterP
 
 const getPubkeysForFilter = (events: NostrEvent[]): string[] => {
 	const pubkeys: Set<string> = new Set();
-	for (const ev of events) {
-		switch (ev.kind) {
-			case 40:
-				pubkeys.add(ev.pubkey);
-				break;
-			case 41:
-				//40さえあればいい
-				break;
-			case 1:
-			case 42:
-				pubkeys.add(ev.pubkey);
-				//pタグ送信先
-				for (const pubkey of ev.tags.filter(v => v[0] === 'p').map(v => v[1])) {
-					pubkeys.add(pubkey);
-				}
-				//npubでの言及
-				const matchesIteratorNpub = ev.content.matchAll(/nostr:(npub\w{59})/g);
-				for (const match of matchesIteratorNpub) {
-					const d = nip19.decode(match[1]);
-					if (d.type === 'npub')
-						pubkeys.add(d.data);
-				}
-				break;
-			default:
-				break;
+	for(const ev of events.filter(v => [0, 40].concat(v.kind))) {
+		pubkeys.add(ev.pubkey);
+	}
+	for(const ev of events.filter(v => [1, 42].concat(v.kind))) {
+		pubkeys.add(ev.pubkey);
+		//pタグ送信先
+		for (const pubkey of ev.tags.filter(v => v[0] === 'p').map(v => v[1])) {
+			pubkeys.add(pubkey);
+		}
+		//npubでの言及
+		const matchesIteratorNpub = ev.content.matchAll(/nostr:(npub\w{59})/g);
+		for (const match of matchesIteratorNpub) {
+			const d = nip19.decode(match[1]);
+			if (d.type === 'npub')
+				pubkeys.add(d.data);
 		}
 	}
 	return Array.from(pubkeys);
 };
 
-const getIdsForFilter = (events: NostrEvent<7|40|41|42>[]): string[] => {
+const getIdsForFilter = (events: NostrEvent[]): string[] => {
 	const ids: Set<string> = new Set();
-	for (const ev of events.filter(ev => ev.kind === 42)) {
+	for (const ev of events) {
 		const matchesIterator = ev.content.matchAll(/nostr:(note\w{59}|nevent\w+)/g);
 		for (const match of matchesIterator) {
 			const d = nip19.decode(match[1]);
@@ -146,7 +166,68 @@ const getIdsForFilter = (events: NostrEvent<7|40|41|42>[]): string[] => {
 	return Array.from(ids);
 };
 
-const getChannelsAndNotes = (pool: SimplePool, events: NostrEvent<40|41|42>[]): [Channel[], NostrEvent[]] => {
+const getChannels = (pool: SimplePool, events40: NostrEvent[], events41: NostrEvent[]): Channel[] => {
+	const channelObjects: {[key: string]: Channel} = {};
+	for (const ev of events40) {
+		try {
+			channelObjects[ev.id] = JSON.parse(ev.content);
+		} catch (error) {
+			console.log(error);
+			continue;
+		}
+		channelObjects[ev.id].updated_at = ev.created_at;
+		channelObjects[ev.id].id = ev.id;
+		channelObjects[ev.id].pubkey = ev.pubkey;
+		channelObjects[ev.id].recommendedRelay = pool.seenOn(ev.id)[0];
+	}
+	for (const ev of events41) {
+		for (const tag of ev.tags) {
+			const id = tag[1];
+			if (tag[0] === 'e' && id in channelObjects && ev.pubkey === channelObjects[id].pubkey && channelObjects[id].updated_at < ev.created_at) {
+				const savedRecommendedRelay = channelObjects[id].recommendedRelay;
+				try {
+					channelObjects[id] = JSON.parse(ev.content);
+				} catch (error) {
+					console.log(error);
+					continue;
+				}
+				channelObjects[id].updated_at = ev.created_at;
+				channelObjects[id].id = id;
+				channelObjects[id].pubkey = ev.pubkey;
+				channelObjects[id].recommendedRelay = savedRecommendedRelay;
+			}
+		}
+	}
+	const channels: Channel[] = getSortedChannels(channelObjects);
+	return channels;
+};
+
+const getNotes = (events42: NostrEvent[]): NostrEvent[] => {
+	events42.sort((a, b) => {
+		if (a.created_at < b.created_at) {
+			return -1;
+		}
+		if (a.created_at > b.created_at) {
+			return 1;
+		}
+		return 0;
+	});
+	return events42;
+};
+
+const getMuteList = (events10000: NostrEvent[]): string[] => {
+	let muteList: string[] = [];
+	let muteList_created_at = 0;
+	for (const ev of events10000) {
+		if (muteList_created_at < ev.created_at) {
+			muteList = ev.tags.filter(v => v[0] === 'p').map(v => v[1]);
+			muteList_created_at = ev.created_at;
+		}
+	}
+	return muteList;
+}
+
+const getChannelsNotesAndMuteList = (pool: SimplePool, events: NostrEvent<40|41|42|10000>[]): [Channel[], NostrEvent[], string[]] => {
 	const channelObjects: {[key: string]: Channel} = {};
 	for (const ev of events.filter(ev => ev.kind === 40)) {
 		try {
@@ -189,8 +270,32 @@ const getChannelsAndNotes = (pool: SimplePool, events: NostrEvent<40|41|42>[]): 
 		}
 		return 0;
 	});
-	return [channels, notes];
+	let muteList: string[] = [];
+	let muteList_created_at = 0;
+	for (const ev of events.filter(ev => ev.kind === 10000)) {
+		if (muteList_created_at < ev.created_at) {
+			muteList = ev.tags.filter(v => v[0] === 'p').map(v => v[1]);
+			muteList_created_at = ev.created_at;
+		}
+	}
+	return [channels, notes, muteList];
 };
+
+const getFrofiles = (events: NostrEvent[]): {[key: string]: Profile} => {
+	const profs: {[key: string]: Profile} = {};
+	for (const ev of events.filter(ev => ev.kind === 0)) {
+		if ((profs[ev.pubkey] && profs[ev.pubkey].created_at < ev.created_at) || !profs[ev.pubkey]) {
+			try {
+				profs[ev.pubkey] = JSON.parse(ev.content);
+			} catch (error) {
+				console.log(error);
+				continue;
+			}
+			profs[ev.pubkey].created_at = ev.created_at;
+		}
+	}
+	return profs;
+}
 
 const getFrofilesAndNotesQuoted = (events: NostrEvent[]): [{[key: string]: Profile}, NostrEvent[]] => {
 	const profs: {[key: string]: Profile} = {};

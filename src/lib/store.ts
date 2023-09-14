@@ -6,5 +6,4 @@ export const storedUseRelaysNIP07 = writable(false);
 export const storedRelaysToUse = writable({});
 export const storedTheme = writable('');
 export const storedMuteList = writable<string[]>([]);
-export const storedFavList = writable<string[]>([]);
-export const storedFavedList = writable<NostrEvent[]>([]);
+export const storedFavList = writable<NostrEvent[]>([]);

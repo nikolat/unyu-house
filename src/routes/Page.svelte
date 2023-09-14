@@ -25,8 +25,7 @@ export let theme: string;
 export let currentChannelId: string | null
 export let currentPubkey: string | null
 export let applyRelays: Function
-export let favList: string[];
-export let favedList: NostrEvent[];
+export let favList: NostrEvent[];
 
 let inputText: string;
 
@@ -63,7 +62,7 @@ const callSendMessage = () => {
 	{:else}
 		<h2>Global timeline</h2>
 	{/if}
-		<Timeline {pool} {relaysToWrite} {notes} {notesQuoted} {profs} {channels} {loginPubkey} {muteList} {favList} {favedList} />
+		<Timeline {pool} {relaysToWrite} {notes} {notesQuoted} {profs} {channels} {loginPubkey} {muteList} {favList} />
 	{#if currentChannelId}
 		<div id="input" class="show">
 			{#if loginPubkey}

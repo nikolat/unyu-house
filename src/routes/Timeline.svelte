@@ -32,8 +32,7 @@ export let profs: {[key: string]: Profile};
 export let channels: Channel[];
 export let loginPubkey: string;
 export let muteList: string[];
-export let favList: string[];
-export let favedList: NostrEvent[];
+export let favList: NostrEvent[];
 
 const getImagesUrls = (content: string) => {
 	const matchesIterator = content.matchAll(/https?:\/\/.+\.(jpe?g|png|gif)/g);
@@ -171,7 +170,7 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 			<div class="image-holder"><a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a></div>
 		{/each}
 			<ul class="fav-holder">
-			{#each favedList as favedEvent}
+			{#each favList as favedEvent}
 				{#if favedEvent.tags.filter(v => v[0] === 'e' && v[1] === note.id).length > 0 && profs[favedEvent.pubkey]}
 					{@const reaction = favedEvent.content.replace(/^\+$/, '❤')}
 					<li>{reaction} <img src="{profs[favedEvent.pubkey].picture || '/default.png'}"
@@ -181,7 +180,7 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 			</ul>
 			<div class="action-bar">
 				<button on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey)}
-					disabled={!loginPubkey || favList.includes(note.id)}>{#if favList.includes(note.id)}★faved{:else}☆fav{/if}</button>
+					disabled={!loginPubkey}>☆fav</button>
 				<details>
 					<summary>JSON</summary>
 					<div class="json-view">{JSON.stringify(note, undefined, 2)}</div>
