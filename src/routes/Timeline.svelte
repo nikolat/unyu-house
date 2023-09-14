@@ -83,19 +83,24 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 		{/if}
 		</dt>
 		<dd>
-			<div class="info-header">
-			{#if note.tags.filter(v => v[0] === 'e' && v[3] === 'reply').length > 0}
-				<a href="#{note.tags.filter(v => v[0] === 'e' && v[3] === 'reply')[0][1]}">&gt;&gt;</a>
-			{/if}
-			{#each note.tags.filter(v => v[0] === 'p').map(v => v[1]) as pubkey}
-				&nbsp;@{profs[pubkey]?.name ?? (nip19.npubEncode(pubkey).slice(0, 10) + '...')}
-			{/each}
-			</div>
 		{#if true}
+			{@const replyTags = note.tags.filter(v => v[0] === 'e' && v[3] === 'reply')}
+			{@const replyPubkeys = note.tags.filter(v => v[0] === 'p').map(v => v[1])}
+			{#if replyTags.length > 0 || replyPubkeys.length > 0}
+				<div class="info-header">
+				{#if replyTags.length > 0}
+					<a href="#{replyTags[0][1]}">&gt;&gt;</a>
+				{/if}
+				{#each replyPubkeys as pubkey}
+					&nbsp;@{profs[pubkey]?.name ?? (nip19.npubEncode(pubkey).slice(0, 10) + '...')}
+				{/each}
+				</div>
+			{/if}
 			{@const r = getExpandTagsList(note.content, note.tags.filter(v => v[0] === 'emoji'))}
 			{@const matchesIterator = r[0]}
 			{@const plainTexts = r[1]}
 			{@const emojiUrls = r[2]}
+			<div class="content">
 			{plainTexts.shift()}
 			{#each matchesIterator as match}
 				{#if /https?:\/\/\S+/.test(match[1]) }
@@ -165,25 +170,33 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 				{/if}
 				{plainTexts.shift()}
 			{/each}
+			</div>
+			{@const imageUrls = getImagesUrls(note.content)}
+			{#if imageUrls.length > 0}
+				<div class="image-holder">
+				{#each imageUrls as imageUrl}
+					<figure><a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a></figure>
+				{/each}
+				</div>
+			{/if}
+			{#if favList.some(ev => ev.tags.filter(tag => tag[0] === 'e' && tag[1] === note.id).length > 0 && profs[ev.pubkey])}
+				<ul class="fav-holder" role="list">
+				{#each favList as ev}
+					{#if ev.tags.filter(tag => tag[0] === 'e' && tag[1] === note.id).length > 0 && profs[ev.pubkey]}
+						{@const reaction = ev.content.replace(/^\+$/, '❤')}
+						{@const prof = profs[ev.pubkey]}
+						<li>{reaction} <img src="{prof.picture || '/default.png'}" alt="avatar of {nip19.npubEncode(ev.pubkey)}"
+							width="16" height="16" /> {prof.display_name} @{prof.name} reacted</li>
+					{/if}
+				{/each}
+				</ul>
+			{/if}
 		{/if}
-		{#each getImagesUrls(note.content) as imageUrl}
-			<div class="image-holder"><a href="{imageUrl}"><img src="{imageUrl}" alt="" /></a></div>
-		{/each}
-			<ul class="fav-holder">
-			{#each favList as favedEvent}
-				{#if favedEvent.tags.filter(v => v[0] === 'e' && v[1] === note.id).length > 0 && profs[favedEvent.pubkey]}
-					{@const reaction = favedEvent.content.replace(/^\+$/, '❤')}
-					<li>{reaction} <img src="{profs[favedEvent.pubkey].picture || '/default.png'}"
-						alt="avatar of {nip19.npubEncode(favedEvent.pubkey)}" width="16" height="16" /> {profs[favedEvent.pubkey].display_name} @{profs[favedEvent.pubkey].name} reacted</li>
-				{/if}
-			{/each}
-			</ul>
 			<div class="action-bar">
-				<button on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey)}
-					disabled={!loginPubkey}>☆fav</button>
+				<button on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey)} disabled={!loginPubkey}>☆fav</button>
 				<details>
 					<summary>JSON</summary>
-					<div class="json-view">{JSON.stringify(note, undefined, 2)}</div>
+					<pre class="json-view"><code>{JSON.stringify(note, undefined, 2)}</code></pre>
 				</details>
 			</div>
 		</dd>
@@ -201,24 +214,30 @@ dd {
 dd .info-header {
 	color: #999;
 }
-dd img {
+dd .image-holder {
+	display: flex;
+}
+dd .image-holder img {
 	max-height: 200px;
 	max-width: 100%;
 }
-.emoji {
+dd .emoji {
 	height: 32px;
 }
-.action-bar > * {
+dd ul.fav-holder {
+	list-style: none;
+}
+dd .action-bar > * {
 	vertical-align: top;
 }
-details {
+dd details {
 	display: inline-block;
 	margin: 0;
 }
-.json-view {
+dd .json-view {
 	font-size: x-small;
 }
-time {
+dd time {
 	margin-left: 32px;
 }
 </style>
