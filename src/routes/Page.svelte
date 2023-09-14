@@ -1,8 +1,8 @@
 <script lang='ts'>
 
-import {
+import type {
 	SimplePool,
-	type Event as NostrEvent,
+	Event as NostrEvent
 } from 'nostr-tools';
 import Sidebar from './Sidebar.svelte';
 import Timeline from './Timeline.svelte';

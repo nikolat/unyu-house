@@ -4,6 +4,7 @@ import {
 	type Event as NostrEvent,
 	type UnsignedEvent,
 	type Filter,
+	type Sub,
 } from 'nostr-tools';
 
 export interface Channel {
@@ -35,9 +36,9 @@ export const defaultRelays = {
 
 export const getEventsPhase1 = async(pool: SimplePool, relays: string[], filterKind42: Filter<42>, callbackPhase1: Function, callbackPhase2: Function, callbackPhase3: Function, loginPubkey: string) => {
 	const limit = 500;
-	const sub = pool.sub(relays, [{kinds: [40, 41], limit: limit}, filterKind42]);
-	const events: NostrEvent[] = [];
-	sub.on('event', (ev: NostrEvent) => {
+	const sub: Sub<40|41|42> = pool.sub(relays, [{kinds: [40, 41], limit: limit}, filterKind42]);
+	const events: NostrEvent<40|41|42>[] = [];
+	sub.on('event', (ev: NostrEvent<40|41|42>) => {
 		events.push(ev);
 	});
 	sub.on('eose', () => {
@@ -45,7 +46,7 @@ export const getEventsPhase1 = async(pool: SimplePool, relays: string[], filterK
 		sub.unsub();
 		const [channels, notes] = getChannelsAndNotes(pool, events);
 		callbackPhase1(channels, notes);
-		const filterPhase2 = [{kinds: [0], authors: getPubkeysForFilter(events)}, {ids: getIdsForFilter(events)}];
+		const filterPhase2: Filter[] = [{kinds: [0], authors: getPubkeysForFilter(events)}, {ids: getIdsForFilter(events)}];
 		const filterPhase3_1: Filter<42> = filterKind42;
 		filterPhase3_1.since = events.filter(ev => ev.kind === 42).map(ev => ev.created_at).reduce((a, b) => Math.max(a, b), 0) + 1;
 		filterPhase3_1.limit = 1;
@@ -61,7 +62,7 @@ export const getEventsPhase1 = async(pool: SimplePool, relays: string[], filterK
 };
 
 export const getEventsPhase2 = async(pool: SimplePool, relays: string[], filterPhase2: Filter[], filterPhase3: Filter<7|42>[], callbackPhase2: Function, callbackPhase3: Function, goPhase3: Boolean) => {
-	const sub = pool.sub(relays, filterPhase2);
+	const sub: Sub = pool.sub(relays, filterPhase2);
 	const events: NostrEvent[] = [];
 	sub.on('event', (ev: NostrEvent) => {
 		events.push(ev);
@@ -72,7 +73,7 @@ export const getEventsPhase2 = async(pool: SimplePool, relays: string[], filterP
 		const [profs, notesQuoted] = getFrofilesAndNotesQuoted(events);
 		callbackPhase2(profs, notesQuoted);
 		if (notesQuoted.length > 0) {
-			const filterPhase2 = [{kinds: [0], authors: getPubkeysForFilter(notesQuoted)}];
+			const filterPhase2: Filter[] = [{kinds: [0], authors: getPubkeysForFilter(notesQuoted)}];
 			getEventsPhase2(pool, relays, filterPhase2, [], callbackPhase2, ()=>{}, false);
 		}
 		if (goPhase3) {
@@ -82,13 +83,13 @@ export const getEventsPhase2 = async(pool: SimplePool, relays: string[], filterP
 };
 
 export const getEventsPhase3 = async(pool: SimplePool, relays: string[], filterPhase3: Filter<7|42>[], profs: {[key: string]: Profile}, notesQuoted: NostrEvent[], callbackPhase2:Function, callbackPhase3: Function) => {
-	const sub = pool.sub(relays, filterPhase3);
-	sub.on('event', (ev: NostrEvent) => {
+	const sub: Sub<7|42> = pool.sub(relays, filterPhase3);
+	sub.on('event', (ev: NostrEvent<7|42>) => {
 		callbackPhase3(sub, ev);
-		const pubkeysToGet = getPubkeysForFilter([ev]).filter(v => !(v in profs));
-		const idsToGet = getIdsForFilter([ev]).filter(v => !(v in notesQuoted.map(v => v.id)));
+		const pubkeysToGet: string[] = getPubkeysForFilter([ev]).filter(v => !(v in profs));
+		const idsToGet: string[] = getIdsForFilter([ev]).filter(v => !(v in notesQuoted.map(v => v.id)));
 		if (pubkeysToGet.length > 0 || idsToGet.length > 0) {
-			const filterPhase2 = [{kinds: [0], authors: pubkeysToGet}, {ids: idsToGet}];
+			const filterPhase2: Filter[] = [{kinds: [0], authors: pubkeysToGet}, {ids: idsToGet}];
 			getEventsPhase2(pool, relays, filterPhase2, filterPhase3, callbackPhase2, callbackPhase3, false);
 		}
 	});
@@ -130,7 +131,7 @@ const getPubkeysForFilter = (events: NostrEvent[]): string[] => {
 	return Array.from(pubkeys);
 };
 
-const getIdsForFilter = (events: NostrEvent[]): string[] => {
+const getIdsForFilter = (events: NostrEvent<7|40|41|42>[]): string[] => {
 	const ids: Set<string> = new Set();
 	for (const ev of events.filter(ev => ev.kind === 42)) {
 		const matchesIterator = ev.content.matchAll(/nostr:(note\w{59}|nevent\w+)/g);
@@ -145,7 +146,7 @@ const getIdsForFilter = (events: NostrEvent[]): string[] => {
 	return Array.from(ids);
 };
 
-const getChannelsAndNotes = (pool: SimplePool, events: NostrEvent[]): [Channel[], NostrEvent[]] => {
+const getChannelsAndNotes = (pool: SimplePool, events: NostrEvent<40|41|42>[]): [Channel[], NostrEvent[]] => {
 	const channelObjects: {[key: string]: Channel} = {};
 	for (const ev of events.filter(ev => ev.kind === 40)) {
 		try {
@@ -177,8 +178,8 @@ const getChannelsAndNotes = (pool: SimplePool, events: NostrEvent[]): [Channel[]
 			}
 		}
 	}
-	const channels = getSortedChannels(channelObjects);
-	const notes = events.filter(ev => ev.kind === 42);
+	const channels: Channel[] = getSortedChannels(channelObjects);
+	const notes: NostrEvent[] = events.filter(ev => ev.kind === 42);
 	notes.sort((a, b) => {
 		if (a.created_at < b.created_at) {
 			return -1;
@@ -204,7 +205,7 @@ const getFrofilesAndNotesQuoted = (events: NostrEvent[]): [{[key: string]: Profi
 			profs[ev.pubkey].created_at = ev.created_at;
 		}
 	}
-	const notesQuoted = events.filter(ev => ev.kind !== 0);
+	const notesQuoted: NostrEvent[] = events.filter(ev => ev.kind !== 0);
 	return [profs, notesQuoted];
 };
 
@@ -224,9 +225,9 @@ const getSortedChannels = (channelObjects: {[key: string]: Channel}) => {
 };
 
 export const getEventsForLoginPhase1 = async(pool: SimplePool, relays: string[], pubkey: string, idsFavSearch: string[], callbackForLoginPhase1: Function, callbackForLoginPhase2: Function) => {
-	const sub = pool.sub(relays, [{kinds: [10000], authors: [pubkey]}, {kinds: [7], authors: [pubkey], '#e': idsFavSearch}, {kinds: [7], '#e': idsFavSearch, '#p': [pubkey]}]);
-	const events: NostrEvent[] = [];
-	sub.on('event', (ev: NostrEvent) => {
+	const sub: Sub<7|10000> = pool.sub(relays, [{kinds: [10000], authors: [pubkey]}, {kinds: [7], authors: [pubkey], '#e': idsFavSearch}, {kinds: [7], '#e': idsFavSearch, '#p': [pubkey]}]);
+	const events: NostrEvent<7|10000>[] = [];
+	sub.on('event', (ev: NostrEvent<7|10000>) => {
 		events.push(ev);
 	});
 	sub.on('eose', () => {
@@ -234,7 +235,7 @@ export const getEventsForLoginPhase1 = async(pool: SimplePool, relays: string[],
 		sub.unsub();
 		const [muteList, favList, favedList, profileListToGet] = getMuteListAndFavs(events, pubkey);
 		callbackForLoginPhase1(muteList, favList, favedList);
-		const filterPhase2 = [{kinds: [0], authors: profileListToGet}];
+		const filterPhase2: Filter<0>[] = [{kinds: [0], authors: profileListToGet}];
 		getEventsForLoginPhase2(pool, relays, filterPhase2, callbackForLoginPhase2);
 	});
 };
@@ -253,7 +254,7 @@ const getEventsForLoginPhase2 = async(pool: SimplePool, relays: string[], filter
 	});
 };
 
-const getMuteListAndFavs = (events: NostrEvent[], pubkey: string): [string[], string[], NostrEvent[], string[]] => {
+const getMuteListAndFavs = (events: NostrEvent<7|10000>[], pubkey: string): [string[], string[], NostrEvent[], string[]] => {
 	const favList: string[] = [];
 	const favedList: NostrEvent[] = [];
 	const profileListToGet = new Set<string>();
@@ -311,28 +312,28 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 	for (const id of mentionIds) {
 		tags.push(['e', id, '', 'mention']);
 	}
-	const baseEvent: UnsignedEvent = {
+	const baseEvent: UnsignedEvent<42> = {
 		kind: 42,
 		pubkey: '',
 		created_at: Math.floor(Date.now() / 1000),
 		tags: tags,
 		content: content
 	};
-	const newEvent: NostrEvent = await (window as any).nostr.signEvent(baseEvent);
+	const newEvent: NostrEvent<42> = await (window as any).nostr.signEvent(baseEvent);
 	const pubs = pool.publish(relaysToWrite, newEvent);
 	await Promise.all(pubs);
 }
 
 export const sendFav = async(pool: SimplePool, relaysToWrite: string[], noteid: string, targetPubkey: string) => {
 	const tags = [['p', targetPubkey, ''], ['e', noteid, '', '']];
-	const baseEvent: UnsignedEvent = {
+	const baseEvent: UnsignedEvent<7> = {
 		kind: 7,
 		pubkey: '',
 		created_at: Math.floor(Date.now() / 1000),
 		tags: tags,
 		content: '+'
 	};
-	const newEvent: NostrEvent = await (window as any).nostr.signEvent(baseEvent);
+	const newEvent: NostrEvent<7> = await (window as any).nostr.signEvent(baseEvent);
 	const pubs = pool.publish(relaysToWrite, newEvent);
 	await Promise.all(pubs);
 }

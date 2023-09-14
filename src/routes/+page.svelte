@@ -9,7 +9,7 @@ const currentChannelId = null;
 const currentPubkey = null;
 
 let pool = new SimplePool();
-let subNotes: Sub<42>;
+let subNotes: Sub<7|42>;
 
 let useRelaysNIP07: boolean;
 $: useRelaysNIP07 = useRelaysNIP07;
@@ -88,7 +88,7 @@ const callbackPhase2 = (profsNew: {[key: string]: Profile}, notesQuotedNew: Nost
 	}
 };
 
-const callbackPhase3 = (subNotesPhase3: Sub<7|42>, ev: NostrEvent) => {
+const callbackPhase3 = (subNotesPhase3: Sub<7|42>, ev: NostrEvent<7|42>) => {
 	subNotes = subNotesPhase3;
 	if (ev.kind === 42 && !notes.map(v => v.id).includes(ev.id)) {
 		notes.push(ev);
