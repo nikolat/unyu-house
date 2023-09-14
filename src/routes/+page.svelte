@@ -157,6 +157,9 @@ const applyRelays = () => {
 	notes = [];
 	notesQuoted = [];
 	profs = {};
+	muteList = [];
+	favList = [];
+	favedList = [];
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
 	const filter: Filter<42> = {kinds: [42], limit: 100};
 	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3, loginPubkey).catch((e) => console.error(e));

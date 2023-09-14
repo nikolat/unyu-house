@@ -45,6 +45,7 @@ const logout = () => {
 	storedMuteList.set([]);
 	storedFavList.set([]);
 	storedFavedList.set([]);
+	applyRelays();
 };
 
 const changeTheme = () => {
