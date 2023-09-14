@@ -42,6 +42,14 @@ const getImageUrls = (content: string) => {
 	}
 	return urls;
 };
+const getVideoUrls = (content: string) => {
+	const matchesIterator = content.matchAll(/https?:\/\/\S+\.mp4/g);
+	const urls = [];
+	for (const match of matchesIterator) {
+		urls.push(match[0]);
+	}
+	return urls;
+};
 
 const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator<RegExpMatchArray>, string[], {[key: string]: string}] => {
 	const regMatchArray = ['https?://[\\w!?/=+\\-_~;.,*&@#$%()[\\]]+', 'nostr:(npub\\w{59})', 'nostr:(note\\w{59})', 'nostr:(nevent\\w+)'];
@@ -179,6 +187,17 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 				{/each}
 				</div>
 			{/if}
+			{@const videoUrls = getVideoUrls(note.content)}
+			{#if videoUrls.length > 0}
+				<div class="video-holder">
+				{#each videoUrls as videoUrl}
+					<video controls preload="metadata">
+						<track kind="captions">
+						<source src="{videoUrl}">
+					</video>
+				{/each}
+				</div>
+			{/if}
 			{#if favList.some(ev => ev.tags.filter(tag => tag[0] === 'e' && tag[1] === note.id).length > 0 && profs[ev.pubkey])}
 				<ul class="fav-holder" role="list">
 				{#each favList as ev}
@@ -217,7 +236,8 @@ dd .info-header {
 dd .image-holder {
 	display: flex;
 }
-dd .image-holder img {
+dd .image-holder img,
+dd .video-holder video {
 	max-height: 200px;
 	max-width: 100%;
 }
