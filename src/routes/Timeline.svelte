@@ -112,7 +112,7 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 			{plainTexts.shift()}
 			{#each matchesIterator as match}
 				{#if /https?:\/\/\S+/.test(match[1]) }
-					<a href="{match[1]}">{match[1]}</a>
+					<a href="{match[1]}" target="_blank" rel="noopener noreferrer">{match[1]}</a>
 				{:else if /npub\w{59}/.test(match[3])}
 					{@const d = nip19.decode(match[3])}
 					{#if d.type === 'npub'}
