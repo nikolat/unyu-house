@@ -37,6 +37,7 @@ const setChannelMetadata = (currentChannelName: string, currentChannelAbout: str
 	editChannelName = currentChannelName;
 	editChannelAbout = currentChannelAbout;
 	editChannelPicture = currentChannelPicture;
+	return '';
 };
 
 const callSendEditChannel = () => {
