@@ -33,6 +33,12 @@ let editChannelPicture: string;
 
 let inputText: string;
 
+const setChannelMetadata = (currentChannelName: string, currentChannelAbout: string, currentChannelPicture: string) => {
+	editChannelName = currentChannelName;
+	editChannelAbout = currentChannelAbout;
+	editChannelPicture = currentChannelPicture;
+};
+
 const callSendEditChannel = () => {
 	if (currentChannelId) {
 		sendEditChannel(pool, relaysToUse, currentChannelId, editChannelName, editChannelAbout, editChannelPicture);
@@ -74,6 +80,7 @@ const callSendMessage = () => {
 		</figure>
 		<details>
 			<summary>Edit Channel</summary>
+			{setChannelMetadata(channel?.name, channel?.about, channel?.picture)}
 			<form>
 				<dl>
 					<dt><label for="edit-channel-name">Name</label></dt>
