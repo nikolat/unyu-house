@@ -228,60 +228,6 @@ const getMuteList = (events10000: NostrEvent[]): string[] => {
 	return muteList;
 }
 
-const getChannelsNotesAndMuteList = (pool: SimplePool, events: NostrEvent<40|41|42|10000>[]): [Channel[], NostrEvent[], string[]] => {
-	const channelObjects: {[key: string]: Channel} = {};
-	for (const ev of events.filter(ev => ev.kind === 40)) {
-		try {
-			channelObjects[ev.id] = JSON.parse(ev.content);
-		} catch (error) {
-			console.log(error);
-			continue;
-		}
-		channelObjects[ev.id].updated_at = ev.created_at;
-		channelObjects[ev.id].id = ev.id;
-		channelObjects[ev.id].pubkey = ev.pubkey;
-		channelObjects[ev.id].recommendedRelay = pool.seenOn(ev.id)[0];
-	}
-	for (const ev of events.filter(ev => ev.kind === 41)) {
-		for (const tag of ev.tags) {
-			const id = tag[1];
-			if (tag[0] === 'e' && id in channelObjects && ev.pubkey === channelObjects[id].pubkey && channelObjects[id].updated_at < ev.created_at) {
-				const savedRecommendedRelay = channelObjects[id].recommendedRelay;
-				try {
-					channelObjects[id] = JSON.parse(ev.content);
-				} catch (error) {
-					console.log(error);
-					continue;
-				}
-				channelObjects[id].updated_at = ev.created_at;
-				channelObjects[id].id = id;
-				channelObjects[id].pubkey = ev.pubkey;
-				channelObjects[id].recommendedRelay = savedRecommendedRelay;
-			}
-		}
-	}
-	const channels: Channel[] = getSortedChannels(channelObjects);
-	const notes: NostrEvent[] = events.filter(ev => ev.kind === 42);
-	notes.sort((a, b) => {
-		if (a.created_at < b.created_at) {
-			return -1;
-		}
-		if (a.created_at > b.created_at) {
-			return 1;
-		}
-		return 0;
-	});
-	let muteList: string[] = [];
-	let muteList_created_at = 0;
-	for (const ev of events.filter(ev => ev.kind === 10000)) {
-		if (muteList_created_at < ev.created_at) {
-			muteList = ev.tags.filter(v => v[0] === 'p').map(v => v[1]);
-			muteList_created_at = ev.created_at;
-		}
-	}
-	return [channels, notes, muteList];
-};
-
 const getFrofiles = (events: NostrEvent[]): {[key: string]: Profile} => {
 	const profs: {[key: string]: Profile} = {};
 	for (const ev of events.filter(ev => ev.kind === 0)) {
