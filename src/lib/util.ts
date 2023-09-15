@@ -450,11 +450,46 @@ export const sendCreateChannel = async(pool: SimplePool, relaysToWrite: string[]
 		pubkey: '',
 		created_at: Math.floor(Date.now() / 1000),
 		tags: [],
-		content: JSON.stringify({name, about, picture})
+		content: JSON.stringify({name: name ?? '', about: about ?? '', picture: picture ?? ''})
 	};
 	const newEvent: NostrEvent<40> = await (window as any).nostr.signEvent(baseEvent);
 	const pubs = pool.publish(relaysToWrite, newEvent);
 	await Promise.all(pubs);
+};
+
+export const sendEditChannel = async(pool: SimplePool, relaysToUse: object, currentChannelId: string, name: string, about: string, picture: string) => {
+	const limit = 500;
+	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
+	const sub: Sub<40|41> = pool.sub(relaysToRead, [{kinds: [40], ids: [currentChannelId], limit: limit}, {kinds: [41], '#e': [currentChannelId], limit: limit}]);
+	let newestEvent: NostrEvent<40|41>;
+	sub.on('event', (ev: NostrEvent<40|41>) => {
+		if (!newestEvent || newestEvent.created_at < ev.created_at) {
+			newestEvent = ev;
+		}
+	});
+	sub.on('eose', async () => {
+		console.log('sendEditChannelPhase1 * EOSE *');
+		sub.unsub();
+		if (!newestEvent) {
+			return;
+		}
+		const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
+		const objContent: object = JSON.parse(newestEvent.content);
+		(objContent as any).name = name ?? '';
+		(objContent as any).about = about ?? '';
+		(objContent as any).picture = picture ?? '';
+		const baseEvent: UnsignedEvent<41> = {
+			kind: 41,
+			pubkey: '',
+			created_at: Math.floor(Date.now() / 1000),
+			tags: [['e', currentChannelId, pool.seenOn(currentChannelId)[0]]],
+			content: JSON.stringify(objContent)
+		};
+		const newEvent: NostrEvent<41> = await (window as any).nostr.signEvent(baseEvent);
+		const pubs = pool.publish(relaysToWrite, newEvent);
+		await Promise.all(pubs);
+		console.log('sendEditChannelPhase2 * Complete *');
+	});
 };
 
 //for debug
