@@ -151,7 +151,7 @@ onMount(() => {
 			</form>
 		</details>
 		{/if}
-		<ul>
+		<ul class="channels" role="list">
 			{#each channels as channel}
 			<li>
 				<img src="{profs[channel.pubkey]?.picture || '/default.png'}" alt="" width="16" height="16">
@@ -188,4 +188,8 @@ details {
 details input {
 	min-width: 15em;
 }
+ul.channels {
+	list-style: none;
+}
+
 </style>
