@@ -199,6 +199,6 @@ afterUpdate(() => {
 	<title>{channels.filter(v => v.id === currentChannelId)[0]?.name ?? '(unknown channel)'} | {title}</title>
 	<link rel="stylesheet" href="{theme || urlDefaultTheme}">
 </svelte:head>
-<Page {title} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {channels} {notes} {notesQuoted} {profs} {pool} {loginPubkey}
+<Page {title} {channels} {notes} {notesQuoted} {profs} {pool} {loginPubkey}
 	{importRelays} {muteList} {useRelaysNIP07} {relaysToUse} {theme}
 	{currentChannelId} {currentPubkey} {applyRelays} {favList} />

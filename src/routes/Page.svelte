@@ -12,7 +12,6 @@ import { sendMessage, type Channel, type Profile } from '$lib/util';
 
 export let title: string;
 export let pool: SimplePool;
-export let relaysToWrite: string[];
 export let channels: Channel[];
 export let notes: NostrEvent[];
 export let notesQuoted: NostrEvent[];
@@ -35,6 +34,7 @@ const callSendMessage = () => {
 		return;
 	const content = inputText;
 	inputText = '';
+	const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
 	const recommendedRelay = channels.filter(v => v.id === currentChannelId)[0].recommendedRelay;
 	sendMessage(pool, relaysToWrite, content, currentChannelId, recommendedRelay);
 }
@@ -42,7 +42,7 @@ const callSendMessage = () => {
 
 <div id="container">
 	<Header {title} />
-	<Sidebar {theme} {relaysToUse} {loginPubkey} {useRelaysNIP07} {channels} {profs} {importRelays} {applyRelays} />
+	<Sidebar {pool} {theme} {relaysToUse} {loginPubkey} {useRelaysNIP07} {channels} {profs} {importRelays} {applyRelays} />
 	<main>
 	{#if currentChannelId}
 		{@const channel = channels.filter(v => v.id === currentChannelId)[0]}
@@ -73,7 +73,7 @@ const callSendMessage = () => {
 	{:else}
 		<h2>Global timeline</h2>
 	{/if}
-		<Timeline {pool} {relaysToWrite} {notes} {notesQuoted} {profs} {channels} {loginPubkey} {muteList} {favList} />
+		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {loginPubkey} {muteList} {favList} />
 	{#if currentChannelId}
 		<div id="input" class="show">
 			{#if loginPubkey}

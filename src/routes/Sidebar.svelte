@@ -5,7 +5,7 @@ import {
 } from 'nostr-tools';
 import { browser } from '$app/environment';
 import { storedLoginpubkey, storedMuteList, storedFavList, storedTheme } from '$lib/store';
-import { urlDarkTheme, urlLightTheme, urlDefaultTheme } from '$lib/util';
+import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel } from '$lib/util';
 import { onMount } from 'svelte';
 
 interface Channel {
@@ -25,6 +25,7 @@ interface Profile {
 	picture: string
 }
 
+export let pool: SimplePool;
 export let relaysToUse: object;
 export let loginPubkey: string;
 export let useRelaysNIP07: boolean;
@@ -32,6 +33,14 @@ export let channels: Channel[];
 export let applyRelays: Function
 export let profs: {[key: string]: Profile};
 export let importRelays: Function;
+export let theme: string;
+storedTheme.subscribe((value) => {
+	theme = value;
+});
+
+let newChannelName: string;
+let newChannelAbout: string;
+let newChannelPicture: string;
 
 const login = async() => {
 	if (browser && (window as any).nostr?.getPublicKey) {
@@ -46,6 +55,10 @@ const logout = () => {
 	storedFavList.set([]);
 	applyRelays();
 };
+const callSendCreateChannel = () => {
+	const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
+	sendCreateChannel(pool, relaysToWrite, newChannelName, newChannelAbout, newChannelPicture);
+}
 
 const changeTheme = () => {
 	const container = document.getElementById('container');
@@ -60,10 +73,6 @@ const changeTheme = () => {
 		container?.classList.add('light');
 	}
 };
-export let theme: string;
-storedTheme.subscribe((value) => {
-	theme = value;
-});
 
 onMount(() => {
 	if (!theme) {
@@ -84,7 +93,32 @@ onMount(() => {
 
 <div id="sidebar">
 	<section>
+		<h2>Login</h2>
+		{#if loginPubkey}
+		<button on:click={logout}>logout</button>
+		{:else}
+		<button on:click={login}>login with NIP-07</button>
+		{/if}
+	</section>
+	<section>
+		<h2>Theme</h2>
+		<form>
+			<label for="theme-dark">Dark theme</label>
+			<input on:change={changeTheme} type="radio" value="dark" name="theme" id="theme-dark" checked={theme === urlDarkTheme}>
+			<label for="theme-light">Light theme</label>
+			<input on:change={changeTheme} type="radio" value="light" name="theme" id="theme-light" checked={theme === urlLightTheme}>
+		</form>
+	</section>
+	<section>
 		<h2>Relays</h2>
+		{#if loginPubkey}
+		<form>
+			<dl>
+				<dt><label for="useRelaysInNIP07">Use relays in NIP-07</label></dt>
+				<dd><input id="use-relay-nip07" name="useRelaysInNIP07" type="checkbox" on:change={() => importRelays()} bind:checked={useRelaysNIP07} /></dd>
+			</dl>
+		</form>
+		{/if}
 		<table>
 			<tr>
 				<th>r</th>
@@ -99,28 +133,24 @@ onMount(() => {
 			</tr>
 			{/each}
 		</table>
-		{#if loginPubkey}
-		<button on:click={logout}>logout</button>
-		<dl>
-			<dt><label for="useRelaysInNIP07">Use relays in NIP-07</label></dt>
-			<dd><input id="use-relay-nip07" name="useRelaysInNIP07" type="checkbox" on:change={() => importRelays()} bind:checked={useRelaysNIP07} /></dd>
-		</dl>
-		{:else}
-		<button on:click={login}>login with NIP-07</button>
-		{/if}
-	</section>
-	<section>
-		<h2>Theme</h2>
-		<form>
-			<label for="theme-dark">Dark theme</label>
-			<input on:change={changeTheme} type="radio" value="dark" name="theme" id="theme-dark" checked={theme === urlDarkTheme}>
-			<label for="theme-light">Light theme</label>
-			<input on:change={changeTheme} type="radio" value="light" name="theme" id="theme-light" checked={theme === urlLightTheme}>
-		</form>
 	</section>
 	<nav>
 		<h2>Channels</h2>
 		<p>Total: {channels.length} channels</p>
+		{#if loginPubkey}
+		<details>
+			<summary>Create New Channel</summary>
+			<dl>
+				<dt><label for="new-channel-name">Name</label></dt>
+				<dd><input id="new-channel-name" placeholder="channel name" bind:value={newChannelName}></dd>
+				<dt><label for="new-channel-about">About</label></dt>
+				<dd><input id="new-channel-about" placeholder="channel description" bind:value={newChannelAbout}></dd>
+				<dt><label for="new-channel-picture">Picture</label></dt>
+				<dd><input id="new-channel-picture" placeholder="https://..." bind:value={newChannelPicture}></dd>
+			</dl>
+			<button on:click={callSendCreateChannel} disabled={!newChannelName}>Create</button>
+		</details>
+		{/if}
 		<ul>
 			{#each channels as channel}
 			<li>
@@ -151,5 +181,11 @@ onMount(() => {
 }
 #sidebar th {
 	text-align: center;
+}
+details {
+	display: inline-block;
+}
+details input {
+	min-width: 15em;
 }
 </style>
