@@ -78,6 +78,7 @@ const callSendMessage = () => {
 			{/if}
 			</figcaption>
 		</figure>
+			{#if loginPubkey === channel.pubkey}
 		<details>
 			<summary>Edit Channel</summary>
 			{setChannelMetadata(channel?.name, channel?.about, channel?.picture)}
@@ -93,6 +94,7 @@ const callSendMessage = () => {
 				<button on:click={callSendEditChannel} disabled={!editChannelName}>Edit</button>
 			</form>
 		</details>
+			{/if}
 		{/if}
 	{:else if currentPubkey}
 		{#if profs[currentPubkey]}
