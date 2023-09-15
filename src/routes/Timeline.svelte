@@ -227,6 +227,9 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 dt {
 	border-top: 1px dashed #666;
 }
+dt time {
+	margin-left: 32px;
+}
 dd {
 	white-space: pre-wrap;
 }
@@ -259,8 +262,5 @@ dd details[open] {
 }
 dd .json-view {
 	font-size: x-small;
-}
-dd time {
-	margin-left: 32px;
 }
 </style>
