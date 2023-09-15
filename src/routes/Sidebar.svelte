@@ -95,9 +95,9 @@ onMount(() => {
 	<section>
 		<h2>Login</h2>
 		{#if loginPubkey}
-		<button on:click={logout}>logout</button>
+		<button on:click={logout}>Logout</button>
 		{:else}
-		<button on:click={login}>login with NIP-07</button>
+		<button on:click={login}>Login with Browser Extension (NIP-07)</button>
 		{/if}
 	</section>
 	<section>
