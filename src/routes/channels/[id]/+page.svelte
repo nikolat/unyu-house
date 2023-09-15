@@ -21,7 +21,7 @@ if (/^nevent/.test(urlId)) {
 }
 
 let pool = new SimplePool();
-let subNotes: Sub<7|42>;
+let subNotes: Sub<7|40|42>;
 
 let useRelaysNIP07: boolean;
 $: useRelaysNIP07 = useRelaysNIP07;
@@ -103,7 +103,7 @@ const callbackPhase2 = (profsNew: {[key: string]: Profile}, favListNew: NostrEve
 	}
 };
 
-const callbackPhase3 = (subNotesPhase3: Sub<7|42>, ev: NostrEvent<7|42>) => {
+const callbackPhase3 = (subNotesPhase3: Sub<7|40|42>, ev: NostrEvent<7|40|42>) => {
 	subNotes = subNotesPhase3;
 	if (ev.kind === 42 && !notes.map(v => v.id).includes(ev.id)) {
 		notes.push(ev);
@@ -113,6 +113,20 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|42>, ev: NostrEvent<7|42>) => {
 		favList.push(ev);
 		favList = favList;
 		storedFavList.set(favList);
+	}
+	else if (ev.kind === 40 && !channels.map(v => v.id).includes(ev.id)) {
+		let channel: Channel;
+		try {
+			channel = JSON.parse(ev.content);
+		} catch (error) {
+			console.log(error);
+			return;
+		}
+		channel.updated_at = ev.created_at;
+		channel.id = ev.id;
+		channel.pubkey = ev.pubkey;
+		channel.recommendedRelay = pool.seenOn(ev.id)[0];
+		channels = [channel, ...channels];
 	}
 };
 
