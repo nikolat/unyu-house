@@ -205,7 +205,7 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 						{@const reaction = ev.content.replace(/^\+$/, '❤')}
 						{@const prof = profs[ev.pubkey]}
 						<li>{reaction} <img src="{prof.picture || '/default.png'}" alt="avatar of {nip19.npubEncode(ev.pubkey)}"
-							width="16" height="16" /> {prof.display_name} @{prof.name} reacted</li>
+							width="16" height="16" /> {prof.display_name} <a href="/{nip19.npubEncode(ev.pubkey)}">@{prof.name}</a> reacted</li>
 					{/if}
 				{/each}
 				</ul>
