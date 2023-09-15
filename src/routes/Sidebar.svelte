@@ -113,10 +113,8 @@ onMount(() => {
 		<h2>Relays</h2>
 		{#if loginPubkey}
 		<form>
-			<dl>
-				<dt><label for="useRelaysInNIP07">Use relays in NIP-07</label></dt>
-				<dd><input id="use-relay-nip07" name="useRelaysInNIP07" type="checkbox" on:change={() => importRelays()} bind:checked={useRelaysNIP07} /></dd>
-			</dl>
+			<label for="use-relay-nip07">Use relays in NIP-07</label>
+			<input id="use-relay-nip07" type="checkbox" on:change={() => importRelays()} bind:checked={useRelaysNIP07} />
 		</form>
 		{/if}
 		<table>
@@ -140,15 +138,17 @@ onMount(() => {
 		{#if loginPubkey}
 		<details>
 			<summary>Create New Channel</summary>
-			<dl>
-				<dt><label for="new-channel-name">Name</label></dt>
-				<dd><input id="new-channel-name" placeholder="channel name" bind:value={newChannelName}></dd>
-				<dt><label for="new-channel-about">About</label></dt>
-				<dd><input id="new-channel-about" placeholder="channel description" bind:value={newChannelAbout}></dd>
-				<dt><label for="new-channel-picture">Picture</label></dt>
-				<dd><input id="new-channel-picture" placeholder="https://..." bind:value={newChannelPicture}></dd>
-			</dl>
-			<button on:click={callSendCreateChannel} disabled={!newChannelName}>Create</button>
+			<form>
+				<dl>
+					<dt><label for="new-channel-name">Name</label></dt>
+					<dd><input id="new-channel-name" type="text" placeholder="channel name" bind:value={newChannelName}></dd>
+					<dt><label for="new-channel-about">About</label></dt>
+					<dd><input id="new-channel-about" type="text" placeholder="channel description" bind:value={newChannelAbout}></dd>
+					<dt><label for="new-channel-picture">Picture</label></dt>
+					<dd><input id="new-channel-picture" type="url" placeholder="https://..." bind:value={newChannelPicture}></dd>
+				</dl>
+				<button on:click={callSendCreateChannel} disabled={!newChannelName}>Create</button>
+			</form>
 		</details>
 		{/if}
 		<ul>

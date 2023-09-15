@@ -452,7 +452,6 @@ export const sendCreateChannel = async(pool: SimplePool, relaysToWrite: string[]
 		content: JSON.stringify({name, about, picture})
 	};
 	const newEvent: NostrEvent<40> = await (window as any).nostr.signEvent(baseEvent);
-//	const pubs = pool.publish(relaysToWrite, newEvent);
-//	await Promise.all(pubs);
-console.log(newEvent);
+	const pubs = pool.publish(relaysToWrite, newEvent);
+	await Promise.all(pubs);
 };
