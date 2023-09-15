@@ -159,6 +159,10 @@ main {
 details {
 	display: inline-block;
 }
+details input,
+details textarea {
+	min-width: 15em;
+}
 #input {
 	position: fixed;
 	width: 100%;

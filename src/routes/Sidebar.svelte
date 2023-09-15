@@ -187,7 +187,8 @@ onMount(() => {
 details {
 	display: inline-block;
 }
-details input {
+details input,
+details textarea {
 	min-width: 15em;
 }
 ul.channels {
