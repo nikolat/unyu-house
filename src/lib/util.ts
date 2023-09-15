@@ -64,7 +64,7 @@ export const getEventsPhase1 = async(pool: SimplePool, relays: string[], filterK
 		const filterPhase3Base: Filter<42> = filterKind42;
 		filterPhase3Base.since = events[42].map(ev => ev.created_at).reduce((a, b) => Math.max(a, b), 0) + 1;
 		filterPhase3Base.limit = 1;
-		const filterPhase3: Filter<7|40|42>[] = [filterPhase3Base];
+		const filterPhase3: Filter<7|40|41|42>[] = [filterPhase3Base];
 		if (loginPubkey) {
 			filterPhase2.push(
 				{kinds: [7], authors: [loginPubkey], '#e': notes.map(v => v.id)},
@@ -73,14 +73,14 @@ export const getEventsPhase1 = async(pool: SimplePool, relays: string[], filterK
 			filterPhase3.push(
 				{kinds: [7], authors: [loginPubkey], limit: 1},
 				{kinds: [7], '#p': [loginPubkey], limit: 1},
-				{kinds: [40], limit: 1}
+				{kinds: [40, 41], limit: 1}
 			);
 		}
 		getEventsPhase2(pool, relays, filterPhase2, filterPhase3, callbackPhase2, callbackPhase3, true);
 	});
 };
 
-export const getEventsPhase2 = async(pool: SimplePool, relays: string[], filterPhase2: Filter[], filterPhase3: Filter<7|40|42>[], callbackPhase2: Function, callbackPhase3: Function, goPhase3: Boolean) => {
+export const getEventsPhase2 = async(pool: SimplePool, relays: string[], filterPhase2: Filter[], filterPhase3: Filter<7|40|41|42>[], callbackPhase2: Function, callbackPhase3: Function, goPhase3: Boolean) => {
 	const sub: Sub = pool.sub(relays, filterPhase2);
 	const events: {[key: number]: NostrEvent[]} = {0: [], 7: []};
 	const eventsQuoted: NostrEvent[] = [];
@@ -107,9 +107,9 @@ export const getEventsPhase2 = async(pool: SimplePool, relays: string[], filterP
 	});
 };
 
-export const getEventsPhase3 = async(pool: SimplePool, relays: string[], filterPhase3: Filter<7|40|42>[], profs: {[key: string]: Profile}, eventsQuoted: NostrEvent[], callbackPhase2:Function, callbackPhase3: Function) => {
-	const sub: Sub<7|40|42> = pool.sub(relays, filterPhase3);
-	sub.on('event', (ev: NostrEvent<7|40|42>) => {
+export const getEventsPhase3 = async(pool: SimplePool, relays: string[], filterPhase3: Filter<7|40|41|42>[], profs: {[key: string]: Profile}, eventsQuoted: NostrEvent[], callbackPhase2:Function, callbackPhase3: Function) => {
+	const sub: Sub<7|40|41|42> = pool.sub(relays, filterPhase3);
+	sub.on('event', (ev: NostrEvent<7|40|41|42>) => {
 		callbackPhase3(sub, ev);
 		const pubkeysToGet: string[] = getPubkeysForFilter([ev]).filter(v => !(v in profs));
 		const idsToGet: string[] = getIdsForFilter([ev]).filter(v => !(v in eventsQuoted.map(v => v.id)));
@@ -227,60 +227,6 @@ const getMuteList = (events10000: NostrEvent[]): string[] => {
 	}
 	return muteList;
 }
-
-const getChannelsNotesAndMuteList = (pool: SimplePool, events: NostrEvent<40|41|42|10000>[]): [Channel[], NostrEvent[], string[]] => {
-	const channelObjects: {[key: string]: Channel} = {};
-	for (const ev of events.filter(ev => ev.kind === 40)) {
-		try {
-			channelObjects[ev.id] = JSON.parse(ev.content);
-		} catch (error) {
-			console.log(error);
-			continue;
-		}
-		channelObjects[ev.id].updated_at = ev.created_at;
-		channelObjects[ev.id].id = ev.id;
-		channelObjects[ev.id].pubkey = ev.pubkey;
-		channelObjects[ev.id].recommendedRelay = pool.seenOn(ev.id)[0];
-	}
-	for (const ev of events.filter(ev => ev.kind === 41)) {
-		for (const tag of ev.tags) {
-			const id = tag[1];
-			if (tag[0] === 'e' && id in channelObjects && ev.pubkey === channelObjects[id].pubkey && channelObjects[id].updated_at < ev.created_at) {
-				const savedRecommendedRelay = channelObjects[id].recommendedRelay;
-				try {
-					channelObjects[id] = JSON.parse(ev.content);
-				} catch (error) {
-					console.log(error);
-					continue;
-				}
-				channelObjects[id].updated_at = ev.created_at;
-				channelObjects[id].id = id;
-				channelObjects[id].pubkey = ev.pubkey;
-				channelObjects[id].recommendedRelay = savedRecommendedRelay;
-			}
-		}
-	}
-	const channels: Channel[] = getSortedChannels(channelObjects);
-	const notes: NostrEvent[] = events.filter(ev => ev.kind === 42);
-	notes.sort((a, b) => {
-		if (a.created_at < b.created_at) {
-			return -1;
-		}
-		if (a.created_at > b.created_at) {
-			return 1;
-		}
-		return 0;
-	});
-	let muteList: string[] = [];
-	let muteList_created_at = 0;
-	for (const ev of events.filter(ev => ev.kind === 10000)) {
-		if (muteList_created_at < ev.created_at) {
-			muteList = ev.tags.filter(v => v[0] === 'p').map(v => v[1]);
-			muteList_created_at = ev.created_at;
-		}
-	}
-	return [channels, notes, muteList];
-};
 
 const getFrofiles = (events: NostrEvent[]): {[key: string]: Profile} => {
 	const profs: {[key: string]: Profile} = {};
@@ -450,11 +396,46 @@ export const sendCreateChannel = async(pool: SimplePool, relaysToWrite: string[]
 		pubkey: '',
 		created_at: Math.floor(Date.now() / 1000),
 		tags: [],
-		content: JSON.stringify({name, about, picture})
+		content: JSON.stringify({name: name ?? '', about: about ?? '', picture: picture ?? ''})
 	};
 	const newEvent: NostrEvent<40> = await (window as any).nostr.signEvent(baseEvent);
 	const pubs = pool.publish(relaysToWrite, newEvent);
 	await Promise.all(pubs);
+};
+
+export const sendEditChannel = async(pool: SimplePool, relaysToUse: object, currentChannelId: string, name: string, about: string, picture: string) => {
+	const limit = 500;
+	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
+	const sub: Sub<40|41> = pool.sub(relaysToRead, [{kinds: [40], ids: [currentChannelId], limit: limit}, {kinds: [41], '#e': [currentChannelId], limit: limit}]);
+	let newestEvent: NostrEvent<40|41>;
+	sub.on('event', (ev: NostrEvent<40|41>) => {
+		if (!newestEvent || newestEvent.created_at < ev.created_at) {
+			newestEvent = ev;
+		}
+	});
+	sub.on('eose', async () => {
+		console.log('sendEditChannelPhase1 * EOSE *');
+		sub.unsub();
+		if (!newestEvent) {
+			return;
+		}
+		const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
+		const objContent: object = JSON.parse(newestEvent.content);
+		(objContent as any).name = name ?? '';
+		(objContent as any).about = about ?? '';
+		(objContent as any).picture = picture ?? '';
+		const baseEvent: UnsignedEvent<41> = {
+			kind: 41,
+			pubkey: '',
+			created_at: Math.floor(Date.now() / 1000),
+			tags: [['e', currentChannelId, pool.seenOn(currentChannelId)[0]]],
+			content: JSON.stringify(objContent)
+		};
+		const newEvent: NostrEvent<41> = await (window as any).nostr.signEvent(baseEvent);
+		const pubs = pool.publish(relaysToWrite, newEvent);
+		await Promise.all(pubs);
+		console.log('sendEditChannelPhase2 * Complete *');
+	});
 };
 
 //for debug

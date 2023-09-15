@@ -19,7 +19,7 @@ if (/^npub/.test(urlId)) {
 }
 
 let pool = new SimplePool();
-let subNotes: Sub<7|40|42>;
+let subNotes: Sub<7|40|41|42>;
 
 let useRelaysNIP07: boolean;
 $: useRelaysNIP07 = useRelaysNIP07;
@@ -101,7 +101,7 @@ const callbackPhase2 = (profsNew: {[key: string]: Profile}, favListNew: NostrEve
 	}
 };
 
-const callbackPhase3 = (subNotesPhase3: Sub<7|40|42>, ev: NostrEvent<7|40|42>) => {
+const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42>, ev: NostrEvent<7|40|41|42>) => {
 	subNotes = subNotesPhase3;
 	if (ev.kind === 42 && !notes.map(v => v.id).includes(ev.id)) {
 		notes.push(ev);
@@ -125,6 +125,25 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|40|42>, ev: NostrEvent<7|40|42>) =
 		channel.pubkey = ev.pubkey;
 		channel.recommendedRelay = pool.seenOn(ev.id)[0];
 		channels = [channel, ...channels];
+	}
+	else if (ev.kind === 41) {
+		const id = ev.tags.filter(tag => tag[0] === 'e')[0][1];
+		const currentChannel: Channel = channels.filter(channel => channel.id === id)[0];
+		if (ev.pubkey !== currentChannel.pubkey || ev.created_at <= currentChannel.updated_at) {
+			return;
+		}
+		let newChannel: Channel;
+		try {
+			newChannel = JSON.parse(ev.content);
+		} catch (error) {
+			console.log(error);
+			return;
+		}
+		newChannel.updated_at = ev.created_at;
+		newChannel.id = id;
+		newChannel.pubkey = ev.pubkey;
+		newChannel.recommendedRelay = currentChannel.recommendedRelay;
+		channels = [newChannel, ...channels.toSpliced(channels.findIndex(channel => channel.id === id), 1)];
 	}
 };
 

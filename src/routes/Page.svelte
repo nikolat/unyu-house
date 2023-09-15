@@ -8,7 +8,7 @@ import {
 import Sidebar from './Sidebar.svelte';
 import Timeline from './Timeline.svelte';
 import Header from './Header.svelte';
-import { sendMessage, type Channel, type Profile } from '$lib/util';
+import { sendMessage, type Channel, type Profile, sendEditChannel } from '$lib/util';
 
 export let title: string;
 export let pool: SimplePool;
@@ -27,7 +27,24 @@ export let currentPubkey: string | null
 export let applyRelays: Function
 export let favList: NostrEvent[];
 
+let editChannelName: string;
+let editChannelAbout: string;
+let editChannelPicture: string;
+
 let inputText: string;
+
+const setChannelMetadata = (currentChannelName: string, currentChannelAbout: string, currentChannelPicture: string) => {
+	editChannelName = currentChannelName;
+	editChannelAbout = currentChannelAbout;
+	editChannelPicture = currentChannelPicture;
+	return '';
+};
+
+const callSendEditChannel = () => {
+	if (currentChannelId) {
+		sendEditChannel(pool, relaysToUse, currentChannelId, editChannelName, editChannelAbout, editChannelPicture);
+	}
+};
 
 const callSendMessage = () => {
 	if (!currentChannelId)
@@ -37,7 +54,7 @@ const callSendMessage = () => {
 	const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
 	const recommendedRelay = channels.filter(v => v.id === currentChannelId)[0].recommendedRelay;
 	sendMessage(pool, relaysToWrite, content, currentChannelId, recommendedRelay);
-}
+};
 </script>
 
 <div id="container">
@@ -62,11 +79,28 @@ const callSendMessage = () => {
 			{/if}
 			</figcaption>
 		</figure>
+			{#if loginPubkey === channel.pubkey}
+		<details>
+			<summary>Edit Channel</summary>
+			{setChannelMetadata(channel?.name, channel?.about, channel?.picture)}
+			<form>
+				<dl>
+					<dt><label for="edit-channel-name">Name</label></dt>
+					<dd><input id="edit-channel-name" type="text" placeholder="channel name" bind:value={editChannelName} /></dd>
+					<dt><label for="edit-channel-about">About</label></dt>
+					<dd><textarea id="edit-channel-about" placeholder="channel description" bind:value={editChannelAbout}></textarea></dd>
+					<dt><label for="edit-channel-picture">Picture</label></dt>
+					<dd><input id="edit-channel-picture" type="url" placeholder="https://..." bind:value={editChannelPicture} /></dd>
+				</dl>
+				<button on:click={callSendEditChannel} disabled={!editChannelName}>Edit</button>
+			</form>
+		</details>
+			{/if}
 		{/if}
 	{:else if currentPubkey}
 		{#if profs[currentPubkey]}
 		<h2><img src="{profs[currentPubkey].picture || './default.png'}" alt="@{profs[currentPubkey].name ?? ''}" width="32" height="32"> {profs[currentPubkey].display_name ?? ''} @{profs[currentPubkey].name ?? ''}</h2>
-		<p class="about">{profs[currentPubkey].about ?? ''}</p>
+		<p id="profile-about">{profs[currentPubkey].about ?? ''}</p>
 		{:else}
 		<h2>Now Loading...</h2>
 		{/if}
@@ -122,6 +156,9 @@ main {
 #channel-about {
 	white-space: pre-wrap;
 }
+details {
+	display: inline-block;
+}
 #input {
 	position: fixed;
 	width: 100%;
@@ -142,7 +179,7 @@ main {
 #input > button {
 	margin-left: 1em;
 }
-.about {
+#profile-about {
 	white-space: pre-wrap;
 }
 </style>

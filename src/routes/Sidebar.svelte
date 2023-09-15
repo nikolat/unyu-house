@@ -56,8 +56,10 @@ const logout = () => {
 	applyRelays();
 };
 const callSendCreateChannel = () => {
+	const [channelName, channelAbout, channelPicture] = [newChannelName, newChannelAbout, newChannelPicture];
+	[newChannelName, newChannelAbout, newChannelPicture] = ['', '', ''];
 	const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
-	sendCreateChannel(pool, relaysToWrite, newChannelName, newChannelAbout, newChannelPicture);
+	sendCreateChannel(pool, relaysToWrite, channelName, channelAbout, channelPicture);
 }
 
 const changeTheme = () => {
@@ -141,11 +143,11 @@ onMount(() => {
 			<form>
 				<dl>
 					<dt><label for="new-channel-name">Name</label></dt>
-					<dd><input id="new-channel-name" type="text" placeholder="channel name" bind:value={newChannelName}></dd>
+					<dd><input id="new-channel-name" type="text" placeholder="channel name" bind:value={newChannelName} /></dd>
 					<dt><label for="new-channel-about">About</label></dt>
-					<dd><input id="new-channel-about" type="text" placeholder="channel description" bind:value={newChannelAbout}></dd>
+					<dd><textarea id="new-channel-about" placeholder="channel description" bind:value={newChannelAbout}></textarea></dd>
 					<dt><label for="new-channel-picture">Picture</label></dt>
-					<dd><input id="new-channel-picture" type="url" placeholder="https://..." bind:value={newChannelPicture}></dd>
+					<dd><input id="new-channel-picture" type="url" placeholder="https://..." bind:value={newChannelPicture} /></dd>
 				</dl>
 				<button on:click={callSendCreateChannel} disabled={!newChannelName}>Create</button>
 			</form>
