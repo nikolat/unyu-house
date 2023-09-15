@@ -56,8 +56,10 @@ const logout = () => {
 	applyRelays();
 };
 const callSendCreateChannel = () => {
+	const [channelName, channelAbout, channelPicture] = [newChannelName, newChannelAbout, newChannelPicture];
+	[newChannelName, newChannelAbout, newChannelPicture] = ['', '', ''];
 	const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
-	sendCreateChannel(pool, relaysToWrite, newChannelName, newChannelAbout, newChannelPicture);
+	sendCreateChannel(pool, relaysToWrite, channelName, channelAbout, channelPicture);
 }
 
 const changeTheme = () => {

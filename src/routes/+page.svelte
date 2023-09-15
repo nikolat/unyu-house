@@ -119,7 +119,7 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42>, ev: NostrEvent<7|40|41|
 	else if (ev.kind === 41) {
 		const id = ev.tags.filter(tag => tag[0] === 'e')[0][1];
 		const currentChannel: Channel = channels.filter(v => v.id === id)[0];
-		if (ev.created_at < currentChannel.updated_at) {
+		if (ev.pubkey !== currentChannel.pubkey || ev.created_at < currentChannel.updated_at) {
 			return;
 		}
 		let newChannel: Channel;
@@ -133,7 +133,7 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42>, ev: NostrEvent<7|40|41|
 		newChannel.id = id;
 		newChannel.pubkey = ev.pubkey;
 		newChannel.recommendedRelay = currentChannel.recommendedRelay;
-		channels = [newChannel, ...channels.toSpliced(channels.findIndex(channel => channel.id === id))];
+		channels = [newChannel, ...channels.toSpliced(channels.findIndex(channel => channel.id === id), 1)];
 	}
 };
 
