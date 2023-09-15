@@ -174,7 +174,7 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 						{match[6]}
 					{/if}
 				{:else if match[8]}
-					<img src="{emojiUrls[match[8]]}" alt="{match[8]}" class="emoji" />
+					<img src="{emojiUrls[match[8]]}" alt="{match[8]}" title="{match[8]}" class="emoji" />
 				{/if}
 				{plainTexts.shift()}
 			{/each}
@@ -206,7 +206,7 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 						{@const prof = profs[ev.pubkey]}
 						<li>
 						{#if emojiTag && ev.content === `:${emojiTag[1]}:` && emojiTag[2]}
-							<img src="{emojiTag[2]}" width="20" height="20" alt=":${emojiTag[1]}:" />
+							<img src="{emojiTag[2]}" width="20" height="20" alt=":{emojiTag[1]}:" title=":{emojiTag[1]}:" />
 						{:else}
 							{ev.content.replace(/^\+$/, '❤')}
 						{/if}
