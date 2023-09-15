@@ -85,11 +85,11 @@ const callSendMessage = () => {
 			<form>
 				<dl>
 					<dt><label for="edit-channel-name">Name</label></dt>
-					<dd><input id="edit-channel-name" type="text" placeholder="channel name" bind:value={editChannelName}></dd>
+					<dd><input id="edit-channel-name" type="text" placeholder="channel name" bind:value={editChannelName} /></dd>
 					<dt><label for="edit-channel-about">About</label></dt>
-					<dd><input id="edit-channel-about" type="text" placeholder="channel description" bind:value={editChannelAbout}></dd>
+					<dd><textarea id="edit-channel-about" placeholder="channel description" bind:value={editChannelAbout}></textarea></dd>
 					<dt><label for="edit-channel-picture">Picture</label></dt>
-					<dd><input id="edit-channel-picture" type="url" placeholder="https://..." bind:value={editChannelPicture}></dd>
+					<dd><input id="edit-channel-picture" type="url" placeholder="https://..." bind:value={editChannelPicture} /></dd>
 				</dl>
 				<button on:click={callSendEditChannel} disabled={!editChannelName}>Edit</button>
 			</form>
