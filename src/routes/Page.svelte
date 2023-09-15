@@ -1,8 +1,9 @@
 <script lang='ts'>
 
-import type {
-	SimplePool,
-	Event as NostrEvent
+import {
+	type SimplePool,
+	type Event as NostrEvent,
+	nip19
 } from 'nostr-tools';
 import Sidebar from './Sidebar.svelte';
 import Timeline from './Timeline.svelte';
@@ -47,15 +48,25 @@ const callSendMessage = () => {
 		{@const channel = channels.filter(v => v.id === currentChannelId)[0]}
 		<h2>{channel?.name ?? 'Now Loading...'}</h2>
 		{#if channel}
-		<p id="channel-about">{#if channel.picture}<img src="{channel.picture}" width="100" height="100" alt="banner" />{/if}{channel.about ?? ''}</p>
-		{/if}
-		{#if profs[channel?.pubkey]}
-		<p id="channel-owner"><img src="{profs[channel.pubkey].picture}" width="32" height="32" alt="{profs[channel.pubkey].display_name}" />@{profs[channel.pubkey].name}</p>
+		<figure>
+			{#if channel.picture}<img src="{channel.picture}" width="100" height="100" alt="banner" />{/if}
+			<figcaption id="channel-about">
+			{#if channel.about}
+				<div>{channel.about}</div>
+			{/if}
+			{#if profs[channel?.pubkey]}
+				<div id="channel-owner">
+					<img src="{profs[channel.pubkey].picture}" width="32" height="32" alt="{profs[channel.pubkey].display_name}" />
+					<a href="/{nip19.npubEncode(channel.pubkey)}">@{profs[channel.pubkey].name ?? ''}</a>
+				</div>
+			{/if}
+			</figcaption>
+		</figure>
 		{/if}
 	{:else if currentPubkey}
 		{#if profs[currentPubkey]}
-		<h2>{profs[currentPubkey].display_name ?? ''} @{profs[currentPubkey].name ?? ''}</h2>
-		<p class="about"><img src="{profs[currentPubkey].picture || './default.png'}" alt="@{profs[currentPubkey].name ?? ''}" width="32" height="32">{profs[currentPubkey].about ?? ''}</p>
+		<h2><img src="{profs[currentPubkey].picture || './default.png'}" alt="@{profs[currentPubkey].name ?? ''}" width="32" height="32"> {profs[currentPubkey].display_name ?? ''} @{profs[currentPubkey].name ?? ''}</h2>
+		<p class="about">{profs[currentPubkey].about ?? ''}</p>
 		{:else}
 		<h2>Now Loading...</h2>
 		{/if}
@@ -110,12 +121,6 @@ main {
 }
 #channel-about {
 	white-space: pre-wrap;
-}
-#channel-about > img {
-	float: left;
-}
-#channel-owner {
-	clear: left;
 }
 #input {
 	position: fixed;
