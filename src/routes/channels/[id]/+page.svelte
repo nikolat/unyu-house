@@ -130,8 +130,8 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42>, ev: NostrEvent<7|40|41|
 	}
 	else if (ev.kind === 41) {
 		const id = ev.tags.filter(tag => tag[0] === 'e')[0][1];
-		const currentChannel: Channel = channels.filter(v => v.id === id)[0];
-		if (ev.pubkey !== currentChannel.pubkey || ev.created_at < currentChannel.updated_at) {
+		const currentChannel: Channel = channels.filter(channel => channel.id === id)[0];
+		if (ev.pubkey !== currentChannel.pubkey || ev.created_at <= currentChannel.updated_at) {
 			return;
 		}
 		let newChannel: Channel;
