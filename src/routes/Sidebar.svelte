@@ -177,6 +177,11 @@ onMount(() => {
 	overflow-y: scroll;
 	transition: width 0.1s;
 }
+@media screen and (min-width: 1280px) {
+	#sidebar {
+		min-width: 20%;
+	}
+}
 #sidebar table {
 	table-layout: auto;
 	width: auto;
