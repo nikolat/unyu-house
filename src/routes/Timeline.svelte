@@ -202,9 +202,15 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 				<ul class="fav-holder" role="list">
 				{#each favList as ev}
 					{#if ev.tags.filter(tag => tag[0] === 'e' && tag[1] === note.id).length > 0 && profs[ev.pubkey]}
-						{@const reaction = ev.content.replace(/^\+$/, '❤')}
+						{@const emojiTag = ev.tags.filter(tag => tag[0] === 'emoji')[0]}
 						{@const prof = profs[ev.pubkey]}
-						<li>{reaction} <img src="{prof.picture || '/default.png'}" alt="avatar of {nip19.npubEncode(ev.pubkey)}"
+						<li>
+						{#if emojiTag && ev.content === `:${emojiTag[1]}:` && emojiTag[2]}
+							<img src="{emojiTag[2]}" width="20" height="20" alt=":${emojiTag[1]}:" />
+						{:else}
+							{ev.content.replace(/^\+$/, '❤')}
+						{/if}
+						<img src="{prof.picture || '/default.png'}" alt="avatar of {nip19.npubEncode(ev.pubkey)}"
 							width="16" height="16" /> {prof.display_name} <a href="/{nip19.npubEncode(ev.pubkey)}">@{prof.name}</a> reacted</li>
 					{/if}
 				{/each}
