@@ -214,8 +214,23 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 			<div class="action-bar">
 				<button on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey)} disabled={!loginPubkey}>☆fav</button>
 				<details>
-					<summary>JSON</summary>
-					<pre class="json-view"><code>{JSON.stringify(note, undefined, 2)}</code></pre>
+					<summary>Details</summary>
+					<dl class="details">
+						<dt>User ID</dt>
+						<dd><code>{nip19.npubEncode(note.pubkey)}</code></dd>
+						<dt>Event ID</dt>
+						<dd><code>{nip19.neventEncode({id:note.id, relays:pool.seenOn(note.id), author:note.pubkey})}</code></dd>
+						<dt>Event JSON</dt>
+						<dd><pre class="json-view"><code>{JSON.stringify(note, undefined, 2)}</code></pre></dd>
+						<dt>Relays seen on</dt>
+						<dd>
+							<ul>
+							{#each pool.seenOn(note.id) as relay}
+								<li>{relay}</li>
+							{/each}
+							</ul>
+						</dd>
+					</dl>
 				</details>
 			</div>
 		</dd>
@@ -224,9 +239,6 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 </dl>
 
 <style>
-dt {
-	border-top: 1px dashed #666;
-}
 dt time {
 	margin-left: 32px;
 }
@@ -260,7 +272,10 @@ dd details {
 dd details[open] {
 	max-width: 100%;
 }
-dd .json-view {
+dd dl * {
+	font-size: small;
+}
+dd dl .json-view > code {
 	font-size: x-small;
 }
 </style>
