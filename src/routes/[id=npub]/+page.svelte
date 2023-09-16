@@ -160,7 +160,9 @@ const importRelays = async() => {
 	}
 	applyRelays();
 };
+let scrolled = false;
 const applyRelays = () => {
+	scrolled = false;
 	channels = [];
 	notes = [];
 	notesQuoted = [];
@@ -172,12 +174,10 @@ const applyRelays = () => {
 	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3, loginPubkey).catch((e) => console.error(e));
 }
 
-let scrolled = false;
 beforeNavigate(() => {
 	subNotes?.unsub();
 });
 afterNavigate(() => {
-	scrolled = false;
 	const urlId: string = data.params.id;
 	if (/^npub/.test(urlId)) {
 		const d = nip19.decode(urlId);

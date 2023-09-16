@@ -162,7 +162,9 @@ const importRelays = async() => {
 	}
 	applyRelays();
 };
+let scrolled = false;
 const applyRelays = () => {
+	scrolled = false;
 	channels = [];
 	notes = [];
 	notesQuoted = [];
@@ -191,12 +193,10 @@ onMount(() => {
 	});
 });
 
-let scrolled = false;
 beforeNavigate(() => {
 	subNotes?.unsub();
 });
 afterNavigate(() => {
-	scrolled = false;
 	const urlId: string = data.params.id;
 	if (/^nevent/.test(urlId)) {
 		const d = nip19.decode(urlId);

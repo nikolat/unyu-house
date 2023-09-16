@@ -150,7 +150,9 @@ const importRelays = async() => {
 	}
 	applyRelays();
 };
+let scrolled = false;
 const applyRelays = () => {
+	scrolled = false;
 	channels = [];
 	notes = [];
 	notesQuoted = [];
@@ -162,13 +164,11 @@ const applyRelays = () => {
 	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3, loginPubkey).catch((e) => console.error(e));
 }
 
-let scrolled = false;
 onDestroy(() => {
 	subNotes?.unsub();
 	pool.close(Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]));
 });
 onMount(async () => {
-	scrolled = false;
 	if (!useRelaysNIP07) {
 		relaysToUse = defaultRelays;
 		storedRelaysToUse.set(relaysToUse);
