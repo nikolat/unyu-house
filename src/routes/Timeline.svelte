@@ -305,6 +305,9 @@ dd .action-bar details summary {
 dd .action-bar details summary {
 	list-style: none;
 }
+dd .action-bar details summary::-webkit-details-marker {
+	display:none;
+}
 dd .action-bar details:not([open]),
 dd .action-bar details:not([open]) summary {
 	background-color: transparent;
