@@ -162,11 +162,13 @@ const applyRelays = () => {
 	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3, loginPubkey).catch((e) => console.error(e));
 }
 
+let scrolled = false;
 onDestroy(() => {
 	subNotes?.unsub();
 	pool.close(Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]));
 });
 onMount(async () => {
+	scrolled = false;
 	if (!useRelaysNIP07) {
 		relaysToUse = defaultRelays;
 		storedRelaysToUse.set(relaysToUse);
@@ -174,8 +176,14 @@ onMount(async () => {
 	applyRelays();
 });
 afterUpdate(() => {
-	const main = document.getElementsByTagName('main')[0];
-	main.scroll(0, main.scrollHeight);
+	if (!scrolled) {
+		if (document.querySelectorAll('main dl dt').length === 0) {
+			return;
+		}
+		const main = document.getElementsByTagName('main')[0];
+		main.scroll(0, main.scrollHeight);
+		scrolled = true;
+	}
 });
 </script>
 

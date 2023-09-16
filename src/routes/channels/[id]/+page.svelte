@@ -191,10 +191,12 @@ onMount(() => {
 	});
 });
 
+let scrolled = false;
 beforeNavigate(() => {
 	subNotes?.unsub();
 });
 afterNavigate(() => {
+	scrolled = false;
 	const urlId: string = data.params.id;
 	if (/^nevent/.test(urlId)) {
 		const d = nip19.decode(urlId);
@@ -221,10 +223,14 @@ afterNavigate(() => {
 	}
 });
 afterUpdate(() => {
-	if (document.activeElement?.tagName.toLowerCase() === 'textarea')
-		return;
-	const main = document.getElementsByTagName('main')[0];
-	main.scroll(0, main.scrollHeight);
+	if (!scrolled) {
+		if (document.querySelectorAll('main dl dt').length === 0) {
+			return;
+		}
+		const main = document.getElementsByTagName('main')[0];
+		main.scroll(0, main.scrollHeight);
+		scrolled = true;
+	}
 });
 </script>
 
