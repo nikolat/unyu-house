@@ -219,9 +219,9 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 			{/if}
 		{/if}
 			<div class="action-bar">
-				<button on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey)} disabled={!loginPubkey}>☆fav</button>
+				<button class="fav" on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey)} disabled={!loginPubkey}><svg><use xlink:href="/heart.svg#fav"></use></svg></button>
 				<details>
-					<summary>Details</summary>
+					<summary><svg><use xlink:href="/more-horizontal.svg#more"></use></svg></summary>
 					<dl class="details">
 						<dt>User ID</dt>
 						<dd><code>{nip19.npubEncode(note.pubkey)}</code></dd>
@@ -272,17 +272,59 @@ dd ul.fav-holder {
 dd .action-bar > * {
 	vertical-align: top;
 }
-dd details {
-	display: inline-block;
-	margin: 0;
-}
-dd details[open] {
-	max-width: 100%;
-}
 dd dl * {
 	font-size: small;
 }
 dd dl .json-view > code {
 	font-size: x-small;
+}
+dd button.fav {
+	background-color: transparent;
+	border: none;
+	outline: none;
+	padding: 0;
+	width: 24px;
+	height: 24px;
+}
+dd button.fav > svg {
+	width: 24px;
+	height: 24px;
+}
+dd details {
+	display: inline-block;
+	margin: 0;
+}
+dd details[open] {
+	max-width: calc(100% - 60px);
+}
+dd .action-bar details,
+dd .action-bar details summary {
+	margin: 0;
+	padding: 0;
+}
+dd .action-bar details summary {
+	list-style: none;
+}
+dd .action-bar details:not([open]),
+dd .action-bar details:not([open]) summary {
+	background-color: transparent;
+}
+dd .action-bar details dl {
+	padding: 0 1em;
+}
+dd .action-bar details svg {
+	width: 24px;
+	height: 24px;
+}
+:global(#container.dark button.fav,
+	#container.dark details) {
+	fill: white;
+}
+:global(#container.light button.fav,
+	#container.light details) {
+	fill: black;
+}
+:global(#container button.fav:active) {
+	fill: pink;
 }
 </style>
