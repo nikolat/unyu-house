@@ -230,6 +230,7 @@ const callSendMessage = (noteId: string, currentChannelId: string, replyId: stri
 			{/if}
 		{/if}
 			<div class="action-bar">
+				{#if loginPubkey}
 				<details>
 					<summary>
 						<svg><use xlink:href="/arrow-bold-reply.svg#reply"></use></svg><span>reply to @{#if profs[note.pubkey]}{profs[note.pubkey]?.name ?? ''}{:else}{nip19.npubEncode(note.pubkey).slice(0, 10)}...{/if}</span>
@@ -243,6 +244,7 @@ const callSendMessage = (noteId: string, currentChannelId: string, replyId: stri
 					{/if}
 				</details>
 				<button class="fav" on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey)} disabled={!loginPubkey}><svg><use xlink:href="/heart.svg#fav"></use></svg></button>
+				{/if}
 				<details>
 					<summary><svg><use xlink:href="/more-horizontal.svg#more"></use></svg></summary>
 					<dl class="details">

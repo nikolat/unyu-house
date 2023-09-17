@@ -120,7 +120,7 @@ const hidePostBar = () => {
 		<h2>Global timeline</h2>
 	{/if}
 		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {loginPubkey} {muteList} {favList} />
-	{#if currentChannelId}
+	{#if currentChannelId && loginPubkey}
 		<div id="input" class="show" on:click|stopPropagation={()=>{}}>
 			{#if loginPubkey}
 			<textarea id="input-text" bind:value={inputText}></textarea>
