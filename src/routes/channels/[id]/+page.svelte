@@ -176,23 +176,10 @@ const applyRelays = () => {
 	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3, loginPubkey).catch((e) => console.error(e));
 }
 
-let scrollPosition = 0;
 onMount(() => {
-	const main = document.querySelector('main');
 	const input = document.getElementById('input');
-	main?.addEventListener('scroll', (e) => {
-		const threshold = 200;
-		if (main.scrollTop - scrollPosition > threshold) {
-			input?.classList.remove('show');
-			scrollPosition = main.scrollTop;
-		}
-		else if (scrollPosition - main.scrollTop > threshold) {
-			input?.classList.add('show');
-			scrollPosition = main.scrollTop;
-		}
-	});
+	input?.classList.remove('show');
 });
-
 beforeNavigate(() => {
 	subNotes?.unsub();
 });

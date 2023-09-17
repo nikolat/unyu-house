@@ -55,9 +55,21 @@ const callSendMessage = () => {
 	const recommendedRelay = channels.filter(v => v.id === currentChannelId)[0].recommendedRelay;
 	sendMessage(pool, relaysToWrite, content, currentChannelId, recommendedRelay);
 };
+
+const showPostBar = () => {
+	const input = document.getElementById('input');
+	input?.classList.add('show');
+};
+
+const hidePostBar = () => {
+	const input = document.getElementById('input');
+	input?.classList.remove('show');
+}
 </script>
 
-<div id="container">
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y-no-static-element-interactions -->
+<div id="container" on:click={hidePostBar}>
 	<Header {title} />
 	<Sidebar {pool} {theme} {relaysToUse} {loginPubkey} {useRelaysNIP07} {channels} {profs} {importRelays} {applyRelays} />
 	<main>
@@ -109,7 +121,7 @@ const callSendMessage = () => {
 	{/if}
 		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {loginPubkey} {muteList} {favList} />
 	{#if currentChannelId}
-		<div id="input" class="show">
+		<div id="input" class="show" on:click|stopPropagation={()=>{}}>
 			{#if loginPubkey}
 			<textarea id="input-text" bind:value={inputText}></textarea>
 				{#if inputText !== ''}
@@ -122,6 +134,7 @@ const callSendMessage = () => {
 				<button disabled>Post</button>
 			{/if}
 		</div>
+		<button id="show-post-bar" on:click|stopPropagation={showPostBar}>show post bar</button>
 	{/if}
 	</main>
 </div>
@@ -185,5 +198,10 @@ details textarea {
 }
 #profile-about {
 	white-space: pre-wrap;
+}
+#show-post-bar {
+	position: fixed;
+	right: 1em;
+	bottom: 1em;
 }
 </style>
