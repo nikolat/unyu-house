@@ -332,21 +332,13 @@ const getMuteListAndFavs = (events: NostrEvent<7|10000>[], pubkey: string): [str
 	return [muteList, favList, favedList, Array.from(profileListToGet)];
 };
 
-export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], content: string, currentChannelId: string, recommendedRelay: string) => {
+export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], content: string, currentChannelId: string, recommendedRelay: string, replyId: string, pubkeysToReply: string[]) => {
 	const tags = [['e', currentChannelId, recommendedRelay, 'root']];
-	const matchesIteratorPubkey = content.matchAll(/(^|\W|\b)(nostr:(npub\w{59}))($|\W|\b)/g);
-	const mentionPubkeys: Set<string> = new Set();
-	for (const match of matchesIteratorPubkey) {
-		const d = nip19.decode(match[3]);
-		if (d.type === 'npub') {
-			mentionPubkeys.add(d.data);
-		}
+	if (replyId) {
+		tags.push(['e', replyId, '', 'reply']);
 	}
-	for (const p of mentionPubkeys) {
-		tags.push(['p', p, '']);
-	}
-	const matchesIteratorId = content.matchAll(/(^|\W|\b)(nostr:(note\w{59}|nevent\w+))($|\W|\b)/g);
 	const mentionIds: Set<string> = new Set();
+	const matchesIteratorId = content.matchAll(/(^|\W|\b)(nostr:(note\w{59}|nevent\w+))($|\W|\b)/g);
 	for (const match of matchesIteratorId) {
 		const d = nip19.decode(match[3]);
 		if (d.type === 'note') {
@@ -358,6 +350,20 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 	}
 	for (const id of mentionIds) {
 		tags.push(['e', id, '', 'mention']);
+	}
+	const mentionPubkeys: Set<string> = new Set();
+	const matchesIteratorPubkey = content.matchAll(/(^|\W|\b)(nostr:(npub\w{59}))($|\W|\b)/g);
+	for (const match of matchesIteratorPubkey) {
+		const d = nip19.decode(match[3]);
+		if (d.type === 'npub') {
+			mentionPubkeys.add(d.data);
+		}
+	}
+	for (const pubkeyToReply of pubkeysToReply) {
+		mentionPubkeys.add(pubkeyToReply);
+	}
+	for (const p of mentionPubkeys) {
+		tags.push(['p', p, '']);
 	}
 	const baseEvent: UnsignedEvent<42> = {
 		kind: 42,

@@ -53,7 +53,7 @@ const callSendMessage = () => {
 	inputText = '';
 	const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
 	const recommendedRelay = channels.filter(v => v.id === currentChannelId)[0].recommendedRelay;
-	sendMessage(pool, relaysToWrite, content, currentChannelId, recommendedRelay);
+	sendMessage(pool, relaysToWrite, content, currentChannelId, recommendedRelay, '', []);
 };
 
 const showPostBar = () => {

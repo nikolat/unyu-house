@@ -5,7 +5,7 @@ import {
 	SimplePool,
 	type Event as NostrEvent,
 } from 'nostr-tools';
-import { sendFav } from '$lib/util';
+import { sendFav, sendMessage } from '$lib/util';
 
 interface Channel {
 	name: string
@@ -33,6 +33,8 @@ export let channels: Channel[];
 export let loginPubkey: string;
 export let muteList: string[];
 export let favList: NostrEvent[];
+
+let inputText: {[key: string]: string} = {};
 
 const getImageUrls = (content: string) => {
 	const matchesIterator = content.matchAll(/https?:\/\/\S+\.(jpe?g|png|gif|webp)/g);
@@ -67,6 +69,15 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 	const plainTexts = content.split(regSplit);
 	const matchesIterator = content.matchAll(regMatch);
 	return [matchesIterator, plainTexts, emojiUrls];
+};
+
+const callSendMessage = (noteId: string, currentChannelId: string, replyId: string, pubkeysToReply:string[]) => {
+	const content = inputText[noteId];
+	if (!content)
+		return;
+	inputText[noteId] = '';
+	const recommendedRelay = channels.filter(v => v.id === currentChannelId)[0].recommendedRelay;
+	sendMessage(pool, relaysToWrite, content, currentChannelId, recommendedRelay, replyId, pubkeysToReply);
 };
 
 </script>
@@ -219,6 +230,18 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 			{/if}
 		{/if}
 			<div class="action-bar">
+				<details>
+					<summary>
+						<svg><use xlink:href="/arrow-bold-reply.svg#reply"></use></svg><span>reply to @{#if profs[note.pubkey]}{profs[note.pubkey]?.name ?? ''}{:else}{nip19.npubEncode(note.pubkey).slice(0, 10)}...{/if}</span>
+					</summary>
+					<textarea id="input-text" bind:value={inputText[note.id]} disabled={!loginPubkey}></textarea>
+					{#if note.tags.filter(v => v[0] === 'e' && v[3] === 'root').length > 0}
+						{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root')[0][1]}
+						{@const replyId = note.id}
+						{@const pubkeysToReply = [note.pubkey, ...note.tags.filter(tag => tag[0] === 'p').map(tag => tag[1])]}
+						<button on:click={() => {callSendMessage(note.id, rootId, replyId, pubkeysToReply)}} disabled={!loginPubkey || !inputText[note.id]}>Reply</button>
+					{/if}
+				</details>
 				<button class="fav" on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey)} disabled={!loginPubkey}><svg><use xlink:href="/heart.svg#fav"></use></svg></button>
 				<details>
 					<summary><svg><use xlink:href="/more-horizontal.svg#more"></use></svg></summary>
@@ -272,6 +295,11 @@ dd ul.fav-holder {
 dd .action-bar > * {
 	vertical-align: top;
 }
+
+dl > dd > div.action-bar > button,
+dl > dd > div.action-bar > details {
+	margin-right: 20px;
+}
 dd dl * {
 	font-size: small;
 }
@@ -295,7 +323,7 @@ dd details {
 	margin: 0;
 }
 dd details[open] {
-	max-width: calc(100% - 60px);
+	max-width: calc(100% - 130px);
 }
 dd .action-bar details,
 dd .action-bar details summary {
@@ -311,6 +339,15 @@ dd .action-bar details summary::-webkit-details-marker {
 dd .action-bar details:not([open]),
 dd .action-bar details:not([open]) summary {
 	background-color: transparent;
+}
+dd .action-bar details[open] summary {
+	min-width: 30em;
+}
+dd .action-bar details[open] summary span {
+	margin-left: 1em;
+}
+dd .action-bar details:not([open]) summary span {
+	display: none;
 }
 dd .action-bar details dl {
 	padding: 0 1em;
