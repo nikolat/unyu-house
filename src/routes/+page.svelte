@@ -1,7 +1,8 @@
 <script lang='ts'>
 import { afterUpdate, onDestroy, onMount } from 'svelte';
 import { SimplePool, type Sub, type Event as NostrEvent, type Filter } from 'nostr-tools';
-import { title, defaultRelays, type Channel, type Profile, getEventsPhase1, urlDefaultTheme } from '$lib/util';
+import { title, defaultRelays } from '$lib/config';
+import { type Channel, type Profile, getEventsPhase1, urlDefaultTheme } from '$lib/util';
 import { storedFavList, storedLoginpubkey, storedMuteList, storedRelaysToUse, storedTheme, storedUseRelaysNIP07 } from '$lib/store';
 import Page from './Page.svelte';
 
