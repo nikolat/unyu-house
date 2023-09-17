@@ -124,7 +124,7 @@ const hidePostBar = () => {
 		<div id="input" class="show" on:click|stopPropagation={()=>{}}>
 			{#if loginPubkey}
 			<textarea id="input-text" bind:value={inputText}></textarea>
-				{#if inputText !== ''}
+				{#if inputText}
 				<button on:click={callSendMessage}>Post</button>
 				{:else}
 				<button disabled>Post</button>
