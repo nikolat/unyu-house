@@ -134,7 +134,7 @@ const hidePostBar = () => {
 				<button disabled>Post</button>
 			{/if}
 		</div>
-		<button id="show-post-bar" on:click|stopPropagation={showPostBar}>show post bar</button>
+		<button id="show-post-bar" on:click|stopPropagation={showPostBar}><svg><use xlink:href="/pencil-create.svg#pencil"></use></svg></button>
 	{/if}
 	</main>
 </div>
@@ -203,5 +203,19 @@ details textarea {
 	position: fixed;
 	right: 1em;
 	bottom: 1em;
+	background-color: transparent;
+}
+#show-post-bar svg {
+	width: 24px;
+	height: 24px;
+}
+#input.show+#show-post-bar {
+	display: none;
+}
+:global(#container.dark #show-post-bar) {
+	fill: white;
+}
+:global(#container.light #show-post-bar) {
+	fill: black;
 }
 </style>
