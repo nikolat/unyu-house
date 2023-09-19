@@ -144,7 +144,7 @@ const callSendMessage = (noteId: string, currentChannelId: string, replyId: stri
 								{:else}
 									<img src="/default.png" alt="" width="32" height="32"><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
 								{/if} 
-								{#if note.tags.filter(v => v[0] === 'e' && v[3] === 'root').length > 0}
+								{#if note.kind === 42 && note.tags.filter(v => v[0] === 'e' && v[3] === 'root').length > 0}
 									{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root')[0][1]}
 									{@const channel = channels.filter(v => v.id === rootId)[0]}
 									{@const channelId = nip19.neventEncode({id:rootId, relays:[channel?.recommendedRelay], author:channel?.pubkey})}
@@ -171,7 +171,7 @@ const callSendMessage = (noteId: string, currentChannelId: string, replyId: stri
 								{:else}
 									<img src="/default.png" alt="" width="32" height="32"><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
 								{/if}| {(new Date(1000 * note.created_at)).toLocaleString()} | kind:{note.kind} 
-								{#if note.tags.filter(v => v[0] === 'e' && v[3] === 'root').length > 0}
+								{#if note.kind === 42 && note.tags.filter(v => v[0] === 'e' && v[3] === 'root').length > 0}
 									{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root')[0][1]}
 									{@const channel = channels.filter(v => v.id === rootId)[0]}
 									{@const channelId = nip19.neventEncode({id:rootId, relays:[channel?.recommendedRelay], author:channel?.pubkey})}
