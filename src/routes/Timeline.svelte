@@ -327,7 +327,7 @@ dd details {
 dd details[open] {
 	max-width: calc(100% - 130px);
 }
-dd details:first-child[open] {
+dd details:only-child[open] {
 	max-width: calc(100% - 30px);
 }
 dd .action-bar details,
