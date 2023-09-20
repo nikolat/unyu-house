@@ -79,17 +79,19 @@ const hidePostBar = () => {
 		{#if channel}
 		<figure>
 			{#if channel.picture}<img src="{channel.picture}" width="100" height="100" alt="banner" />{/if}
+			{#if channel.about || profs[channel.pubkey]}
 			<figcaption id="channel-about">
-			{#if channel.about}
+				{#if channel.about}
 				<div>{channel.about}</div>
-			{/if}
-			{#if profs[channel?.pubkey]}
+				{/if}
+				{#if profs[channel.pubkey]}
 				<div id="channel-owner">
-					<img src="{profs[channel.pubkey].picture}" width="32" height="32" alt="{profs[channel.pubkey].display_name}" />
+					<img src="{profs[channel.pubkey].picture}" width="32" height="32" alt="@{profs[channel.pubkey].name}" />
 					<a href="/{nip19.npubEncode(channel.pubkey)}">@{profs[channel.pubkey].name ?? ''}</a>
 				</div>
-			{/if}
+				{/if}
 			</figcaption>
+			{/if}
 		</figure>
 			{#if loginPubkey === channel.pubkey}
 		<details>

@@ -164,6 +164,21 @@ const callSendMessage = (noteId: string, currentChannelId: string, replyId: stri
 					{#if d.type === 'nevent' && (notes.filter(v => v.id === d.data.id).length > 0 || notesQuoted.filter(v => v.id === d.data.id).length > 0)}
 						{@const note = notes.filter(v => v.id === d.data.id)[0] ?? notesQuoted.filter(v => v.id === d.data.id)[0]}
 						<blockquote>
+							{#if note.kind === 40}
+							{@const channel = channels.filter(v => v.id === note.id)[0]}
+							{@const channelId = nip19.neventEncode({id:d.data.id, relays:[channel?.recommendedRelay], author:channel?.pubkey})}
+							<h2>{#if channel}<a href="/channels/{channelId}">{channel.name ?? ''}</a>{:else}(unknown channel){/if}</h2>
+								{#if channel}
+								<figure>
+									{#if channel.picture}<img src="{channel.picture}" width="100" height="100" alt="banner" />{/if}
+									{#if channel.about}
+									<figcaption id="channel-about">
+										<div>{channel.about}</div>
+									</figcaption>
+									{/if}
+								</figure>
+								{/if}
+							{:else}
 							<dl>
 								<dt>
 								{#if profs[note.pubkey]}
@@ -181,6 +196,7 @@ const callSendMessage = (noteId: string, currentChannelId: string, replyId: stri
 								</dt>
 								<dd>{note.content}</dd>
 							</dl>
+							{/if}
 						</blockquote>
 					{:else}
 						{match[6]}
