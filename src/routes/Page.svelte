@@ -1,14 +1,14 @@
 <script lang='ts'>
 
-import {
-	type SimplePool,
-	type Event as NostrEvent,
-	nip19
+import type {
+	SimplePool,
+	Event as NostrEvent,
 } from 'nostr-tools';
+import { sendMessage, type Channel, type Profile } from '$lib/util';
 import Sidebar from './Sidebar.svelte';
 import Timeline from './Timeline.svelte';
 import Header from './Header.svelte';
-import { sendMessage, type Channel, type Profile, sendEditChannel } from '$lib/util';
+import ChannelMetadata from './ChannelMetadata.svelte';
 
 export let title: string;
 export let pool: SimplePool;
@@ -27,24 +27,7 @@ export let currentPubkey: string | null
 export let applyRelays: Function
 export let favList: NostrEvent[];
 
-let editChannelName: string;
-let editChannelAbout: string;
-let editChannelPicture: string;
-
 let inputText: string;
-
-const setChannelMetadata = (currentChannelName: string, currentChannelAbout: string, currentChannelPicture: string) => {
-	editChannelName = currentChannelName;
-	editChannelAbout = currentChannelAbout;
-	editChannelPicture = currentChannelPicture;
-	return '';
-};
-
-const callSendEditChannel = () => {
-	if (currentChannelId) {
-		sendEditChannel(pool, relaysToUse, currentChannelId, editChannelName, editChannelAbout, editChannelPicture);
-	}
-};
 
 const callSendMessage = () => {
 	if (!currentChannelId)
@@ -75,42 +58,7 @@ const hidePostBar = () => {
 	<main>
 	{#if currentChannelId}
 		{@const channel = channels.filter(v => v.id === currentChannelId)[0]}
-		<h2>{channel?.name ?? 'Now Loading...'}</h2>
-		{#if channel}
-		<figure>
-			{#if channel.picture}<img src="{channel.picture}" width="100" height="100" alt="banner" />{/if}
-			{#if channel.about || profs[channel.pubkey]}
-			<figcaption id="channel-about">
-				{#if channel.about}
-				<div>{channel.about}</div>
-				{/if}
-				{#if profs[channel.pubkey]}
-				<div id="channel-owner">
-					<img src="{profs[channel.pubkey].picture}" width="32" height="32" alt="@{profs[channel.pubkey].name}" />
-					<a href="/{nip19.npubEncode(channel.pubkey)}">@{profs[channel.pubkey].name ?? ''}</a>
-				</div>
-				{/if}
-			</figcaption>
-			{/if}
-		</figure>
-			{#if loginPubkey === channel.pubkey}
-		<details>
-			<summary>Edit Channel</summary>
-			{setChannelMetadata(channel?.name, channel?.about, channel?.picture)}
-			<form>
-				<dl>
-					<dt><label for="edit-channel-name">Name</label></dt>
-					<dd><input id="edit-channel-name" type="text" placeholder="channel name" bind:value={editChannelName} /></dd>
-					<dt><label for="edit-channel-about">About</label></dt>
-					<dd><textarea id="edit-channel-about" placeholder="channel description" bind:value={editChannelAbout}></textarea></dd>
-					<dt><label for="edit-channel-picture">Picture</label></dt>
-					<dd><input id="edit-channel-picture" type="url" placeholder="https://..." bind:value={editChannelPicture} /></dd>
-				</dl>
-				<button on:click={callSendEditChannel} disabled={!editChannelName}>Edit</button>
-			</form>
-		</details>
-			{/if}
-		{/if}
+		<ChannelMetadata {channel} {pool} {profs} {loginPubkey} {relaysToUse} isQuote={false} />
 	{:else if currentPubkey}
 		{#if profs[currentPubkey]}
 		<h2><img src="{profs[currentPubkey].picture || './default.png'}" alt="@{profs[currentPubkey].name ?? ''}" width="32" height="32"> {profs[currentPubkey].display_name ?? ''} @{profs[currentPubkey].name ?? ''}</h2>
@@ -167,16 +115,6 @@ main {
 	overflow-x: hidden;
 	overflow-y: scroll;
 	word-break: break-all;
-}
-#channel-about {
-	white-space: pre-wrap;
-}
-details {
-	display: inline-block;
-}
-details input,
-details textarea {
-	min-width: 15em;
 }
 #input {
 	position: fixed;

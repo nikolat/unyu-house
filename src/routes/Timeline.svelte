@@ -5,25 +5,9 @@ import {
 	SimplePool,
 	type Event as NostrEvent,
 } from 'nostr-tools';
-import { sendFav, sendMessage } from '$lib/util';
+import { sendFav, sendMessage, type Profile, type Channel } from '$lib/util';
 import { urlToLinkNote } from '$lib/config';
-
-interface Channel {
-	name: string
-	about: string
-	picture: string
-	updated_at: number
-	id: string
-	pubkey: string
-	recommendedRelay: string
-}
-
-interface Profile {
-	name: string
-	display_name: string
-	about: string
-	picture: string
-}
+import ChannelMetadata from './ChannelMetadata.svelte';
 
 export let pool: SimplePool;
 export let relaysToWrite: string[];
@@ -167,18 +151,7 @@ const callSendMessage = (noteId: string, currentChannelId: string, replyId: stri
 						<blockquote>
 							{#if note.kind === 40}
 							{@const channel = channels.filter(v => v.id === note.id)[0]}
-							{@const channelId = nip19.neventEncode({id:d.data.id, relays:[channel?.recommendedRelay], author:channel?.pubkey})}
-							<h2>{#if channel}<a href="/channels/{channelId}">{channel.name ?? ''}</a>{:else}(unknown channel){/if}</h2>
-								{#if channel}
-								<figure>
-									{#if channel.picture}<img src="{channel.picture}" width="100" height="100" alt="banner" />{/if}
-									{#if channel.about}
-									<figcaption id="channel-about">
-										<div>{channel.about}</div>
-									</figcaption>
-									{/if}
-								</figure>
-								{/if}
+							<ChannelMetadata {channel} {pool} {profs} {loginPubkey} relaysToUse={{}} isQuote={true} />
 							{:else}
 							<dl>
 								<dt>
