@@ -8,6 +8,7 @@ import {
 import { sendFav, sendMessage, type Profile, type Channel } from '$lib/util';
 import { urlToLinkNote } from '$lib/config';
 import ChannelMetadata from './ChannelMetadata.svelte';
+import Quote from './Quote.svelte';
 
 export let pool: SimplePool;
 export let relaysToWrite: string[];
@@ -39,7 +40,7 @@ const getVideoUrls = (content: string) => {
 };
 
 const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator<RegExpMatchArray>, string[], {[key: string]: string}] => {
-	const regMatchArray = ['https?://[\\w!?/=+\\-_~;.,*&@#$%()[\\]]+', 'nostr:(npub\\w{59})', 'nostr:(note\\w{59})', 'nostr:(nevent\\w+)'];
+	const regMatchArray = ['https?://[\\w!?/=+\\-_~;.,*&@#$%()[\\]]+', 'nostr:npub\\w{59}', 'nostr:note\\w{59}', 'nostr:nevent\\w+'];
 	const emojiUrls: {[key: string]: string} = {};
 	const emojiRegs = [];
 	for (const tag of tags) {
@@ -50,7 +51,7 @@ const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator
 		regMatchArray.push(emojiRegs.join('|'));
 	}
 	const regMatch = new RegExp(regMatchArray.map(v => '(' + v + ')').join('|'), 'g');
-	const regSplit = new RegExp(regMatchArray.map(v => v.replace('(', '').replace(')', '')).join('|'));
+	const regSplit = new RegExp(regMatchArray.join('|'));
 	const plainTexts = content.split(regSplit);
 	const matchesIterator = content.matchAll(regMatch);
 	return [matchesIterator, plainTexts, emojiUrls];
@@ -110,74 +111,24 @@ const callSendMessage = (noteId: string, currentChannelId: string, replyId: stri
 			{#each matchesIterator as match}
 				{#if /https?:\/\/\S+/.test(match[1]) }
 					<a href="{match[1]}" target="_blank" rel="noopener noreferrer">{match[1]}</a>
-				{:else if /npub\w{59}/.test(match[3])}
-					{@const d = nip19.decode(match[3])}
+				{:else if /nostr:npub\w{59}/.test(match[2])}
+					{@const matchedText = match[2]}
+					{@const npubText = matchedText.replace(/nostr:/, '')}
+					{@const d = nip19.decode(npubText)}
 					{#if d.type === 'npub'}
-						<a href="/{match[3]}">@{profs[d.data]?.name ?? (match[3].slice(0, 10) + '...')}</a>
+						<a href="/{match[3]}">@{profs[d.data]?.name ?? (npubText.slice(0, 10) + '...')}</a>
 					{:else}
-						{match[2]}
+						{matchedText}
 					{/if}
-				{:else if /note\w{59}/.test(match[5])}
-					{@const d = nip19.decode(match[5])}
-					{#if d.type === 'note' && (notes.filter(v => v.id === d.data).length > 0 || notesQuoted.filter(v => v.id === d.data).length > 0)}
-						{@const note = notes.filter(v => v.id === d.data)[0] ?? notesQuoted.filter(v => v.id === d.data)[0]}
-						<blockquote>
-							<dl>
-								<dt>
-								{#if profs[note.pubkey]}
-									<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32" /> {profs[note.pubkey].display_name ?? ''} <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>
-								{:else}
-									<img src="/default.png" alt="" width="32" height="32" /><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
-								{/if} 
-								<br /><time>{(new Date(1000 * note.created_at)).toLocaleString()}</time> {#if note.kind === 1}<a href="{urlToLinkNote}/{match[5]}" target="_blank" rel="noopener noreferrer">kind:1</a>{:else}kind:{note.kind}{/if}
-								{#if note.kind === 42 && note.tags.filter(v => v[0] === 'e' && v[3] === 'root').length > 0}
-									{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root')[0][1]}
-									{@const channel = channels.filter(v => v.id === rootId)[0]}
-									{@const channelId = nip19.neventEncode({id:rootId, relays:[channel?.recommendedRelay], author:channel?.pubkey})}
-									{@const channelName = (channels.filter(v => v.id === rootId)[0])?.name ?? '(unknown channel)'}
-									{#if channel}<a href="/channels/{channelId}">{channelName}</a>{:else}{channelName}{/if}
-								{/if}
-								</dt>
-								<dd>{note.content}</dd>
-							</dl>
-						</blockquote>
-					{:else}
-						{match[4]}
-					{/if}
-				{:else if /nevent\w+/.test(match[7])}
-					{@const d = nip19.decode(match[7])}
-					{#if d.type === 'nevent' && (notes.filter(v => v.id === d.data.id).length > 0 || notesQuoted.filter(v => v.id === d.data.id).length > 0)}
-						{@const note = notes.filter(v => v.id === d.data.id)[0] ?? notesQuoted.filter(v => v.id === d.data.id)[0]}
-						<blockquote>
-							{#if note.kind === 40}
-							{@const channel = channels.filter(v => v.id === note.id)[0]}
-							<ChannelMetadata {channel} {pool} {profs} {loginPubkey} relaysToUse={{}} isQuote={true} />
-							{:else}
-							<dl>
-								<dt>
-								{#if profs[note.pubkey]}
-									<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>
-								{:else}
-									<img src="/default.png" alt="" width="32" height="32" /><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
-								{/if}
-								<br /><time>{(new Date(1000 * note.created_at)).toLocaleString()}</time> {#if note.kind === 1}<a href="{urlToLinkNote}/{match[7]}" target="_blank" rel="noopener noreferrer">kind:1</a>{:else}kind:{note.kind}{/if}
-								{#if note.kind === 42 && note.tags.filter(v => v[0] === 'e' && v[3] === 'root').length > 0}
-									{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root')[0][1]}
-									{@const channel = channels.filter(v => v.id === rootId)[0]}
-									{@const channelId = nip19.neventEncode({id:rootId, relays:[channel?.recommendedRelay], author:channel?.pubkey})}
-									{@const channelName = (channels.filter(v => v.id === rootId)[0])?.name ?? '(unknown channel)'}
-									{#if channel}<a href="/channels/{channelId}">{channelName}</a>{:else}{channelName}{/if}
-								{/if}
-								</dt>
-								<dd>{note.content}</dd>
-							</dl>
-							{/if}
-						</blockquote>
-					{:else}
-						{match[6]}
-					{/if}
-				{:else if match[8]}
-					<img src="{emojiUrls[match[8]]}" alt="{match[8]}" title="{match[8]}" class="emoji" />
+				{:else if /nostr:note\w{59}/.test(match[3])}
+					{@const matchedText = match[3]}
+					<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} />
+				{:else if /nostr:nevent\w+/.test(match[4])}
+					{@const matchedText = match[4]}
+					<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} />
+				{:else if match[5]}
+					{@const matchedText = match[5]}
+					<img src="{emojiUrls[matchedText]}" alt="{matchedText}" title="{matchedText}" class="emoji" />
 				{/if}
 				{plainTexts.shift()}
 			{/each}
