@@ -66,7 +66,7 @@ $: profs = profs;
 
 const callbackPhase1 = (channelsNew: Channel[], notesNew: NostrEvent[], muteListNew: string[]) => {
 	channels = channelsNew;
-	notes = notesNew;
+	notes = notesNew.filter(ev => ev.tags.some(tag => tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root'));
 	muteList = muteListNew;
 };
 
@@ -106,7 +106,7 @@ const callbackPhase2 = (profsNew: {[key: string]: Profile}, favListNew: NostrEve
 
 const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42>, ev: NostrEvent<7|40|41|42>) => {
 	subNotes = subNotesPhase3;
-	if (ev.kind === 42 && !notes.map(v => v.id).includes(ev.id)) {
+	if (ev.kind === 42 && ev.tags.some(tag => tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root') && !notes.map(v => v.id).includes(ev.id)) {
 		notes.push(ev);
 		notes = notes;
 	}
