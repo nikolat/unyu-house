@@ -152,7 +152,7 @@ const callSendMessage = (noteId: string, currentChannelId: string, replyId: stri
 									{@const channelName = (channels.filter(v => v.id === rootId)[0])?.name ?? '(unknown channel)'}
 									{#if channel}<a href="/channels/{channelId}">{channelName}</a>{:else}{channelName}{/if}
 								{/if}
-								<br /><time>{(new Date(1000 * note.created_at)).toLocaleString()}</time> {#if note.kind === 1}<a href="{urlToLinkNote}/{match[5]}" target="_blank" rel="noopener noreferrer">kind:1</a>{:else}{note.kind}{/if}
+								<br /><time>{(new Date(1000 * note.created_at)).toLocaleString()}</time> {#if note.kind === 1}<a href="{urlToLinkNote}/{match[5]}" target="_blank" rel="noopener noreferrer">kind:1</a>{:else}kind:{note.kind}{/if}
 								</dt>
 								<dd>{note.content}</dd>
 							</dl>
@@ -186,7 +186,7 @@ const callSendMessage = (noteId: string, currentChannelId: string, replyId: stri
 									<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32" /> {profs[note.pubkey].display_name ?? ''} | <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>
 								{:else}
 									<img src="/default.png" alt="" width="32" height="32"><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
-								{/if}| {(new Date(1000 * note.created_at)).toLocaleString()} | {#if note.kind === 1}<a href="{urlToLinkNote}/{match[7]}" target="_blank" rel="noopener noreferrer">kind:1</a>{:else}{note.kind}{/if} 
+								{/if}| {(new Date(1000 * note.created_at)).toLocaleString()} | {#if note.kind === 1}<a href="{urlToLinkNote}/{match[7]}" target="_blank" rel="noopener noreferrer">kind:1</a>{:else}kind:{note.kind}{/if} 
 								{#if note.kind === 42 && note.tags.filter(v => v[0] === 'e' && v[3] === 'root').length > 0}
 									{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root')[0][1]}
 									{@const channel = channels.filter(v => v.id === rootId)[0]}
