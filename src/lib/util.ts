@@ -439,6 +439,19 @@ export const sendEditChannel = async(pool: SimplePool, relaysToUse: object, curr
 	});
 };
 
+export const sendDeletion = async(pool: SimplePool, relaysToWrite: string[], eventId: string) => {
+	const baseEvent: UnsignedEvent<5> = {
+		kind: 5,
+		pubkey: '',
+		created_at: Math.floor(Date.now() / 1000),
+		tags: [['e', eventId]],
+		content: ''
+	};
+	const newEvent: NostrEvent<5> = await (window as any).nostr.signEvent(baseEvent);
+	const pubs = pool.publish(relaysToWrite, newEvent);
+	await Promise.all(pubs);
+};
+
 //for debug
 export const sendProfile = async(pool: SimplePool, relaysToWrite: string[], objProfile: object) => {
 	const baseEvent: UnsignedEvent<0> = {

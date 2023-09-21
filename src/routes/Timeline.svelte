@@ -5,9 +5,7 @@ import {
 	SimplePool,
 	type Event as NostrEvent,
 } from 'nostr-tools';
-import { sendFav, sendMessage, type Profile, type Channel } from '$lib/util';
-import { urlToLinkNote } from '$lib/config';
-import ChannelMetadata from './ChannelMetadata.svelte';
+import { sendFav, sendDeletion, sendMessage, type Profile, type Channel } from '$lib/util';
 import Quote from './Quote.svelte';
 
 export let pool: SimplePool;
@@ -186,6 +184,9 @@ const callSendMessage = (noteId: string, currentChannelId: string, replyId: stri
 					{/if}
 				</details>
 				<button class="fav" on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey)} disabled={!loginPubkey}><svg><use xlink:href="/heart.svg#fav"></use></svg></button>
+					{#if note.pubkey === loginPubkey}
+				<button class="delete" on:click={() => sendDeletion(pool, relaysToWrite, note.id)} disabled={!loginPubkey || note.pubkey !== loginPubkey}><svg><use xlink:href="/trash.svg#delete"></use></svg></button>
+					{/if}
 				{/if}
 				<details>
 					<summary><svg><use xlink:href="/more-horizontal.svg#more"></use></svg></summary>
@@ -250,7 +251,8 @@ dd dl * {
 dd dl .json-view > code {
 	font-size: x-small;
 }
-dd button.fav {
+dd button.fav,
+dd button.delete {
 	background-color: transparent;
 	border: none;
 	outline: none;
@@ -258,7 +260,8 @@ dd button.fav {
 	width: 24px;
 	height: 24px;
 }
-dd button.fav > svg {
+dd button.fav > svg,
+dd button.delete > svg {
 	width: 24px;
 	height: 24px;
 }
@@ -267,7 +270,7 @@ dd details {
 	margin: 0;
 }
 dd details[open] {
-	max-width: calc(100% - 130px);
+	max-width: calc(100% - 170px);
 }
 dd details:only-child[open] {
 	max-width: calc(100% - 30px);
@@ -304,10 +307,12 @@ dd .action-bar details svg {
 	height: 24px;
 }
 :global(#container.dark button.fav,
+	#container.dark button.delete,
 	#container.dark details) {
 	fill: white;
 }
 :global(#container.light button.fav,
+	#container.light button.delete,
 	#container.light details) {
 	fill: black;
 }
