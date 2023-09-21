@@ -50,7 +50,7 @@ const getNote = (eventText: string) => {
 				{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root')[0][1]}
 				{@const channel = channels.filter(v => v.id === rootId)[0]}
 				{@const channelId = nip19.neventEncode({id:rootId, relays:[channel?.recommendedRelay], author:channel?.pubkey})}
-				{@const channelName = (channels.filter(v => v.id === rootId)[0])?.name ?? '(unknown channel)'}
+				{@const channelName = channel?.name ?? '(unknown channel)'}
 				{#if channel}<a href="/channels/{channelId}">{channelName}</a>{:else}{channelName}{/if}
 			{/if}
 			</dt>
