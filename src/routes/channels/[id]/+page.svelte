@@ -3,7 +3,7 @@ import { afterUpdate, onMount } from 'svelte';
 import { SimplePool, nip19, type Sub, type Event as NostrEvent, type Filter } from 'nostr-tools';
 import { title, defaultRelays } from '$lib/config';
 import { type Channel, type Profile, getEventsPhase1, urlDefaultTheme } from '$lib/util';
-import { storedFavList, storedLoginpubkey, storedMuteList, storedRelaysToUse, storedTheme, storedUseRelaysNIP07 } from '$lib/store';
+import { storedFavList, storedLoginpubkey, storedMuteList, storedRelaysToUse, storedTheme } from '$lib/store';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
 import Page from '../../Page.svelte';
 
@@ -24,11 +24,6 @@ if (/^nevent/.test(urlId)) {
 let pool = new SimplePool();
 let subNotes: Sub<7|40|41|42>;
 
-let useRelaysNIP07: boolean;
-$: useRelaysNIP07 = useRelaysNIP07;
-storedUseRelaysNIP07.subscribe((value) => {
-	useRelaysNIP07 = value;
-});
 let relaysToUse: object;
 $: relaysToUse = relaysToUse;
 storedRelaysToUse.subscribe((value) => {
@@ -150,16 +145,17 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42>, ev: NostrEvent<7|40|41|
 	}
 };
 
-const importRelays = async() => {
-	useRelaysNIP07 = (<HTMLInputElement>document.getElementById('use-relay-nip07')).checked;
-	storedUseRelaysNIP07.set(useRelaysNIP07);
-	if (useRelaysNIP07) {
-		relaysToUse = await (window as any).nostr.getRelays();
-		storedRelaysToUse.set(relaysToUse);
-	}
-	else {
-		relaysToUse = defaultRelays;
-		storedRelaysToUse.set(relaysToUse);
+const importRelays = async (relaysSelected: string) => {
+	switch (relaysSelected) {
+		case 'nip07':
+			relaysToUse = await (window as any).nostr.getRelays();
+			storedRelaysToUse.set(relaysToUse);
+			break;
+		case 'default':
+		default:
+			relaysToUse = defaultRelays;
+			storedRelaysToUse.set(relaysToUse);
+			break;
 	}
 	applyRelays();
 };
@@ -180,6 +176,10 @@ const applyRelays = () => {
 onMount(() => {
 	const input = document.getElementById('input');
 	input?.classList.remove('show');
+	if (Object.keys(relaysToUse).length == 0) {
+		relaysToUse = defaultRelays;
+		storedRelaysToUse.set(relaysToUse);
+	}
 });
 beforeNavigate(() => {
 	subNotes?.unsub();
@@ -196,10 +196,6 @@ afterNavigate(() => {
 	channels = [];
 	notes = [];
 	profs = {};
-	if (!useRelaysNIP07) {
-		relaysToUse = defaultRelays;
-		storedRelaysToUse.set(relaysToUse);
-	}
 	applyRelays();
 	const sidebar = document.getElementById('sidebar');
 	const main = document.querySelector('main');
@@ -227,5 +223,5 @@ afterUpdate(() => {
 	<link rel="stylesheet" href="{theme || urlDefaultTheme}">
 </svelte:head>
 <Page {title} {channels} {notes} {notesQuoted} {profs} {pool} {loginPubkey}
-	{importRelays} {muteList} {useRelaysNIP07} {relaysToUse} {theme}
+	{importRelays} {muteList} {relaysToUse} {theme}
 	{currentChannelId} {currentPubkey} {applyRelays} {favList} />

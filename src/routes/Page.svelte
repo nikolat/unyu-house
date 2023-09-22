@@ -19,7 +19,6 @@ export let profs: {[key: string]: Profile};
 export let loginPubkey: string;
 export let importRelays: Function;
 export let muteList: string[];
-export let useRelaysNIP07: boolean;
 export let relaysToUse: object;
 export let theme: string;
 export let currentChannelId: string | null
@@ -54,7 +53,7 @@ const hidePostBar = () => {
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div id="container" on:click={hidePostBar}>
 	<Header {title} />
-	<Sidebar {pool} {theme} {relaysToUse} {loginPubkey} {useRelaysNIP07} {channels} {profs} {importRelays} {applyRelays} />
+	<Sidebar {pool} {theme} {relaysToUse} {loginPubkey} {channels} {profs} {importRelays} {applyRelays} />
 	<main>
 	{#if currentChannelId}
 		{@const channel = channels.filter(v => v.id === currentChannelId)[0]}

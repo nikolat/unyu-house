@@ -4,36 +4,24 @@ import {
 	nip19,
 } from 'nostr-tools';
 import { browser } from '$app/environment';
-import { storedLoginpubkey, storedMuteList, storedFavList, storedTheme } from '$lib/store';
-import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel } from '$lib/util';
+import { storedLoginpubkey, storedMuteList, storedFavList, storedTheme, storedRelaysSelected } from '$lib/store';
+import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile } from '$lib/util';
 import { onMount } from 'svelte';
-
-interface Channel {
-	name: string
-	about: string
-	picture: string
-	updated_at: number
-	id: string
-	pubkey: string
-	recommendedRelay: string
-}
-
-interface Profile {
-	name: string
-	display_name: string
-	about: string
-	picture: string
-}
 
 export let pool: SimplePool;
 export let relaysToUse: object;
 export let loginPubkey: string;
-export let useRelaysNIP07: boolean;
 export let channels: Channel[];
 export let applyRelays: Function
 export let profs: {[key: string]: Profile};
 export let importRelays: Function;
 export let theme: string;
+
+let relaysSelected: string;
+storedRelaysSelected.subscribe((value) => {
+	relaysSelected = value;
+});
+
 storedTheme.subscribe((value) => {
 	theme = value;
 });
@@ -76,6 +64,12 @@ const changeTheme = () => {
 	}
 };
 
+const changeRelays = (relay: string) => {
+	relaysSelected = relay;
+	storedRelaysSelected.set(relaysSelected);
+	importRelays(relaysSelected);
+};
+
 onMount(() => {
 	if (!theme) {
 		theme = urlDefaultTheme;
@@ -94,7 +88,7 @@ onMount(() => {
 </script>
 
 <div id="sidebar">
-	<section>
+	<section id="login">
 		<h2>Login</h2>
 		{#if loginPubkey}
 		<button on:click={logout}>Logout</button>
@@ -102,21 +96,35 @@ onMount(() => {
 		<button on:click={login}>Login with Browser Extension (NIP-07)</button>
 		{/if}
 	</section>
-	<section>
+	<section id="theme">
 		<h2>Theme</h2>
 		<form>
-			<label for="theme-dark">Dark theme</label>
-			<input on:change={changeTheme} type="radio" value="dark" name="theme" id="theme-dark" checked={theme === urlDarkTheme}>
-			<label for="theme-light">Light theme</label>
-			<input on:change={changeTheme} type="radio" value="light" name="theme" id="theme-light" checked={theme === urlLightTheme}>
+			<ul>
+				<li>
+					<input on:change={changeTheme} type="radio" value="dark" name="theme" id="theme-dark" checked={theme === urlDarkTheme}>
+					<label for="theme-dark">Dark theme</label>
+				</li>
+				<li>
+					<input on:change={changeTheme} type="radio" value="light" name="theme" id="theme-light" checked={theme === urlLightTheme}>
+					<label for="theme-light">Light theme</label>
+				</li>
+			</ul>
 		</form>
 	</section>
-	<section>
+	<section id="relays">
 		<h2>Relays</h2>
 		{#if loginPubkey}
 		<form>
-			<label for="use-relay-nip07">Use relays in NIP-07</label>
-			<input id="use-relay-nip07" type="checkbox" on:change={() => importRelays()} bind:checked={useRelaysNIP07} />
+			<ul>
+				<li>
+					<input on:change={() => changeRelays('nip07')} type="radio" value="nip07" name="relay" id="relay-nip07" checked={relaysSelected === 'nip07'}>
+					<label for="relay-nip07">NIP-07</label>
+				</li>
+				<li>
+					<input on:change={() => changeRelays('default')} type="radio" value="default" name="relay" id="relay-default" checked={relaysSelected === 'default'}>
+					<label for="relay-default">Default</label>
+				</li>
+			</ul>
 		</form>
 		{/if}
 		<table>
@@ -134,7 +142,7 @@ onMount(() => {
 			{/each}
 		</table>
 	</section>
-	<nav>
+	<nav id="channels">
 		<h2>Channels</h2>
 		<p>Total: {channels.length} channels</p>
 		{#if loginPubkey}
@@ -153,7 +161,7 @@ onMount(() => {
 			</form>
 		</details>
 		{/if}
-		<ul class="channels" role="list">
+		<ul role="list">
 			{#each channels as channel}
 			<li>
 				<img src="{profs[channel.pubkey]?.picture || '/default.png'}" alt="" width="16" height="16">
@@ -196,7 +204,7 @@ details input,
 details textarea {
 	min-width: 15em;
 }
-ul.channels {
+ul {
 	list-style: none;
 }
 
