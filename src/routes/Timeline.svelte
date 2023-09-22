@@ -64,6 +64,14 @@ const callSendMessage = (noteId: string, currentChannelId: string, replyId: stri
 	sendMessage(pool, relaysToWrite, content, currentChannelId, recommendedRelay, replyId, pubkeysToReply);
 };
 
+const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteId: string) => {
+	if (!confirm('Delete this post?')) {
+		return;
+	}
+	notes = notes.filter(ev => ev.id !== noteId);
+	await sendDeletion(pool, relaysToWrite, noteId);
+};
+
 </script>
 
 <p>Total: {notes.length} posts</p>
@@ -185,7 +193,7 @@ const callSendMessage = (noteId: string, currentChannelId: string, replyId: stri
 				</details>
 				<button class="fav" on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey)} disabled={!loginPubkey}><svg><use xlink:href="/heart.svg#fav"></use></svg></button>
 					{#if note.pubkey === loginPubkey}
-				<button class="delete" on:click={() => sendDeletion(pool, relaysToWrite, note.id)} disabled={!loginPubkey || note.pubkey !== loginPubkey}><svg><use xlink:href="/trash.svg#delete"></use></svg></button>
+				<button class="delete" on:click={() => callSendDeletion(pool, relaysToWrite, note.id)} disabled={!loginPubkey || note.pubkey !== loginPubkey}><svg><use xlink:href="/trash.svg#delete"></use></svg></button>
 					{/if}
 				{/if}
 				<details>
