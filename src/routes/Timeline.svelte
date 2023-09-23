@@ -60,7 +60,7 @@ const callSendMessage = (noteId: string, currentChannelId: string, replyId: stri
 	if (!content)
 		return;
 	inputText[noteId] = '';
-	const recommendedRelay = channels.filter(v => v.id === currentChannelId)[0].recommendedRelay;
+	const recommendedRelay = channels.filter(v => v.id === currentChannelId)[0]?.recommendedRelay ?? '';
 	sendMessage(pool, relaysToWrite, content, currentChannelId, recommendedRelay, replyId, pubkeysToReply);
 };
 
