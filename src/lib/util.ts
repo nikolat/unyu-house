@@ -429,7 +429,7 @@ export const sendEditChannel = async(pool: SimplePool, relaysToUse: object, curr
 			kind: 41,
 			pubkey: '',
 			created_at: Math.floor(Date.now() / 1000),
-			tags: [['e', currentChannelId, pool.seenOn(currentChannelId)[0]]],
+			tags: [['e', currentChannelId, pool.seenOn(currentChannelId)[0] ?? '']],
 			content: JSON.stringify(objContent)
 		};
 		const newEvent: NostrEvent<41> = await (window as any).nostr.signEvent(baseEvent);

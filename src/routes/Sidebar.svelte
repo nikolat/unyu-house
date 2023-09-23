@@ -165,7 +165,7 @@ onMount(() => {
 			{#each channels as channel}
 			<li>
 				<img src="{profs[channel.pubkey]?.picture || '/default.png'}" alt="" width="16" height="16">
-				<a href="/channels/{nip19.neventEncode({id:channel.id, relays:[channel.recommendedRelay], author:channel.pubkey})}">{channel.name}</a>
+				<a href="/channels/{nip19.neventEncode({id:channel.id, relays:channel.recommendedRelay ? [channel.recommendedRelay] : [], author:channel.pubkey ?? ''})}">{channel.name}</a>
 			</li>
 			{/each}
 		</ul>
