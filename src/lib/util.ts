@@ -437,13 +437,13 @@ export const sendCreateChannel = async(pool: SimplePool, relaysToWrite: string[]
 	await Promise.all(pubs);
 };
 
-export const sendEditChannel = async(pool: SimplePool, relaysToUse: object, currentChannelId: string, name: string, about: string, picture: string) => {
+export const sendEditChannel = async(pool: SimplePool, relaysToUse: object, loginPubkey: string, currentChannelId: string, name: string, about: string, picture: string) => {
 	const limit = 500;
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
-	const sub: Sub<40|41> = pool.sub(relaysToRead, [{kinds: [40], ids: [currentChannelId], limit: limit}, {kinds: [41], '#e': [currentChannelId], limit: limit}]);
+	const sub: Sub<40|41> = pool.sub(relaysToRead, [{kinds: [40], ids: [currentChannelId], limit: limit}, {kinds: [41], authors: [loginPubkey], '#e': [currentChannelId], limit: limit}]);
 	let newestEvent: NostrEvent<40|41>;
 	sub.on('event', (ev: NostrEvent<40|41>) => {
-		if (!newestEvent || newestEvent.created_at < ev.created_at) {
+		if (ev.pubkey === loginPubkey && (!newestEvent || newestEvent.created_at < ev.created_at)) {
 			newestEvent = ev;
 		}
 	});

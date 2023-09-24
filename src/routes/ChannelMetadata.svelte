@@ -22,7 +22,7 @@ const setChannelMetadata = (currentChannelName: string, currentChannelAbout: str
 
 const callSendEditChannel = () => {
 	if (channel?.id) {
-		sendEditChannel(pool, relaysToUse, channel.id, editChannelName, editChannelAbout, editChannelPicture);
+		sendEditChannel(pool, relaysToUse, loginPubkey, channel.id, editChannelName, editChannelAbout, editChannelPicture);
 	}
 };
 
