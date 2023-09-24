@@ -3,7 +3,7 @@
 import {
 	type SimplePool,
 	type Event as NostrEvent,
-    nip19,
+	nip19,
 } from 'nostr-tools';
 import { sendMessage, type Channel, type Profile, getExpandTagsList } from '$lib/util';
 import Sidebar from './Sidebar.svelte';
@@ -19,7 +19,6 @@ export let notesQuoted: NostrEvent[];
 export let profs: {[key: string]: Profile};
 export let loginPubkey: string;
 export let importRelays: Function;
-export let muteList: string[];
 export let relaysToUse: object;
 export let theme: string;
 export let currentChannelId: string | null
@@ -96,7 +95,7 @@ const hidePostBar = () => {
 	{:else}
 		<h2>Global timeline</h2>
 	{/if}
-		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {loginPubkey} {muteList} {favList} />
+		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {loginPubkey} {favList} />
 	{#if currentChannelId && loginPubkey}
 		<div id="input" class="show" on:click|stopPropagation={()=>{}}>
 			{#if loginPubkey}

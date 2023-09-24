@@ -32,13 +32,13 @@ export const urlDefaultTheme = urlDarkTheme;
 
 export const getEventsPhase1 = async(pool: SimplePool, relays: string[], filterKind42: Filter<42>, callbackPhase1: Function, callbackPhase2: Function, callbackPhase3: Function, loginPubkey: string) => {
 	const limit = 500;
-	const filterPhase1: Filter<40|41|42|10000>[] = [{kinds: [40, 41], limit: limit}, filterKind42];
+	const filterPhase1: Filter<40|41|42|10000|10001>[] = [{kinds: [40, 41], limit: limit}, filterKind42];
 	if (loginPubkey) {
-		filterPhase1.push({kinds: [10000], authors: [loginPubkey]});
+		filterPhase1.push({kinds: [10000, 10001], authors: [loginPubkey]});
 	}
-	const sub: Sub<40|41|42|10000> = pool.sub(relays, filterPhase1);
-	const events: {[key: number]: NostrEvent<40|41|42|10000>[]} = {40: [], 41: [], 42: [], 10000: []};
-	sub.on('event', (ev: NostrEvent<40|41|42|10000>) => {
+	const sub: Sub<40|41|42|10000|10001> = pool.sub(relays, filterPhase1);
+	const events: {[key: number]: NostrEvent<40|41|42|10000|10001>[]} = {40: [], 41: [], 42: [], 10000: [], 10001: []};
+	sub.on('event', (ev: NostrEvent<40|41|42|10000|10001>) => {
 		events[ev.kind].push(ev);
 	});
 	sub.on('eose', () => {
@@ -47,7 +47,8 @@ export const getEventsPhase1 = async(pool: SimplePool, relays: string[], filterK
 		const channels = getChannels(pool, events[40], events[41]);
 		const notes = getNotes(events[42]);
 		const muteList = getMuteList(events[10000]);
-		callbackPhase1(channels, notes, muteList);
+		const pinList = getPinList(events[10001]);
+		callbackPhase1(channels, notes, muteList, pinList);
 		const pubkeysToGet: string[] = getPubkeysForFilter(Object.values(events).reduce((a, b) => a.concat(b), []));
 		const idsToGet: string[] = getIdsForFilter(events[42]);
 		const filterPhase2: Filter[] = [];
@@ -231,16 +232,16 @@ const getNotes = (events42: NostrEvent[]): NostrEvent[] => {
 };
 
 const getMuteList = (events10000: NostrEvent[]): string[] => {
-	let muteList: string[] = [];
-	let muteList_created_at = 0;
-	for (const ev of events10000) {
-		if (muteList_created_at < ev.created_at) {
-			muteList = ev.tags.filter(v => v[0] === 'p').map(v => v[1]);
-			muteList_created_at = ev.created_at;
-		}
-	}
-	return muteList;
-}
+	if (events10000.length === 0)
+		return [];
+	return events10000.reduce((a, b) => a.created_at > b.created_at ? a : b).tags.filter(v => v[0] === 'p').map(v => v[1]);
+};
+
+const getPinList = (events10001: NostrEvent[]): string[] => {
+	if (events10001.length === 0)
+		return [];
+	return events10001.reduce((a, b) => a.created_at > b.created_at ? a : b).tags.filter(v => v[0] === 'e').map(v => v[1]);
+};
 
 const getFrofiles = (events: NostrEvent[]): {[key: string]: Profile} => {
 	const profs: {[key: string]: Profile} = {};
@@ -256,7 +257,7 @@ const getFrofiles = (events: NostrEvent[]): {[key: string]: Profile} => {
 		}
 	}
 	return profs;
-}
+};
 
 const getFrofilesAndNotesQuoted = (events: NostrEvent[]): [{[key: string]: Profile}, NostrEvent[]] => {
 	const profs: {[key: string]: Profile} = {};

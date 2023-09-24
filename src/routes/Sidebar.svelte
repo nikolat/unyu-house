@@ -4,7 +4,7 @@ import {
 	nip19,
 } from 'nostr-tools';
 import { browser } from '$app/environment';
-import { storedLoginpubkey, storedMuteList, storedFavList, storedTheme, storedRelaysSelected } from '$lib/store';
+import { storedLoginpubkey, storedMuteList, storedFavList, storedTheme, storedRelaysSelected, storedPinList } from '$lib/store';
 import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile } from '$lib/util';
 import { onMount } from 'svelte';
 
@@ -24,6 +24,12 @@ storedRelaysSelected.subscribe((value) => {
 
 storedTheme.subscribe((value) => {
 	theme = value;
+});
+
+let pinList: string[];
+$: pinList = pinList;
+storedPinList.subscribe((value: string[]) => {
+	pinList = value;
 });
 
 let newChannelName: string;
@@ -168,7 +174,19 @@ onMount(() => {
 				<button on:click={callSendCreateChannel} disabled={!newChannelName}>Create</button>
 			</form>
 		</details>
+			{#if pinList.length > 0}
+		<h3>Pinned Channels</h3>
+		<ul role="list">
+				{#each channels.filter(ch => pinList.includes(ch.id)) as channel}
+			<li>
+				<img src="{profs[channel.pubkey]?.picture || '/default.png'}" alt="" width="16" height="16">
+				<a href="/channels/{nip19.neventEncode({id:channel.id, relays:channel.recommendedRelay ? [channel.recommendedRelay] : [], author:channel.pubkey ?? ''})}">{channel.name}</a>
+			</li>
+				{/each}
+		</ul>
+			{/if}
 		{/if}
+		<h3>All Channels</h3>
 		<ul role="list">
 			{#each channels as channel}
 			<li>

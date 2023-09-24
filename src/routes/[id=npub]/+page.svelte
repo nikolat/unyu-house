@@ -3,7 +3,7 @@ import { afterUpdate, onMount } from 'svelte';
 import { SimplePool, nip19, type Sub, type Event as NostrEvent, type Filter } from 'nostr-tools';
 import { title, defaultRelays, relaysToGetRelays } from '$lib/config';
 import { type Channel, type Profile, getEventsPhase1, urlDefaultTheme, getEvents } from '$lib/util';
-import { storedFavList, storedLoginpubkey, storedMuteList, storedRelaysToUse, storedTheme } from '$lib/store';
+import { storedFavList, storedLoginpubkey, storedMuteList, storedPinList, storedRelaysToUse, storedTheme } from '$lib/store';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
 import Page from '../Page.svelte';
 
@@ -32,11 +32,6 @@ $: loginPubkey = loginPubkey;
 storedLoginpubkey.subscribe((value) => {
 	loginPubkey = value;
 });
-let muteList: string[];
-$: muteList = muteList;
-storedMuteList.subscribe((value: string[]) => {
-	muteList = value;
-});
 let favList: NostrEvent[];
 $: favList = favList;
 storedFavList.subscribe((value: NostrEvent[]) => {
@@ -57,10 +52,11 @@ $: notesQuoted = notesQuoted;
 let profs: {[key: string]: Profile} = {};
 $: profs = profs;
 
-const callbackPhase1 = (channelsNew: Channel[], notesNew: NostrEvent[], muteListNew: string[]) => {
+const callbackPhase1 = (channelsNew: Channel[], notesNew: NostrEvent[], muteListNew: string[], pinListNew: string[]) => {
 	channels = channelsNew;
 	notes = notesNew;
-	muteList = muteListNew;
+	storedMuteList.set(muteListNew);
+	storedPinList.set(pinListNew);
 };
 
 const callbackPhase2 = (profsNew: {[key: string]: Profile}, favListNew: NostrEvent[], eventsQuotedNew: NostrEvent[]) => {
@@ -204,7 +200,8 @@ const applyRelays = () => {
 	notes = [];
 	notesQuoted = [];
 	profs = {};
-	muteList = [];
+	storedMuteList.set([]);
+	storedPinList.set([]);
 	favList = [];
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
 	const filter: Filter<42> = {kinds: [42], limit: 100, authors: [currentPubkey]};
@@ -250,5 +247,5 @@ afterUpdate(() => {
 	<link rel="stylesheet" href="{theme || urlDefaultTheme}">
 </svelte:head>
 <Page {title} {channels} {notes} {notesQuoted} {profs} {pool} {loginPubkey}
-	{importRelays} {muteList} {relaysToUse} {theme}
+	{importRelays} {relaysToUse} {theme}
 	{currentChannelId} {currentPubkey} {applyRelays} {favList} />
