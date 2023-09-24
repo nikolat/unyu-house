@@ -117,6 +117,14 @@ onMount(() => {
 		<form>
 			<ul>
 				<li>
+					<input on:change={() => changeRelays('kind3')} type="radio" value="kind3" name="relay" id="relay-kind3" checked={relaysSelected === 'kind3'}>
+					<label for="relay-kind3">kind3</label>
+				</li>
+				<li>
+					<input on:change={() => changeRelays('kind10002')} type="radio" value="kind10002" name="relay" id="relay-kind10002" checked={relaysSelected === 'kind10002'}>
+					<label for="relay-kind10002">kind10002</label>
+				</li>
+				<li>
 					<input on:change={() => changeRelays('nip07')} type="radio" value="nip07" name="relay" id="relay-nip07" checked={relaysSelected === 'nip07'}>
 					<label for="relay-nip07">NIP-07</label>
 				</li>

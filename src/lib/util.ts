@@ -332,6 +332,19 @@ const getMuteListAndFavs = (events: NostrEvent<7|10000>[], pubkey: string): [str
 	return [muteList, favList, favedList, Array.from(profileListToGet)];
 };
 
+export const getEvents = (pool: SimplePool, relays: string[], filters: Filter[], callback: Function) => {
+	const sub: Sub = pool.sub(relays, filters);
+	const events: NostrEvent[] = [];
+	sub.on('event', (ev: NostrEvent) => {
+		events.push(ev);
+	});
+	sub.on('eose', () => {
+		console.log('getEvents * EOSE *');
+		sub.unsub();
+		callback(events);
+	});
+};
+
 export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], content: string, currentChannelId: string, recommendedRelay: string, replyId: string, pubkeysToReply: string[]) => {
 	const tags = [['e', currentChannelId, recommendedRelay, 'root']];
 	if (replyId) {
