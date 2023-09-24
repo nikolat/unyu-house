@@ -5,7 +5,7 @@ import {
 	SimplePool,
 	type Event as NostrEvent,
 } from 'nostr-tools';
-import { sendFav, sendDeletion, sendMessage, type Profile, type Channel } from '$lib/util';
+import { sendFav, sendDeletion, sendMessage, getExpandTagsList , type Profile, type Channel } from '$lib/util';
 import Quote from './Quote.svelte';
 
 export let pool: SimplePool;
@@ -35,24 +35,6 @@ const getVideoUrls = (content: string) => {
 		urls.push(match[0]);
 	}
 	return urls;
-};
-
-const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator<RegExpMatchArray>, string[], {[key: string]: string}] => {
-	const regMatchArray = ['https?://[\\w!?/=+\\-_~:;.,*&@#$%()[\\]]+', 'nostr:npub\\w{59}', 'nostr:note\\w{59}', 'nostr:nevent\\w+'];
-	const emojiUrls: {[key: string]: string} = {};
-	const emojiRegs = [];
-	for (const tag of tags) {
-		emojiRegs.push(':' + tag[1] + ':');
-		emojiUrls[':' + tag[1] + ':'] = tag[2];
-	}
-	if (emojiRegs.length > 0) {
-		regMatchArray.push(emojiRegs.join('|'));
-	}
-	const regMatch = new RegExp(regMatchArray.map(v => '(' + v + ')').join('|'), 'g');
-	const regSplit = new RegExp(regMatchArray.join('|'));
-	const plainTexts = content.split(regSplit);
-	const matchesIterator = content.matchAll(regMatch);
-	return [matchesIterator, plainTexts, emojiUrls];
 };
 
 const callSendMessage = (noteId: string, currentChannelId: string, replyId: string, pubkeysToReply:string[]) => {
@@ -122,7 +104,7 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 					{@const npubText = matchedText.replace(/nostr:/, '')}
 					{@const d = nip19.decode(npubText)}
 					{#if d.type === 'npub'}
-						<a href="/{match[3]}">@{profs[d.data]?.name ?? (npubText.slice(0, 10) + '...')}</a>
+						<a href="/{npubText}">@{profs[d.data]?.name ?? (npubText.slice(0, 10) + '...')}</a>
 					{:else}
 						{matchedText}
 					{/if}

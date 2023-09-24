@@ -80,6 +80,7 @@ export const getEventsPhase2 = async(pool: SimplePool, relays: string[], filterP
 	const sub: Sub = pool.sub(relays, filterPhase2);
 	const events: {[key: number]: NostrEvent[]} = {0: [], 7: []};
 	const eventsQuoted: NostrEvent[] = [];
+	const eventsAll: NostrEvent[] = [];
 	sub.on('event', (ev: NostrEvent) => {
 		if ([0, 7].includes(ev.kind)) {
 			events[ev.kind].push(ev);
@@ -87,17 +88,18 @@ export const getEventsPhase2 = async(pool: SimplePool, relays: string[], filterP
 		else {
 			eventsQuoted.push(ev);
 		}
+		eventsAll.push(ev);
 	});
 	sub.on('eose', () => {
 		console.log('getEventsPhase2 * EOSE *');
 		sub.unsub();
 		const profs = getFrofiles(events[0]);
 		callbackPhase2(profs, events[7], eventsQuoted);
-		if (eventsQuoted.length > 0) {
-			const filterPhase2: Filter<0>[] = [{kinds: [0], authors: getPubkeysForFilter(eventsQuoted)}];
-			getEventsPhase2(pool, relays, filterPhase2, [], callbackPhase2, ()=>{}, false);
-		}
 		if (goPhase3) {
+			if (eventsAll.length > 0) {
+				const filterPhase2: Filter<0>[] = [{kinds: [0], authors: getPubkeysForFilter(eventsAll)}];
+				getEventsPhase2(pool, relays, filterPhase2, [], callbackPhase2, ()=>{}, false);
+			}
 			getEventsPhase3(pool, relays, filterPhase3, profs, eventsQuoted, callbackPhase2, callbackPhase3);
 		}
 	});
@@ -128,8 +130,24 @@ export const getEventsPhase3 = async(pool: SimplePool, relays: string[], filterP
 
 const getPubkeysForFilter = (events: NostrEvent[]): string[] => {
 	const pubkeys: Set<string> = new Set();
-	for(const ev of events.filter(v => [0, 40].concat(v.kind))) {
+	for(const ev of events.filter(v => [7, 40].concat(v.kind))) {
 		pubkeys.add(ev.pubkey);
+	}
+	for(const ev of events.filter(v => v.kind === 0)) {
+		//npubでの言及
+		try {
+			const content = JSON.parse(ev.content);
+			const matchesIteratorNpub = (content.about as string).matchAll(/nostr:(npub\w{59})/g);
+			for (const match of matchesIteratorNpub) {
+				const d = nip19.decode(match[1]);
+				if (d.type === 'npub') {
+					pubkeys.add(d.data);
+				}
+			}
+		} catch (error) {
+			console.log(error);
+			continue;
+		}
 	}
 	for(const ev of events.filter(v => [1, 42].concat(v.kind))) {
 		pubkeys.add(ev.pubkey);
@@ -478,4 +496,22 @@ export const sendProfile = async(pool: SimplePool, relaysToWrite: string[], objP
 	const newEvent: NostrEvent<0> = await (window as any).nostr.signEvent(baseEvent);
 	const pubs = pool.publish(relaysToWrite, newEvent);
 	await Promise.all(pubs);
+};
+
+export const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator<RegExpMatchArray>, string[], {[key: string]: string}] => {
+	const regMatchArray = ['https?://[\\w!?/=+\\-_~:;.,*&@#$%()[\\]]+', 'nostr:npub\\w{59}', 'nostr:note\\w{59}', 'nostr:nevent\\w+'];
+	const emojiUrls: {[key: string]: string} = {};
+	const emojiRegs = [];
+	for (const tag of tags) {
+		emojiRegs.push(':' + tag[1] + ':');
+		emojiUrls[':' + tag[1] + ':'] = tag[2];
+	}
+	if (emojiRegs.length > 0) {
+		regMatchArray.push(emojiRegs.join('|'));
+	}
+	const regMatch = new RegExp(regMatchArray.map(v => '(' + v + ')').join('|'), 'g');
+	const regSplit = new RegExp(regMatchArray.join('|'));
+	const plainTexts = content.split(regSplit);
+	const matchesIterator = content.matchAll(regMatch);
+	return [matchesIterator, plainTexts, emojiUrls];
 };

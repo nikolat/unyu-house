@@ -1,10 +1,11 @@
 <script lang='ts'>
 
-import type {
-	SimplePool,
-	Event as NostrEvent,
+import {
+	type SimplePool,
+	type Event as NostrEvent,
+    nip19,
 } from 'nostr-tools';
-import { sendMessage, type Channel, type Profile } from '$lib/util';
+import { sendMessage, type Channel, type Profile, getExpandTagsList } from '$lib/util';
 import Sidebar from './Sidebar.svelte';
 import Timeline from './Timeline.svelte';
 import Header from './Header.svelte';
@@ -61,8 +62,34 @@ const hidePostBar = () => {
 	{:else if currentPubkey}
 		{#if profs[currentPubkey]}
 		<h2><img src="{profs[currentPubkey].picture || './default.png'}" alt="@{profs[currentPubkey].name ?? ''}" width="32" height="32"> {profs[currentPubkey].display_name ?? ''} @{profs[currentPubkey].name ?? ''}</h2>
-		<p id="profile-about">{profs[currentPubkey].about ?? ''}</p>
-		{#if profs[currentPubkey].website}<p id="profile-website"><a href="{profs[currentPubkey].website}" target="_blank" rel="noopener noreferrer">{profs[currentPubkey].website}</a></p>{/if}
+			{#if profs[currentPubkey].about}
+			{@const r = getExpandTagsList(profs[currentPubkey].about, [])}
+			{@const matchesIterator = r[0]}
+			{@const plainTexts = r[1]}
+			{@const emojiUrls = r[2]}
+			<p id="profile-about">
+				{plainTexts.shift()}
+				{#each matchesIterator as match}
+					{#if /https?:\/\/\S+/.test(match[1]) }
+						<a href="{match[1]}" target="_blank" rel="noopener noreferrer">{match[1]}</a>
+					{:else if /nostr:npub\w{59}/.test(match[2])}
+						{@const matchedText = match[2]}
+						{@const npubText = matchedText.replace(/nostr:/, '')}
+						{@const d = nip19.decode(npubText)}
+						{#if d.type === 'npub'}
+							<a href="/{npubText}">@{profs[d.data]?.name ?? (npubText.slice(0, 10) + '...')}</a>
+						{:else}
+							{matchedText}
+						{/if}
+					{:else if match[5]}
+						{@const matchedText = match[5]}
+						<img src="{emojiUrls[matchedText]}" alt="{matchedText}" title="{matchedText}" class="emoji" />
+					{/if}
+					{plainTexts.shift()}
+				{/each}
+			</p>
+			{/if}
+			{#if profs[currentPubkey].website}<p id="profile-website"><a href="{profs[currentPubkey].website}" target="_blank" rel="noopener noreferrer">{profs[currentPubkey].website}</a></p>{/if}
 		{:else}
 		<h2>Now Loading...</h2>
 		{/if}
