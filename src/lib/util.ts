@@ -22,6 +22,7 @@ export interface Profile {
 	display_name: string
 	about: string
 	picture: string
+	website: string
 	created_at: number
 }
 

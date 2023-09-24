@@ -62,6 +62,7 @@ const hidePostBar = () => {
 		{#if profs[currentPubkey]}
 		<h2><img src="{profs[currentPubkey].picture || './default.png'}" alt="@{profs[currentPubkey].name ?? ''}" width="32" height="32"> {profs[currentPubkey].display_name ?? ''} @{profs[currentPubkey].name ?? ''}</h2>
 		<p id="profile-about">{profs[currentPubkey].about ?? ''}</p>
+		{#if profs[currentPubkey].website}<p id="profile-website"><a href="{profs[currentPubkey].website}" target="_blank" rel="noopener noreferrer">{profs[currentPubkey].website}</a></p>{/if}
 		{:else}
 		<h2>Now Loading...</h2>
 		{/if}
