@@ -7,7 +7,6 @@ import {
 } from 'nostr-tools';
 import { sendFav, sendDeletion, sendMessage, getExpandTagsList , type Profile, type Channel } from '$lib/util';
 import Quote from './Quote.svelte';
-import { storedMuteList } from '$lib/store';
 
 export let pool: SimplePool;
 export let relaysToWrite: string[];
@@ -16,13 +15,8 @@ export let notesQuoted: NostrEvent[];
 export let profs: {[key: string]: Profile};
 export let channels: Channel[];
 export let loginPubkey: string;
+export let muteList: string[];
 export let favList: NostrEvent[];
-
-let muteList: string[];
-$: muteList = muteList;
-storedMuteList.subscribe((value: string[]) => {
-	muteList = value;
-});
 
 let inputText: {[key: string]: string} = {};
 

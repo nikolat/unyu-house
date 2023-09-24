@@ -1,5 +1,5 @@
 <script lang='ts'>
-import { sendEditChannel, type Channel, type Profile } from "$lib/util";
+import { sendEditChannel, type Channel, type Profile, sendPin } from "$lib/util";
 import { SimplePool, nip19 } from "nostr-tools";
 
 export let channel: Channel;
@@ -8,6 +8,7 @@ export let profs: {[key: string]: Profile};
 export let loginPubkey: string;
 export let relaysToUse: object;
 export let isQuote: boolean;
+export let pinList: string[];
 
 let editChannelName: string;
 let editChannelAbout: string;
@@ -25,6 +26,10 @@ const callSendEditChannel = () => {
 		sendEditChannel(pool, relaysToUse, loginPubkey, channel.id, editChannelName, editChannelAbout, editChannelPicture);
 	}
 };
+
+const callSendPin = (toSet: boolean) => {
+	sendPin(pool, relaysToUse, loginPubkey, channel.id, toSet);
+}
 
 </script>
 
@@ -68,6 +73,13 @@ const callSendEditChannel = () => {
 	</form>
 </details>
 	{/if}
+	{#if loginPubkey && !isQuote}
+		{#if pinList.includes(channel.id)}
+<button class="channel-metadata" on:click={() => callSendPin(false)}>Pin off</button>
+		{:else}
+<button class="channel-metadata" on:click={() => callSendPin(true)}>Pin on</button>
+		{/if}
+	{/if}
 {/if}
 
 <style>
@@ -76,9 +88,13 @@ const callSendEditChannel = () => {
 }
 details {
 	display: inline-block;
+	margin: 0;
 }
 details input,
 details textarea {
 	min-width: 15em;
+}
+button.channel-metadata, details {
+	vertical-align: top;
 }
 </style>

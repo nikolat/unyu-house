@@ -4,7 +4,7 @@ import {
 	nip19,
 } from 'nostr-tools';
 import { browser } from '$app/environment';
-import { storedLoginpubkey, storedMuteList, storedFavList, storedTheme, storedRelaysSelected, storedPinList } from '$lib/store';
+import { storedLoginpubkey, storedTheme, storedRelaysSelected } from '$lib/store';
 import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile } from '$lib/util';
 import { onMount } from 'svelte';
 
@@ -16,6 +16,7 @@ export let applyRelays: Function
 export let profs: {[key: string]: Profile};
 export let importRelays: Function;
 export let theme: string;
+export let pinList: string[];
 
 let relaysSelected: string;
 storedRelaysSelected.subscribe((value) => {
@@ -24,12 +25,6 @@ storedRelaysSelected.subscribe((value) => {
 
 storedTheme.subscribe((value) => {
 	theme = value;
-});
-
-let pinList: string[];
-$: pinList = pinList;
-storedPinList.subscribe((value: string[]) => {
-	pinList = value;
 });
 
 let newChannelName: string;
@@ -45,8 +40,6 @@ const login = async() => {
 };
 const logout = () => {
 	storedLoginpubkey.set('');
-	storedMuteList.set([]);
-	storedFavList.set([]);
 	applyRelays();
 };
 const callSendCreateChannel = () => {

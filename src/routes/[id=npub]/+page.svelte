@@ -3,7 +3,7 @@ import { afterUpdate, onMount } from 'svelte';
 import { SimplePool, nip19, type Sub, type Event as NostrEvent, type Filter } from 'nostr-tools';
 import { title, defaultRelays, relaysToGetRelays } from '$lib/config';
 import { type Channel, type Profile, getEventsPhase1, urlDefaultTheme, getEvents } from '$lib/util';
-import { storedFavList, storedLoginpubkey, storedMuteList, storedPinList, storedRelaysToUse, storedTheme } from '$lib/store';
+import { storedLoginpubkey, storedRelaysToUse, storedTheme } from '$lib/store';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
 import Page from '../Page.svelte';
 
@@ -20,7 +20,7 @@ if (/^npub/.test(urlId)) {
 }
 
 let pool = new SimplePool();
-let subNotes: Sub<7|40|41|42>;
+let subNotes: Sub<7|40|41|42|10001>;
 
 let relaysToUse: object;
 $: relaysToUse = relaysToUse;
@@ -32,11 +32,12 @@ $: loginPubkey = loginPubkey;
 storedLoginpubkey.subscribe((value) => {
 	loginPubkey = value;
 });
-let favList: NostrEvent[];
+let muteList: string[] = [];
+$: muteList = muteList;
+let pinList: string[] = [];
+$: pinList = pinList;
+let favList: NostrEvent[] = [];
 $: favList = favList;
-storedFavList.subscribe((value: NostrEvent[]) => {
-	favList = value;
-});
 let theme: string;
 $: theme = theme;
 storedTheme.subscribe((value) => {
@@ -55,8 +56,8 @@ $: profs = profs;
 const callbackPhase1 = (channelsNew: Channel[], notesNew: NostrEvent[], muteListNew: string[], pinListNew: string[]) => {
 	channels = channelsNew;
 	notes = notesNew;
-	storedMuteList.set(muteListNew);
-	storedPinList.set(pinListNew);
+	muteList = muteListNew;
+	pinList = pinListNew;
 };
 
 const callbackPhase2 = (profsNew: {[key: string]: Profile}, favListNew: NostrEvent[], eventsQuotedNew: NostrEvent[]) => {
@@ -79,7 +80,6 @@ const callbackPhase2 = (profsNew: {[key: string]: Profile}, favListNew: NostrEve
 	}
 	if (favAdded) {
 		favList = favList;
-		storedFavList.set(favList);
 	}
 	let notesQuotedAdded = false;
 	for (const ev of eventsQuotedNew) {
@@ -93,7 +93,7 @@ const callbackPhase2 = (profsNew: {[key: string]: Profile}, favListNew: NostrEve
 	}
 };
 
-const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42>, ev: NostrEvent<7|40|41|42>) => {
+const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42|10001>, ev: NostrEvent<7|40|41|42|10001>) => {
 	subNotes = subNotesPhase3;
 	if (ev.kind === 42 && !notes.map(v => v.id).includes(ev.id)) {
 		notes.push(ev);
@@ -102,7 +102,11 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42>, ev: NostrEvent<7|40|41|
 	else if (ev.kind === 7 && !favList.map(v => v.id).includes(ev.id)) {
 		favList.push(ev);
 		favList = favList;
-		storedFavList.set(favList);
+	}
+	else if (ev.kind === 10001) {
+		if (ev.pubkey !== loginPubkey)
+			return;
+		pinList = ev.tags.filter(tag => tag[0] === 'e').map(tag => tag[1]);
 	}
 	else if (ev.kind === 40 && !channels.map(v => v.id).includes(ev.id)) {
 		let channel: Channel;
@@ -200,8 +204,8 @@ const applyRelays = () => {
 	notes = [];
 	notesQuoted = [];
 	profs = {};
-	storedMuteList.set([]);
-	storedPinList.set([]);
+	muteList = [];
+	pinList = [];
 	favList = [];
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
 	const filter: Filter<42> = {kinds: [42], limit: 100, authors: [currentPubkey]};
@@ -247,5 +251,5 @@ afterUpdate(() => {
 	<link rel="stylesheet" href="{theme || urlDefaultTheme}">
 </svelte:head>
 <Page {title} {channels} {notes} {notesQuoted} {profs} {pool} {loginPubkey}
-	{importRelays} {relaysToUse} {theme}
+	{importRelays} {muteList} {pinList} {relaysToUse} {theme}
 	{currentChannelId} {currentPubkey} {applyRelays} {favList} />

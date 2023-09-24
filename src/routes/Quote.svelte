@@ -36,7 +36,7 @@ const getNote = (eventText: string) => {
 	<blockquote>
 		{#if note.kind === 40}
 		{@const channel = channels.filter(v => v.id === note.id)[0]}
-		<ChannelMetadata {channel} {pool} {profs} {loginPubkey} relaysToUse={{}} isQuote={true} />
+		<ChannelMetadata {channel} {pool} {profs} {loginPubkey} relaysToUse={{}} isQuote={true} pinList={[]} />
 		{:else}
 		<dl>
 			<dt>

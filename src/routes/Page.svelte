@@ -19,6 +19,8 @@ export let notesQuoted: NostrEvent[];
 export let profs: {[key: string]: Profile};
 export let loginPubkey: string;
 export let importRelays: Function;
+export let muteList: string[];
+export let pinList: string[];
 export let relaysToUse: object;
 export let theme: string;
 export let currentChannelId: string | null
@@ -53,11 +55,11 @@ const hidePostBar = () => {
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div id="container" on:click={hidePostBar}>
 	<Header {title} />
-	<Sidebar {pool} {theme} {relaysToUse} {loginPubkey} {channels} {profs} {importRelays} {applyRelays} />
+	<Sidebar {pool} {theme} {relaysToUse} {loginPubkey} {channels} {profs} {importRelays} {applyRelays} {pinList} />
 	<main>
 	{#if currentChannelId}
 		{@const channel = channels.filter(v => v.id === currentChannelId)[0]}
-		<ChannelMetadata {channel} {pool} {profs} {loginPubkey} {relaysToUse} isQuote={false} />
+		<ChannelMetadata {channel} {pool} {profs} {loginPubkey} {relaysToUse} isQuote={false} {pinList} />
 	{:else if currentPubkey}
 		{#if profs[currentPubkey]}
 		<h2><img src="{profs[currentPubkey].picture || './default.png'}" alt="@{profs[currentPubkey].name ?? ''}" width="32" height="32"> {profs[currentPubkey].display_name ?? ''} @{profs[currentPubkey].name ?? ''}</h2>
@@ -95,7 +97,7 @@ const hidePostBar = () => {
 	{:else}
 		<h2>Global timeline</h2>
 	{/if}
-		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {loginPubkey} {favList} />
+		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {loginPubkey} {muteList} {favList} />
 	{#if currentChannelId && loginPubkey}
 		<div id="input" class="show" on:click|stopPropagation={()=>{}}>
 			{#if loginPubkey}
