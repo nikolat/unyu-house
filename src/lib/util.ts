@@ -68,8 +68,8 @@ export const getEventsPhase1 = async(pool: SimplePool, relays: string[], filterK
 				{kinds: [7], '#p': [loginPubkey], '#e': notes.map(v => v.id)}
 			);
 			filterPhase3.push(
-				{kinds: [7], authors: [loginPubkey], limit: 1},
-				{kinds: [7, 10001], '#p': [loginPubkey], limit: 1},
+				{kinds: [7, 10001], authors: [loginPubkey], limit: 1},
+				{kinds: [7], '#p': [loginPubkey], limit: 1},
 				{kinds: [40, 41], limit: 1}
 			);
 		}
