@@ -75,9 +75,9 @@ const callSendPin = (toSet: boolean) => {
 	{/if}
 	{#if loginPubkey && !isQuote}
 		{#if pinList.includes(channel.id)}
-<button class="channel-metadata" on:click={() => callSendPin(false)}>Pin off</button>
+<button class="channel-metadata on" on:click={() => callSendPin(false)}><svg><use xlink:href="/bookmark.svg#pin"></use></svg></button>
 		{:else}
-<button class="channel-metadata" on:click={() => callSendPin(true)}>Pin on</button>
+<button class="channel-metadata off" on:click={() => callSendPin(true)}><svg><use xlink:href="/bookmark.svg#pin"></use></svg></button>
 		{/if}
 	{/if}
 {/if}
@@ -95,6 +95,27 @@ details textarea {
 	min-width: 15em;
 }
 button.channel-metadata, details {
-	vertical-align: top;
+	vertical-align: middle;
+}
+button.channel-metadata {
+	background-color: transparent;
+	border: none;
+	outline: none;
+	padding: 0;
+	width: 24px;
+	height: 24px;
+}
+button.channel-metadata > svg {
+	width: 24px;
+	height: 24px;
+}
+:global(#container.dark button.channel-metadata) {
+	fill: white;
+}
+:global(#container.light button.channel-metadata) {
+	fill: black;
+}
+:global(#container button.channel-metadata.on) {
+	fill: pink;
 }
 </style>
