@@ -20,6 +20,7 @@ export let profs: {[key: string]: Profile};
 export let loginPubkey: string;
 export let importRelays: Function;
 export let muteList: string[];
+export let wordList: string[];
 export let pinList: string[];
 export let relaysToUse: object;
 export let theme: string;
@@ -97,7 +98,7 @@ const hidePostBar = () => {
 	{:else}
 		<h2>Global timeline</h2>
 	{/if}
-		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {loginPubkey} {muteList} {favList} />
+		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {loginPubkey} {muteList} {wordList} {favList} />
 	{#if currentChannelId && loginPubkey}
 		<div id="input" class="show" on:click|stopPropagation={()=>{}}>
 			{#if loginPubkey}

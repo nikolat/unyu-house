@@ -36,6 +36,8 @@ storedLoginpubkey.subscribe((value) => {
 });
 let muteList: string[] = [];
 $: muteList = muteList;
+let wordList: string[] = [];
+$: wordList = wordList;
 let pinList: string[] = [];
 $: pinList = pinList;
 let favList: NostrEvent[] = [];
@@ -55,10 +57,21 @@ $: notesQuoted = notesQuoted;
 let profs: {[key: string]: Profile} = {};
 $: profs = profs;
 
-const callbackPhase1 = (channelsNew: Channel[], notesNew: NostrEvent[], muteListNew: string[], pinListNew: string[]) => {
+const callbackPhase1 = async (loginPubkey: string, channelsNew: Channel[], notesNew: NostrEvent[], event10000: NostrEvent<10000> | null, pinListNew: string[]) => {
 	channels = channelsNew;
 	notes = notesNew.filter(ev => ev.tags.some(tag => tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root'));
-	muteList = muteListNew;
+	muteList = event10000?.tags.filter(v => v[0] === 'p').map(v => v[1]) ?? [];
+	wordList = event10000?.tags.filter(v => v[0] === 'word').map(v => v[1]) ?? [];
+	if (loginPubkey && event10000?.content) {
+		const content = await (window as any).nostr.nip04.decrypt(loginPubkey, event10000.content);
+		try {
+			const list: string[][] = JSON.parse(content);
+			muteList = muteList.concat(list.filter(v => v[0] === 'p').map(v => v[1]));
+			wordList = wordList.concat(list.filter(v => v[0] === 'word').map(v => v[1]));
+		} catch (error) {
+			console.log(error);
+		}
+	}
 	pinList = pinListNew;
 };
 
@@ -264,5 +277,5 @@ afterUpdate(() => {
 	<link rel="stylesheet" href="{theme || urlDefaultTheme}">
 </svelte:head>
 <Page {title} {channels} {notes} {notesQuoted} {profs} {pool} {loginPubkey}
-	{importRelays} {muteList} {pinList} {relaysToUse} {theme}
+	{importRelays} {muteList} {wordList} {pinList} {relaysToUse} {theme}
 	{currentChannelId} {currentPubkey} {applyRelays} {favList} />

@@ -16,6 +16,7 @@ export let profs: {[key: string]: Profile};
 export let channels: Channel[];
 export let loginPubkey: string;
 export let muteList: string[];
+export let wordList: string[];
 export let favList: NostrEvent[];
 
 let inputText: {[key: string]: string} = {};
@@ -59,7 +60,7 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 <p>Total: {notes.length} posts</p>
 <dl>
 {#each notes as note}
-	{#if !muteList?.includes(note.pubkey)}
+	{#if !muteList?.includes(note.pubkey) && !wordList?.reduce((accumulator, currentValue) => accumulator || note.content.includes(currentValue), false)}
 		<dt id="{note.id}">
 		{#if profs[note.pubkey]}
 			<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>

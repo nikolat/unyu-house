@@ -46,9 +46,9 @@ export const getEventsPhase1 = async(pool: SimplePool, relays: string[], filterK
 		sub.unsub();
 		const channels = getChannels(pool, events[40], events[41]);
 		const notes = getNotes(events[42]);
-		const muteList = getMuteList(events[10000]);
+		const event10000 = events[10000].length === 0 ? null : events[10000].reduce((a, b) => a.created_at > b.created_at ? a : b);
 		const pinList = getPinList(events[10001]);
-		callbackPhase1(channels, notes, muteList, pinList);
+		callbackPhase1(loginPubkey, channels, notes, event10000, pinList);
 		const pubkeysToGet: string[] = getPubkeysForFilter(Object.values(events).reduce((a, b) => a.concat(b), []));
 		const idsToGet: string[] = getIdsForFilter(events[42]);
 		const filterPhase2: Filter[] = [];
@@ -231,12 +231,6 @@ const getNotes = (events42: NostrEvent[]): NostrEvent[] => {
 		return 0;
 	});
 	return events42;
-};
-
-const getMuteList = (events10000: NostrEvent[]): string[] => {
-	if (events10000.length === 0)
-		return [];
-	return events10000.reduce((a, b) => a.created_at > b.created_at ? a : b).tags.filter(v => v[0] === 'p').map(v => v[1]);
 };
 
 const getPinList = (events10001: NostrEvent[]): string[] => {
