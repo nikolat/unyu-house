@@ -7,6 +7,10 @@ import {
 } from 'nostr-tools';
 import { sendFav, sendDeletion, sendMessage, getExpandTagsList , type Profile, type Channel } from '$lib/util';
 import Quote from './Quote.svelte';
+import data from '@emoji-mart/data';
+import { Picker } from 'emoji-mart';
+// @ts-ignore
+import type { BaseEmoji } from '@types/emoji-mart';
 
 export let pool: SimplePool;
 export let relaysToWrite: string[];
@@ -18,6 +22,9 @@ export let loginPubkey: string;
 export let muteList: string[];
 export let wordList: string[];
 export let favList: NostrEvent[];
+
+let emojiPicker: {[key: string]: HTMLElement} = {};
+let visible: {[key: string]: boolean} = {};
 
 let inputText: {[key: string]: string} = {};
 
@@ -45,6 +52,22 @@ const callSendMessage = (noteId: string, currentChannelId: string, replyId: stri
 	inputText[noteId] = '';
 	const recommendedRelay = channels.filter(v => v.id === currentChannelId)[0]?.recommendedRelay ?? '';
 	sendMessage(pool, relaysToWrite, content, currentChannelId, recommendedRelay, replyId, pubkeysToReply);
+};
+
+const callSendEmoji = (pool: SimplePool, relaysToWrite: string[], noteId: string, notePubkey: string) => {
+	visible[noteId] = !visible[noteId];
+	if (emojiPicker[noteId].children.length > 0) {
+		return;
+	}
+	const picker = new Picker({
+		data,
+		onEmojiSelect
+	});
+	function onEmojiSelect(emoji: BaseEmoji) {
+		visible[noteId] = false;
+		sendFav(pool, relaysToWrite, noteId, notePubkey, emoji.native);
+	}
+	emojiPicker[noteId].appendChild(picker as any);
 };
 
 const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteId: string) => {
@@ -174,7 +197,9 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 						<button on:click={() => {callSendMessage(note.id, rootId, replyId, pubkeysToReply)}} disabled={!loginPubkey || !inputText[note.id]}>Reply</button>
 					{/if}
 				</details>
-				<button class="fav" on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey)} disabled={!loginPubkey}><svg><use xlink:href="/heart.svg#fav"></use></svg></button>
+				<button class="fav" on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey, '+')} disabled={!loginPubkey}><svg><use xlink:href="/heart.svg#fav"></use></svg></button>
+				<button class="emoji" on:click={() => callSendEmoji(pool, relaysToWrite, note.id, note.pubkey)} disabled={!loginPubkey}><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button>
+				<div bind:this={emojiPicker[note.id]} class={visible[note.id] ? '' : 'hidden'}></div>
 					{#if note.pubkey === loginPubkey}
 				<button class="delete" on:click={() => callSendDeletion(pool, relaysToWrite, note.id)} disabled={!loginPubkey || note.pubkey !== loginPubkey}><svg><use xlink:href="/trash.svg#delete"></use></svg></button>
 					{/if}
@@ -243,6 +268,7 @@ dd dl .json-view > code {
 	font-size: x-small;
 }
 dd button.fav,
+dd button.emoji,
 dd button.delete {
 	background-color: transparent;
 	border: none;
@@ -252,6 +278,7 @@ dd button.delete {
 	height: 24px;
 }
 dd button.fav > svg,
+dd button.emoji > svg,
 dd button.delete > svg {
 	width: 24px;
 	height: 24px;
@@ -297,12 +324,17 @@ dd .action-bar details svg {
 	width: 24px;
 	height: 24px;
 }
+div.hidden {
+	display: none;
+}
 :global(#container.dark button.fav,
+	#container.dark button.emoji,
 	#container.dark button.delete,
 	#container.dark details) {
 	fill: white;
 }
 :global(#container.light button.fav,
+	#container.light button.emoji,
 	#container.light button.delete,
 	#container.light details) {
 	fill: black;

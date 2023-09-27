@@ -5,6 +5,7 @@ The web client for [NIP-28](https://github.com/nostr-protocol/nips/blob/master/2
 ## Libraries, frameworks, images, services and protocols
 
 - [nostr-tools](https://github.com/nbd-wtf/nostr-tools)
+- [emoji-mart](https://github.com/missive/emoji-mart)
 - [Svelte](https://svelte.dev/)
 - [Water.css](https://watercss.kognise.dev/)
 - [Evericons](http://www.evericons.com/)
