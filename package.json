@@ -10,8 +10,11 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
 	"devDependencies": {
+		"@emoji-mart/data": "^1.1.2",
 		"@sveltejs/adapter-auto": "^2.0.0",
 		"@sveltejs/kit": "^1.20.4",
+		"@types/emoji-mart": "^3.0.10",
+		"emoji-mart": "^5.5.2",
 		"nostr-tools": "^1.14.2",
 		"svelte": "^4.0.5",
 		"svelte-check": "^3.4.3",

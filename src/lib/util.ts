@@ -406,14 +406,14 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 	await Promise.all(pubs);
 }
 
-export const sendFav = async(pool: SimplePool, relaysToWrite: string[], noteid: string, targetPubkey: string) => {
+export const sendFav = async(pool: SimplePool, relaysToWrite: string[], noteid: string, targetPubkey: string, content: string) => {
 	const tags = [['p', targetPubkey, ''], ['e', noteid, '', '']];
 	const baseEvent: UnsignedEvent<7> = {
 		kind: 7,
 		pubkey: '',
 		created_at: Math.floor(Date.now() / 1000),
 		tags: tags,
-		content: '+'
+		content: content
 	};
 	const newEvent: NostrEvent<7> = await (window as any).nostr.signEvent(baseEvent);
 	const pubs = pool.publish(relaysToWrite, newEvent);
