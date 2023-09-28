@@ -128,7 +128,7 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 			{@const imageUrls = getImageUrls(note.content)}
 			{@const videoUrls = getVideoUrls(note.content)}
 			{@const contentWarningTag = note.tags.filter(tag => tag[0] === 'content-warning')}
-			<div class="content-warning-reason {contentWarningTag.length > 0 ? '' : 'hide'}">Content Warning{#if contentWarningTag[1]}<br />Reason: {contentWarningTag[1]}{/if}</div>
+			<div class="content-warning-reason {contentWarningTag.length > 0 ? '' : 'hide'}">Content Warning{#if contentWarningTag.length > 0 && contentWarningTag[0][1]}<br />Reason: {contentWarningTag[0][1]}{/if}</div>
 			<button class="content-warning-show {contentWarningTag.length > 0 ? '' : 'hide'}" on:click={() => showContentWarning(note.id)}>Show Content</button>
 			<div class="content-warning-target {contentWarningTag.length > 0 ? 'hide' : ''}">
 				<div class="content">
