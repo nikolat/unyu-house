@@ -45,6 +45,13 @@ const getVideoUrls = (content: string) => {
 	return urls;
 };
 
+const showContentWarning = (noteId: string) => {
+	const dd = document.querySelector(`#note-${noteId} + dd`);
+	dd?.querySelector('button.content-warning-show')?.classList.add('hide');
+	dd?.querySelector('div.content-warning-reason')?.classList.add('hide');
+	dd?.querySelector('div.content-warning-target')?.classList.remove('hide');
+};
+
 const callSendMessage = (noteId: string, currentChannelId: string, replyId: string, pubkeysToReply:string[]) => {
 	const content = inputText[noteId];
 	if (!content)
@@ -84,7 +91,7 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 <dl>
 {#each notes as note}
 	{#if !muteList?.includes(note.pubkey) && !wordList?.reduce((accumulator, currentValue) => accumulator || note.content.includes(currentValue), false)}
-		<dt id="{note.id}">
+		<dt id="note-{note.id}">
 		{#if profs[note.pubkey]}
 			<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>
 		{:else}
@@ -107,7 +114,7 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 			{#if replyTags.length > 0 || replyPubkeys.length > 0}
 				<div class="info-header">
 				{#if replyTags.length > 0}
-					<a href="#{replyTags[0][1]}">&gt;&gt;</a>
+					<a href="#note-{replyTags[0][1]}">&gt;&gt;</a>
 				{/if}
 				{#each replyPubkeys as pubkey}
 					&nbsp;@{profs[pubkey]?.name ?? (nip19.npubEncode(pubkey).slice(0, 10) + '...')}
@@ -118,52 +125,57 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 			{@const matchesIterator = r[0]}
 			{@const plainTexts = r[1]}
 			{@const emojiUrls = r[2]}
-			<div class="content">
-			{plainTexts.shift()}
-			{#each matchesIterator as match}
-				{#if /https?:\/\/\S+/.test(match[1]) }
-					<a href="{match[1]}" target="_blank" rel="noopener noreferrer">{match[1]}</a>
-				{:else if /nostr:npub\w{59}/.test(match[2])}
-					{@const matchedText = match[2]}
-					{@const npubText = matchedText.replace(/nostr:/, '')}
-					{@const d = nip19.decode(npubText)}
-					{#if d.type === 'npub'}
-						<a href="/{npubText}">@{profs[d.data]?.name ?? (npubText.slice(0, 10) + '...')}</a>
-					{:else}
-						{matchedText}
-					{/if}
-				{:else if /nostr:note\w{59}/.test(match[3])}
-					{@const matchedText = match[3]}
-					<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} />
-				{:else if /nostr:nevent\w+/.test(match[4])}
-					{@const matchedText = match[4]}
-					<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} />
-				{:else if match[5]}
-					{@const matchedText = match[5]}
-					<img src="{emojiUrls[matchedText]}" alt="{matchedText}" title="{matchedText}" class="emoji" />
-				{/if}
-				{plainTexts.shift()}
-			{/each}
-			</div>
 			{@const imageUrls = getImageUrls(note.content)}
-			{#if imageUrls.length > 0}
-				<div class="image-holder">
-				{#each imageUrls as imageUrl}
-					<figure><a href="{imageUrl}" target="_blank" rel="noopener noreferrer"><img src="{imageUrl}" alt="auto load" /></a></figure>
+			{@const videoUrls = getVideoUrls(note.content)}
+			{@const contentWarningTag = note.tags.filter(tag => tag[0] === 'content-warning')}
+			<div class="content-warning-reason {contentWarningTag.length > 0 ? '' : 'hide'}">Content Warning{#if contentWarningTag[1]}<br />Reason: {contentWarningTag[1]}{/if}</div>
+			<button class="content-warning-show {contentWarningTag.length > 0 ? '' : 'hide'}" on:click={() => showContentWarning(note.id)}>Show Content</button>
+			<div class="content-warning-target {contentWarningTag.length > 0 ? 'hide' : ''}">
+				<div class="content">
+				{plainTexts.shift()}
+				{#each matchesIterator as match}
+					{#if /https?:\/\/\S+/.test(match[1]) }
+						<a href="{match[1]}" target="_blank" rel="noopener noreferrer">{match[1]}</a>
+					{:else if /nostr:npub\w{59}/.test(match[2])}
+						{@const matchedText = match[2]}
+						{@const npubText = matchedText.replace(/nostr:/, '')}
+						{@const d = nip19.decode(npubText)}
+						{#if d.type === 'npub'}
+							<a href="/{npubText}">@{profs[d.data]?.name ?? (npubText.slice(0, 10) + '...')}</a>
+						{:else}
+							{matchedText}
+						{/if}
+					{:else if /nostr:note\w{59}/.test(match[3])}
+						{@const matchedText = match[3]}
+						<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} />
+					{:else if /nostr:nevent\w+/.test(match[4])}
+						{@const matchedText = match[4]}
+						<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} />
+					{:else if match[5]}
+						{@const matchedText = match[5]}
+						<img src="{emojiUrls[matchedText]}" alt="{matchedText}" title="{matchedText}" class="emoji" />
+					{/if}
+					{plainTexts.shift()}
 				{/each}
 				</div>
-			{/if}
-			{@const videoUrls = getVideoUrls(note.content)}
-			{#if videoUrls.length > 0}
+				{#if imageUrls.length > 0}
+				<div class="image-holder">
+					{#each imageUrls as imageUrl}
+					<figure><a href="{imageUrl}" target="_blank" rel="noopener noreferrer"><img src="{imageUrl}" alt="auto load" /></a></figure>
+					{/each}
+				</div>
+				{/if}
+				{#if videoUrls.length > 0}
 				<div class="video-holder">
-				{#each videoUrls as videoUrl}
+					{#each videoUrls as videoUrl}
 					<video controls preload="metadata">
 						<track kind="captions">
 						<source src="{videoUrl}">
 					</video>
-				{/each}
+					{/each}
 				</div>
-			{/if}
+				{/if}
+			</div>
 			{#if favList.some(ev => ev.tags.filter(tag => tag[0] === 'e' && tag[1] === note.id).length > 0 && profs[ev.pubkey])}
 				<ul class="fav-holder" role="list">
 				{#each favList as ev}
@@ -235,6 +247,17 @@ dt time {
 }
 dd {
 	white-space: pre-wrap;
+}
+dd button.content-warning-show,
+dd div.content-warning-reason {
+	display: none;
+}
+dd button.content-warning-show:not(.hide),
+dd div.content-warning-reason:not(.hide) {
+	display: inherit;
+}
+dd div.content-warning-target.hide {
+	visibility: hidden;
 }
 dd .info-header {
 	color: #999;
