@@ -57,6 +57,8 @@ const callSendMessage = (noteId: string, currentChannelId: string, replyId: stri
 	if (!content)
 		return;
 	inputText[noteId] = '';
+	const details = <HTMLDetailsElement>document.querySelector(`#note-${noteId} + dd div.action-bar details`);
+	details.open = false;
 	const recommendedRelay = channels.filter(v => v.id === currentChannelId)[0]?.recommendedRelay ?? '';
 	sendMessage(pool, relaysToWrite, content, currentChannelId, recommendedRelay, replyId, pubkeysToReply);
 };
