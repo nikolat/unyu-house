@@ -204,7 +204,7 @@ onMount(() => {
 	overflow-y: scroll;
 	transition: width 0.1s;
 }
-@media screen and (min-width: 1280px) {
+@media screen and (min-width: 1080px) {
 	#sidebar {
 		min-width: 20%;
 	}
