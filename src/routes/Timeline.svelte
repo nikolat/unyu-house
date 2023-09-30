@@ -22,6 +22,7 @@ export let loginPubkey: string;
 export let muteList: string[];
 export let wordList: string[];
 export let favList: NostrEvent[];
+export let resetScroll: Function;
 
 let emojiPicker: {[key: string]: HTMLElement} = {};
 let visible: {[key: string]: boolean} = {};
@@ -59,6 +60,7 @@ const callSendMessage = (noteId: string, currentChannelId: string, replyId: stri
 	inputText[noteId] = '';
 	const details = <HTMLDetailsElement>document.querySelector(`#note-${noteId} + dd div.action-bar details`);
 	details.open = false;
+	resetScroll();
 	const recommendedRelay = channels.filter(v => v.id === currentChannelId)[0]?.recommendedRelay ?? '';
 	sendMessage(pool, relaysToWrite, content, currentChannelId, recommendedRelay, replyId, pubkeysToReply);
 };

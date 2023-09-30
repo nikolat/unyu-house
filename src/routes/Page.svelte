@@ -24,10 +24,11 @@ export let wordList: string[];
 export let pinList: string[];
 export let relaysToUse: object;
 export let theme: string;
-export let currentChannelId: string | null
-export let currentPubkey: string | null
-export let applyRelays: Function
+export let currentChannelId: string | null;
+export let currentPubkey: string | null;
+export let applyRelays: Function;
 export let favList: NostrEvent[];
+export let resetScroll: Function;
 
 let inputText: string;
 
@@ -37,6 +38,7 @@ const callSendMessage = () => {
 	const content = inputText;
 	inputText = '';
 	hidePostBar();
+	resetScroll();
 	const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
 	const recommendedRelay = channels.filter(v => v.id === currentChannelId)[0]?.recommendedRelay ?? '';
 	sendMessage(pool, relaysToWrite, content, currentChannelId, recommendedRelay, '', []);
@@ -99,7 +101,7 @@ const hidePostBar = () => {
 	{:else}
 		<h2>Global timeline</h2>
 	{/if}
-		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {loginPubkey} {muteList} {wordList} {favList} />
+		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {loginPubkey} {muteList} {wordList} {favList} {resetScroll} />
 	{#if currentChannelId && loginPubkey}
 		<div id="input" class="show" on:click|stopPropagation={()=>{}}>
 			{#if loginPubkey}

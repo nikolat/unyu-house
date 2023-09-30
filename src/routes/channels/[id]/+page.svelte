@@ -213,6 +213,9 @@ const importRelays = async (relaysSelected: string) => {
 	}
 };
 let scrolled = false;
+const resetScroll = () => {
+	scrolled = false;
+};
 const applyRelays = () => {
 	scrolled = false;
 	channels = [];
@@ -225,7 +228,7 @@ const applyRelays = () => {
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
 	const filter: Filter<42> = {kinds: [42], limit: 100, '#e': [currentChannelId]};
 	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3, loginPubkey).catch((e) => console.error(e));
-}
+};
 
 onMount(() => {
 	const input = document.getElementById('input');
@@ -278,4 +281,4 @@ afterUpdate(() => {
 </svelte:head>
 <Page {title} {channels} {notes} {notesQuoted} {profs} {pool} {loginPubkey}
 	{importRelays} {muteList} {wordList} {pinList} {relaysToUse} {theme}
-	{currentChannelId} {currentPubkey} {applyRelays} {favList} />
+	{currentChannelId} {currentPubkey} {applyRelays} {favList} {resetScroll} />
