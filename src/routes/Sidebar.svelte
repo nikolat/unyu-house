@@ -33,9 +33,13 @@ let newChannelPicture: string;
 
 const login = async() => {
 	if (browser && (window as any).nostr?.getPublicKey) {
-		loginPubkey = await (window as any).nostr.getPublicKey();
-		storedLoginpubkey.set(loginPubkey);
-		applyRelays();
+		try {
+			loginPubkey = await (window as any).nostr.getPublicKey();
+			storedLoginpubkey.set(loginPubkey);
+			applyRelays();
+		} catch (error) {
+			console.error(error);
+		}
 	}
 };
 const logout = () => {
