@@ -98,8 +98,10 @@ const hidePostBar = () => {
 		{:else}
 		<h2>Now Loading...</h2>
 		{/if}
-	{:else}
+	{:else if currentChannelId === null && currentPubkey === null}
 		<h2>Global timeline</h2>
+	{:else}
+		<h2>Error</h2>
 	{/if}
 		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {loginPubkey} {muteList} {wordList} {favList} {resetScroll} />
 	{#if currentChannelId && loginPubkey}

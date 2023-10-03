@@ -10,14 +10,7 @@ import Page from '../Page.svelte';
 const currentChannelId = null;
 
 export let data: any;
-const urlId: string = data.params.id;
 let currentPubkey: string;
-if (/^npub/.test(urlId)) {
-	const d = nip19.decode(urlId);
-	if (d.type === 'npub') {
-		currentPubkey = d.data;
-	}
-}
 
 let pool = new SimplePool();
 let subNotes: Sub<7|40|41|42|10001>;
@@ -228,7 +221,23 @@ const applyRelays = () => {
 	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3, loginPubkey).catch((e) => console.error(e));
 };
 
+const getPubkey = (urlId: string) => {
+	if (/^npub/.test(urlId)) {
+		const d = nip19.decode(urlId);
+		if (d.type === 'npub') {
+			return d.data;
+		}
+		else {
+			throw new TypeError(`"${urlId}" must be npub`);
+		}
+	}
+	else {
+		throw new TypeError(`"${urlId}" has no pubkey`);
+	}
+};
+
 onMount(() => {
+	currentPubkey = getPubkey(data.params.id);
 	if (Object.keys(relaysToUse).length == 0) {
 		relaysToUse = defaultRelays;
 		storedRelaysToUse.set(relaysToUse);
@@ -238,13 +247,7 @@ beforeNavigate(() => {
 	subNotes?.unsub();
 });
 afterNavigate(() => {
-	const urlId: string = data.params.id;
-	if (/^npub/.test(urlId)) {
-		const d = nip19.decode(urlId);
-		if (d.type === 'npub') {
-			currentPubkey = d.data;
-		}
-	}
+	currentPubkey = getPubkey(data.params.id);
 	channels = [];
 	notes = [];
 	profs = {};

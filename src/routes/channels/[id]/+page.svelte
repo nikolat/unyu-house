@@ -10,16 +10,7 @@ import Page from '../../Page.svelte';
 const currentPubkey = null;
 
 export let data: any;
-const urlId: string = data.params.id;
 let currentChannelId: string;
-let currentChannelOwner: string | undefined;
-if (/^nevent/.test(urlId)) {
-	const d = nip19.decode(urlId);
-	if (d.type === 'nevent') {
-		currentChannelId = d.data.id
-		currentChannelOwner = d.data.author;
-	}
-}
 
 let pool = new SimplePool();
 let subNotes: Sub<7|40|41|42|10001>;
@@ -230,7 +221,29 @@ const applyRelays = () => {
 	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3, loginPubkey).catch((e) => console.error(e));
 };
 
+const getChannelId = (urlId: string) => {
+	if (/^(nevent|note)/.test(urlId)) {
+		const d = nip19.decode(urlId);
+		if (d.type === 'nevent') {
+			return d.data.id
+		}
+		else if (d.type === 'note') {
+			return d.data;
+		}
+		else {
+			throw new TypeError(`"${urlId}" must be nevent or note`);
+		}
+	}
+	else if (urlId.length === 64) {
+		return urlId;
+	}
+	else {
+		throw new TypeError(`"${urlId}" has no channel id`);
+	}
+};
+
 onMount(() => {
+	currentChannelId = getChannelId(data.params.id);
 	const input = document.getElementById('input');
 	input?.classList.remove('show');
 	if (Object.keys(relaysToUse).length == 0) {
@@ -242,14 +255,7 @@ beforeNavigate(() => {
 	subNotes?.unsub();
 });
 afterNavigate(() => {
-	const urlId: string = data.params.id;
-	if (/^nevent/.test(urlId)) {
-		const d = nip19.decode(urlId);
-		if (d.type === 'nevent') {
-			currentChannelId = d.data.id
-			currentChannelOwner = d.data.author;
-		}
-	}
+	currentChannelId = getChannelId(data.params.id);
 	channels = [];
 	notes = [];
 	profs = {};
