@@ -45,6 +45,14 @@ const getVideoUrls = (content: string) => {
 	}
 	return urls;
 };
+const getAudioUrls = (content: string) => {
+	const matchesIterator = content.matchAll(/https?:\/\/\S+\.mp3/g);
+	const urls = [];
+	for (const match of matchesIterator) {
+		urls.push(match[0]);
+	}
+	return urls;
+};
 
 const showContentWarning = (noteId: string) => {
 	const dd = document.querySelector(`#note-${noteId} + dd`);
@@ -135,6 +143,7 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 			{@const emojiUrls = r[2]}
 			{@const imageUrls = getImageUrls(note.content)}
 			{@const videoUrls = getVideoUrls(note.content)}
+			{@const audioUrls = getAudioUrls(note.content)}
 			{@const contentWarningTag = note.tags.filter(tag => tag[0] === 'content-warning')}
 			<div class="content-warning-reason {contentWarningTag.length > 0 ? '' : 'hide'}">Content Warning{#if contentWarningTag.length > 0 && contentWarningTag[0][1]}<br />Reason: {contentWarningTag[0][1]}{/if}</div>
 			<button class="content-warning-show {contentWarningTag.length > 0 ? '' : 'hide'}" on:click={() => showContentWarning(note.id)}>Show Content</button>
@@ -180,6 +189,13 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 						<track kind="captions">
 						<source src="{videoUrl}">
 					</video>
+					{/each}
+				</div>
+				{/if}
+				{#if audioUrls.length > 0}
+				<div class="audio-holder">
+					{#each audioUrls as audioUrl}
+					<audio controls preload="metadata" src="{audioUrl}"></audio>
 					{/each}
 				</div>
 				{/if}
