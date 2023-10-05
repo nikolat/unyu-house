@@ -5,7 +5,7 @@ import {
 	type Event as NostrEvent,
 	nip19,
 } from 'nostr-tools';
-import { sendMessage, type Channel, type Profile, getExpandTagsList } from '$lib/util';
+import { sendMessage, type Channel, type Profile, getExpandTagsList, type GetRelays } from '$lib/util';
 import Sidebar from './Sidebar.svelte';
 import Timeline from './Timeline.svelte';
 import Header from './Header.svelte';
@@ -22,7 +22,7 @@ export let importRelays: Function;
 export let muteList: string[];
 export let wordList: string[];
 export let pinList: string[];
-export let relaysToUse: object;
+export let relaysToUse: {[key: string]: GetRelays};
 export let theme: string;
 export let currentChannelId: string | null;
 export let currentPubkey: string | null;

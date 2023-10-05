@@ -1,12 +1,12 @@
 <script lang='ts'>
-import { sendEditChannel, type Channel, type Profile, sendPin } from "$lib/util";
+import { sendEditChannel, type Channel, type Profile, sendPin, type GetRelays } from "$lib/util";
 import { SimplePool, nip19 } from "nostr-tools";
 
 export let channel: Channel;
 export let pool: SimplePool;
 export let profs: {[key: string]: Profile};
 export let loginPubkey: string;
-export let relaysToUse: object;
+export let relaysToUse: {[key: string]: GetRelays};
 export let isQuote: boolean;
 export let pinList: string[];
 

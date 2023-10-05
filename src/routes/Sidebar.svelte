@@ -5,11 +5,11 @@ import {
 } from 'nostr-tools';
 import { browser } from '$app/environment';
 import { storedLoginpubkey, storedTheme, storedRelaysSelected } from '$lib/store';
-import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile } from '$lib/util';
+import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile, type GetRelays } from '$lib/util';
 import { onMount } from 'svelte';
 
 export let pool: SimplePool;
-export let relaysToUse: object;
+export let relaysToUse: {[key: string]: GetRelays};
 export let loginPubkey: string;
 export let channels: Channel[];
 export let applyRelays: Function

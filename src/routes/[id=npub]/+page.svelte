@@ -169,6 +169,7 @@ const applyRelays = () => {
 	muteList = [];
 	pinList = [];
 	favList = [];
+	subNotes?.unsub();
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
 	const filter: Filter<42> = {kinds: [42], limit: 100, authors: [currentPubkey]};
 	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3, loginPubkey).catch((e) => console.error(e));
@@ -201,9 +202,6 @@ beforeNavigate(() => {
 });
 afterNavigate(() => {
 	currentPubkey = getPubkey(data.params.id);
-	channels = [];
-	notes = [];
-	profs = {};
 	applyRelays();
 });
 afterUpdate(() => {
