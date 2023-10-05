@@ -6,6 +6,7 @@ import {
 	type Filter,
 	type Sub,
 } from 'nostr-tools';
+import { defaultRelays, relaysToGetRelays } from './config';
 
 export interface Channel {
 	name: string
@@ -24,6 +25,11 @@ export interface Profile {
 	picture: string
 	website: string
 	created_at: number
+}
+
+export interface GetRelays {
+	read: boolean
+	write: boolean
 }
 
 export const urlDarkTheme = 'https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css';
@@ -562,4 +568,43 @@ export const getExpandTagsList = (content: string, tags: string[][]): [IterableI
 	const plainTexts = content.split(regSplit);
 	const matchesIterator = content.matchAll(regMatch);
 	return [matchesIterator, plainTexts, emojiUrls];
+};
+
+export const getRelaysToUse = async (relaysSelected: string, pool: SimplePool, loginPubkey: string, callback: Function) => {
+	let relaysToUse: {[key: string]: GetRelays} = {};
+	switch (relaysSelected) {
+		case 'kind3':
+			getEvents(pool, relaysToGetRelays, [{kinds: [3], authors: [loginPubkey]}], (events: NostrEvent<3>[]) => {
+				if (events.length === 0) {
+					return {};
+				}
+				const ev: NostrEvent<3> = events.reduce((a: NostrEvent<3>, b: NostrEvent<3>) => a.created_at > b.created_at ? a : b)
+				relaysToUse = ev.content ? JSON.parse(ev.content) : {};
+				callback(relaysToUse);
+			});
+			break;
+		case 'kind10002':
+			getEvents(pool, relaysToGetRelays, [{kinds: [10002], authors: [loginPubkey]}], (events: NostrEvent<10002>[]) => {
+				if (events.length === 0) {
+					return {};
+				}
+				const ev: NostrEvent<10002> = events.reduce((a: NostrEvent<10002>, b: NostrEvent<10002>) => a.created_at > b.created_at ? a : b)
+				const newRelays: {[key: string]: GetRelays} = {};
+				for (const tag of ev.tags.filter(tag => tag[0] === 'r')) {
+					newRelays[tag[1]] = {'read': !Object.hasOwn(tag, 2) || tag[2] === 'read', 'write': !Object.hasOwn(tag, 2) || tag[2] === 'write'};
+				}
+				relaysToUse = newRelays;
+				callback(relaysToUse);
+			});
+			break;
+		case 'nip07':
+			relaysToUse = await (window as any).nostr.getRelays();
+			callback(relaysToUse);
+			break;
+		case 'default':
+		default:
+			relaysToUse = defaultRelays;
+			callback(relaysToUse);
+			break;
+	}
 };

@@ -1,8 +1,8 @@
 <script lang='ts'>
 import { afterUpdate, onDestroy, onMount } from 'svelte';
 import { SimplePool, type Sub, type Event as NostrEvent, type Filter } from 'nostr-tools';
-import { title, defaultRelays, relaysToGetRelays } from '$lib/config';
-import { type Channel, type Profile, getEventsPhase1, urlDefaultTheme, getEvents } from '$lib/util';
+import { title, defaultRelays } from '$lib/config';
+import { type Channel, type Profile, getEventsPhase1, urlDefaultTheme, getRelaysToUse, type GetRelays } from '$lib/util';
 import { storedLoginpubkey, storedRelaysToUse, storedTheme } from '$lib/store';
 import Page from './Page.svelte';
 
@@ -12,7 +12,7 @@ const currentPubkey = null;
 let pool = new SimplePool();
 let subNotes: Sub<7|40|41|42|10001>;
 
-let relaysToUse: object;
+let relaysToUse: {[key: string]: GetRelays};
 $: relaysToUse = relaysToUse;
 storedRelaysToUse.subscribe((value) => {
 	relaysToUse = value;
@@ -147,58 +147,11 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42|10001>, ev: NostrEvent<7|
 };
 
 const importRelays = async (relaysSelected: string) => {
-	switch (relaysSelected) {
-		case 'kind3':
-			getEvents(
-				pool,
-				relaysToGetRelays,
-				[{kinds: [3], authors: [loginPubkey]}],
-				(events: NostrEvent<3>[]) => {
-				if (events.length === 0) {
-					return;
-				}
-				const ev: NostrEvent<3> = events.reduce((a: NostrEvent<3>, b: NostrEvent<3>) => a.created_at > b.created_at ? a : b)
-				try {
-					relaysToUse = ev.content ? JSON.parse(ev.content) : {};
-					storedRelaysToUse.set(relaysToUse);
-					applyRelays();
-				} catch (error) {
-					console.warn(error);
-					return;
-				}
-			});
-			break;
-		case 'kind10002':
-			getEvents(
-				pool,
-				relaysToGetRelays,
-				[{kinds: [10002], authors: [loginPubkey]}],
-				(events: NostrEvent<10002>[]) => {
-				if (events.length === 0) {
-					return;
-				}
-				const ev: NostrEvent<10002> = events.reduce((a: NostrEvent<10002>, b: NostrEvent<10002>) => a.created_at > b.created_at ? a : b)
-				const newRelays: {[key: string]: object} = {};
-				for (const tag of ev.tags.filter(tag => tag[0] === 'r')) {
-					newRelays[tag[1]] = {'read': !Object.hasOwn(tag, 2) || tag[2] === 'read', 'write': !Object.hasOwn(tag, 2) || tag[2] === 'write'};
-				}
-				relaysToUse = newRelays;
-				storedRelaysToUse.set(relaysToUse);
-				applyRelays();
-			});
-			break;
-		case 'nip07':
-			relaysToUse = await (window as any).nostr.getRelays();
-			storedRelaysToUse.set(relaysToUse);
-			applyRelays();
-			break;
-		case 'default':
-		default:
-			relaysToUse = defaultRelays;
-			storedRelaysToUse.set(relaysToUse);
-			applyRelays();
-			break;
-	}
+	getRelaysToUse(relaysSelected, pool, loginPubkey, (relaysToUseBack: {[key: string]: GetRelays}) => {
+		relaysToUse = relaysToUseBack;
+		storedRelaysToUse.set(relaysToUse);
+		applyRelays();
+	});
 };
 let scrolled = false;
 const resetScroll = () => {
