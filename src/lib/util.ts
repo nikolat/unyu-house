@@ -148,7 +148,7 @@ const getPubkeysForFilter = (events: NostrEvent[]): string[] => {
 				}
 			}
 		} catch (error) {
-			console.log(error);
+			console.warn(error);
 			continue;
 		}
 	}
@@ -190,7 +190,7 @@ const getChannels = (pool: SimplePool, events40: NostrEvent[], events41: NostrEv
 		try {
 			channelObjects[ev.id] = JSON.parse(ev.content);
 		} catch (error) {
-			console.log(error);
+			console.warn(error);
 			continue;
 		}
 		channelObjects[ev.id].updated_at = ev.created_at;
@@ -206,7 +206,7 @@ const getChannels = (pool: SimplePool, events40: NostrEvent[], events41: NostrEv
 				try {
 					channelObjects[id] = JSON.parse(ev.content);
 				} catch (error) {
-					console.log(error);
+					console.warn(error);
 					continue;
 				}
 				channelObjects[id].updated_at = ev.created_at;
@@ -246,7 +246,7 @@ const getFrofiles = (events: NostrEvent[]): {[key: string]: Profile} => {
 			try {
 				profs[ev.pubkey] = JSON.parse(ev.content);
 			} catch (error) {
-				console.log(error);
+				console.warn(error);
 				continue;
 			}
 			profs[ev.pubkey].created_at = ev.created_at;
@@ -262,7 +262,7 @@ const getFrofilesAndNotesQuoted = (events: NostrEvent[]): [{[key: string]: Profi
 			try {
 				profs[ev.pubkey] = JSON.parse(ev.content);
 			} catch (error) {
-				console.log(error);
+				console.warn(error);
 				continue;
 			}
 			profs[ev.pubkey].created_at = ev.created_at;

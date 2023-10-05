@@ -57,7 +57,7 @@ const callbackPhase1 = async (loginPubkey: string, channelsNew: Channel[], notes
 			muteList = muteList.concat(list.filter(v => v[0] === 'p').map(v => v[1]));
 			wordList = wordList.concat(list.filter(v => v[0] === 'word').map(v => v[1]));
 		} catch (error) {
-			console.log(error);
+			console.warn(error);
 		}
 	}
 	pinList = pinListNew;
@@ -116,7 +116,7 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42|10001>, ev: NostrEvent<7|
 		try {
 			channel = JSON.parse(ev.content);
 		} catch (error) {
-			console.log(error);
+			console.warn(error);
 			return;
 		}
 		channel.updated_at = ev.created_at;
@@ -135,7 +135,7 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42|10001>, ev: NostrEvent<7|
 		try {
 			newChannel = JSON.parse(ev.content);
 		} catch (error) {
-			console.log(error);
+			console.warn(error);
 			return;
 		}
 		newChannel.updated_at = ev.created_at;
@@ -159,11 +159,11 @@ const importRelays = async (relaysSelected: string) => {
 				}
 				const ev: NostrEvent<3> = events.reduce((a: NostrEvent<3>, b: NostrEvent<3>) => a.created_at > b.created_at ? a : b)
 				try {
-					relaysToUse = JSON.parse(ev.content);
+					relaysToUse = ev.content ? JSON.parse(ev.content) : {};
 					storedRelaysToUse.set(relaysToUse);
 					applyRelays();
 				} catch (error) {
-					console.log(error);
+					console.warn(error);
 					return;
 				}
 			});
