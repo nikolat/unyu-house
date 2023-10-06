@@ -354,16 +354,18 @@ const getMuteListAndFavs = (events: NostrEvent<7|10000>[], pubkey: string): [str
 	return [muteList, favList, favedList, Array.from(profileListToGet)];
 };
 
-export const getEvents = (pool: SimplePool, relays: string[], filters: Filter[], callback: Function) => {
-	const sub: Sub = pool.sub(relays, filters);
-	const events: NostrEvent[] = [];
-	sub.on('event', (ev: NostrEvent) => {
-		events.push(ev);
-	});
-	sub.on('eose', () => {
-		console.log('getEvents * EOSE *');
-		sub.unsub();
-		callback(events);
+export const getEvents = (pool: SimplePool, relays: string[], filters: Filter[]): Promise<NostrEvent[]> => {
+	return new Promise((resolve, reject) => {
+		const sub: Sub = pool.sub(relays, filters);
+		const events: NostrEvent[] = [];
+		sub.on('event', (ev: NostrEvent) => {
+			events.push(ev);
+		});
+		sub.on('eose', () => {
+			console.log('getEvents * EOSE *');
+			sub.unsub();
+			resolve(events);
+		});
 	});
 };
 
@@ -574,21 +576,21 @@ export const getRelaysToUse = async (relaysSelected: string, pool: SimplePool, l
 	let relaysToUse: {[key: string]: GetRelays} = {};
 	switch (relaysSelected) {
 		case 'kind3':
-			getEvents(pool, relaysToGetRelays, [{kinds: [3], authors: [loginPubkey]}], (events: NostrEvent<3>[]) => {
+			getEvents(pool, relaysToGetRelays, [{kinds: [3], authors: [loginPubkey]}]).then((events: NostrEvent[]) => {
 				if (events.length === 0) {
 					return {};
 				}
-				const ev: NostrEvent<3> = events.reduce((a: NostrEvent<3>, b: NostrEvent<3>) => a.created_at > b.created_at ? a : b)
+				const ev: NostrEvent = events.reduce((a: NostrEvent, b: NostrEvent) => a.created_at > b.created_at ? a : b)
 				relaysToUse = ev.content ? JSON.parse(ev.content) : {};
 				callback(relaysToUse);
-			});
+			})
 			break;
 		case 'kind10002':
-			getEvents(pool, relaysToGetRelays, [{kinds: [10002], authors: [loginPubkey]}], (events: NostrEvent<10002>[]) => {
+			getEvents(pool, relaysToGetRelays, [{kinds: [10002], authors: [loginPubkey]}]).then((events: NostrEvent[]) => {
 				if (events.length === 0) {
 					return {};
 				}
-				const ev: NostrEvent<10002> = events.reduce((a: NostrEvent<10002>, b: NostrEvent<10002>) => a.created_at > b.created_at ? a : b)
+				const ev: NostrEvent = events.reduce((a: NostrEvent, b: NostrEvent) => a.created_at > b.created_at ? a : b)
 				const newRelays: {[key: string]: GetRelays} = {};
 				for (const tag of ev.tags.filter(tag => tag[0] === 'r')) {
 					newRelays[tag[1]] = {'read': !Object.hasOwn(tag, 2) || tag[2] === 'read', 'write': !Object.hasOwn(tag, 2) || tag[2] === 'write'};
