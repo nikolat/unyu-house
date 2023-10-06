@@ -355,7 +355,7 @@ const getMuteListAndFavs = (events: NostrEvent<7|10000>[], pubkey: string): [str
 };
 
 export const getEvents = (pool: SimplePool, relays: string[], filters: Filter[]): Promise<NostrEvent[]> => {
-	return new Promise((resolve, reject) => {
+	return new Promise((resolve) => {
 		const sub: Sub = pool.sub(relays, filters);
 		const events: NostrEvent[] = [];
 		sub.on('event', (ev: NostrEvent) => {
@@ -572,41 +572,40 @@ export const getExpandTagsList = (content: string, tags: string[][]): [IterableI
 	return [matchesIterator, plainTexts, emojiUrls];
 };
 
-export const getRelaysToUse = async (relaysSelected: string, pool: SimplePool, loginPubkey: string, callback: Function) => {
-	let relaysToUse: {[key: string]: GetRelays} = {};
+export const getRelaysToUse = (relaysSelected: string, pool: SimplePool, loginPubkey: string): Promise<{[key: string]: GetRelays}> => {
 	switch (relaysSelected) {
 		case 'kind3':
-			getEvents(pool, relaysToGetRelays, [{kinds: [3], authors: [loginPubkey]}]).then((events: NostrEvent[]) => {
-				if (events.length === 0) {
-					return {};
-				}
-				const ev: NostrEvent = events.reduce((a: NostrEvent, b: NostrEvent) => a.created_at > b.created_at ? a : b)
-				relaysToUse = ev.content ? JSON.parse(ev.content) : {};
-				callback(relaysToUse);
-			})
-			break;
-		case 'kind10002':
-			getEvents(pool, relaysToGetRelays, [{kinds: [10002], authors: [loginPubkey]}]).then((events: NostrEvent[]) => {
-				if (events.length === 0) {
-					return {};
-				}
-				const ev: NostrEvent = events.reduce((a: NostrEvent, b: NostrEvent) => a.created_at > b.created_at ? a : b)
-				const newRelays: {[key: string]: GetRelays} = {};
-				for (const tag of ev.tags.filter(tag => tag[0] === 'r')) {
-					newRelays[tag[1]] = {'read': !Object.hasOwn(tag, 2) || tag[2] === 'read', 'write': !Object.hasOwn(tag, 2) || tag[2] === 'write'};
-				}
-				relaysToUse = newRelays;
-				callback(relaysToUse);
+			return new Promise((resolve) => {
+				getEvents(pool, relaysToGetRelays, [{kinds: [3], authors: [loginPubkey]}]).then((events: NostrEvent[]) => {
+					if (events.length === 0) {
+						resolve({});
+					}
+					else {
+						const ev: NostrEvent = events.reduce((a: NostrEvent, b: NostrEvent) => a.created_at > b.created_at ? a : b)
+						resolve(ev.content ? JSON.parse(ev.content) : {});
+					}
+				});
 			});
-			break;
+		case 'kind10002':
+			return new Promise((resolve) => {
+				getEvents(pool, relaysToGetRelays, [{kinds: [10002], authors: [loginPubkey]}]).then((events: NostrEvent[]) => {
+					if (events.length === 0) {
+						resolve({});
+					}
+					else {
+						const ev: NostrEvent = events.reduce((a: NostrEvent, b: NostrEvent) => a.created_at > b.created_at ? a : b)
+						const newRelays: {[key: string]: GetRelays} = {};
+						for (const tag of ev.tags.filter(tag => tag[0] === 'r')) {
+							newRelays[tag[1]] = {'read': !Object.hasOwn(tag, 2) || tag[2] === 'read', 'write': !Object.hasOwn(tag, 2) || tag[2] === 'write'};
+						}
+						resolve(newRelays);
+					}
+				});
+			});
 		case 'nip07':
-			relaysToUse = await (window as any).nostr.getRelays();
-			callback(relaysToUse);
-			break;
+			return (window as any).nostr.getRelays();
 		case 'default':
 		default:
-			relaysToUse = defaultRelays;
-			callback(relaysToUse);
-			break;
+			return Promise.resolve(defaultRelays);
 	}
 };

@@ -149,12 +149,16 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42|10001>, ev: NostrEvent<7|
 	}
 };
 
-const importRelays = async (relaysSelected: string) => {
-	getRelaysToUse(relaysSelected, pool, loginPubkey, (relaysToUseBack: {[key: string]: GetRelays}) => {
-		relaysToUse = relaysToUseBack;
-		storedRelaysToUse.set(relaysToUse);
-		applyRelays();
-	});
+const importRelays = (relaysSelected: string) => {
+	getRelaysToUse(relaysSelected, pool, loginPubkey)
+		.then((relaysToUseBack: {[key: string]: GetRelays}) => {
+			relaysToUse = relaysToUseBack;
+			storedRelaysToUse.set(relaysToUse);
+			applyRelays();
+		})
+		.catch((error) => {
+			console.warn(error);
+		});
 };
 let scrolled = false;
 const resetScroll = () => {
