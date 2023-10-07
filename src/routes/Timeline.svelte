@@ -46,7 +46,7 @@ const getVideoUrls = (content: string) => {
 	return urls;
 };
 const getAudioUrls = (content: string) => {
-	const matchesIterator = content.matchAll(/https?:\/\/\S+\.mp3/g);
+	const matchesIterator = content.matchAll(/https?:\/\/\S+\.(mp3|m4a|wav|ogg|aac)/g);
 	const urls = [];
 	for (const match of matchesIterator) {
 		urls.push(match[0]);
