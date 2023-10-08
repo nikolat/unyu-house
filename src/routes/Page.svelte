@@ -168,7 +168,6 @@ const importRelays = (relaysSelected: string) => {
 		.then((relaysToUseBack: {[key: string]: GetRelays}) => {
 			relaysToUse = relaysToUseBack;
 			storedRelaysToUse.set(relaysToUse);
-			storedNeedApplyRelays.set(true);
 			applyRelays();
 		})
 		.catch((error) => {
@@ -177,6 +176,7 @@ const importRelays = (relaysSelected: string) => {
 };
 
 const applyRelays = () => {
+	storedNeedApplyRelays.set(false);
 	resetScroll();
 	channels = [];
 	notes = [];
@@ -205,7 +205,6 @@ onMount(() => {
 		unsubscribeApplyRelays = storedNeedApplyRelays.subscribe((value) => {
 			if (value === true) {
 				applyRelays();
-				storedNeedApplyRelays.set(false);
 			}
 		});
 	}
@@ -244,7 +243,6 @@ afterNavigate(() => {
 		unsubscribeApplyRelays = storedNeedApplyRelays.subscribe((value) => {
 			if (value === true) {
 				applyRelays();
-				storedNeedApplyRelays.set(false);
 			}
 		});
 	}
@@ -290,7 +288,7 @@ $: titleString = currentChannelId ? `${channels.filter(v => v.id === currentChan
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div id="container" on:click={hidePostBar}>
 	<Header {title} />
-	<Sidebar {pool} {theme} {relaysToUse} {loginPubkey} {channels} {profs} {importRelays} {applyRelays} {pinList} />
+	<Sidebar {pool} {theme} {relaysToUse} {loginPubkey} {channels} {profs} {importRelays} {pinList} />
 	<main>
 	{#if currentChannelId}
 		{@const channel = channels.filter(v => v.id === currentChannelId)[0]}

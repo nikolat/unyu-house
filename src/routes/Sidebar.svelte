@@ -4,7 +4,7 @@ import {
 	nip19,
 } from 'nostr-tools';
 import { browser } from '$app/environment';
-import { storedLoginpubkey, storedTheme, storedRelaysSelected } from '$lib/store';
+import { storedLoginpubkey, storedTheme, storedRelaysSelected, storedNeedApplyRelays } from '$lib/store';
 import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile, type GetRelays } from '$lib/util';
 import { onMount } from 'svelte';
 
@@ -12,7 +12,6 @@ export let pool: SimplePool;
 export let relaysToUse: {[key: string]: GetRelays};
 export let loginPubkey: string;
 export let channels: Channel[];
-export let applyRelays: Function
 export let profs: {[key: string]: Profile};
 export let importRelays: Function;
 export let theme: string;
@@ -36,7 +35,7 @@ const login = async() => {
 		try {
 			loginPubkey = await (window as any).nostr.getPublicKey();
 			storedLoginpubkey.set(loginPubkey);
-			applyRelays();
+			storedNeedApplyRelays.set(true);
 		} catch (error) {
 			console.error(error);
 		}
@@ -44,7 +43,7 @@ const login = async() => {
 };
 const logout = () => {
 	storedLoginpubkey.set('');
-	applyRelays();
+	storedNeedApplyRelays.set(true);
 };
 const callSendCreateChannel = () => {
 	const [channelName, channelAbout, channelPicture] = [newChannelName, newChannelAbout, newChannelPicture];

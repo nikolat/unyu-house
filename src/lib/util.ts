@@ -98,7 +98,13 @@ const getEventsPhase2 = (pool: SimplePool, relays: string[], filterPhase2: Filte
 		eventsAll.push(ev);
 	});
 	sub.on('eose', () => {
-		console.log('getEventsPhase2 * EOSE *');
+		if (goPhase3) {
+			console.log('getEventsPhase2 * EOSE *');
+		}
+		else {
+			console.log('getEventsPhase2-2 * EOSE *');
+			console.log(eventsAll);
+		}
 		sub.unsub();
 		const profs = getFrofiles(events[0]);
 		callbackPhase2(profs, events[7], eventsQuoted);
