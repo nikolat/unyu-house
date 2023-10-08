@@ -13,37 +13,26 @@ let pool = new SimplePool();
 let subNotes: Sub<7|40|41|42|10001>;
 
 let relaysToUse: {[key: string]: GetRelays};
-$: relaysToUse = relaysToUse;
 storedRelaysToUse.subscribe((value) => {
 	relaysToUse = value;
 });
 let loginPubkey: string;
-$: loginPubkey = loginPubkey;
 storedLoginpubkey.subscribe((value) => {
 	loginPubkey = value;
 });
 let muteList: string[] = [];
-$: muteList = muteList;
 let wordList: string[] = [];
-$: wordList = wordList;
 let pinList: string[] = [];
-$: pinList = pinList;
 let favList: NostrEvent[] = [];
-$: favList = favList;
 let theme: string;
-$: theme = theme;
 storedTheme.subscribe((value) => {
 	theme = value;
 });
 
 let channels: Channel[] = [];
-$: channels = channels;
 let notes: NostrEvent[] = [];
-$: notes = notes;
 let notesQuoted: NostrEvent[] = [];
-$: notesQuoted = notesQuoted;
 let profs: {[key: string]: Profile} = {};
-$: profs = profs;
 
 const callbackPhase1 = async (loginPubkey: string, channelsNew: Channel[], notesNew: NostrEvent[], event10000: NostrEvent<10000> | null, pinListNew: string[]) => {
 	channels = channelsNew;
