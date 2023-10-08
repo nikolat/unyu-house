@@ -89,7 +89,7 @@ const callbackPhase2 = (profsNew: {[key: string]: Profile}, favListNew: NostrEve
 	}
 	let notesQuotedAdded = false;
 	for (const ev of eventsQuotedNew) {
-		if (!(ev.id in notesQuoted.map(ev => ev.id))) {
+		if (!notesQuoted.map(ev => ev.id).includes(ev.id)) {
 			notesQuoted.push(ev);
 			notesQuotedAdded = true;
 		}
@@ -176,7 +176,7 @@ const applyRelays = () => {
 	subNotes?.unsub();
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
 	const filter: Filter<42> = {kinds: [42], limit: 100, '#e': [currentChannelId]};
-	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3, loginPubkey).catch((e) => console.error(e));
+	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3, loginPubkey);
 };
 
 const getChannelId = (urlId: string) => {
