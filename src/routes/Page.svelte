@@ -188,7 +188,7 @@ const applyRelays = () => {
 	subNotes?.unsub();
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
 	let filter: Filter<42>;
-		if (currentChannelId) {
+	if (currentChannelId) {
 		filter = {kinds: [42], limit: 100, '#e': [currentChannelId]};
 	}
 	else if (currentPubkey) {
@@ -275,16 +275,15 @@ const hidePostBar = () => {
 	const input = document.getElementById('input');
 	input?.classList.remove('show');
 }
+
+$: titleString = currentChannelId ? `${channels.filter(v => v.id === currentChannelId)[0]?.name ?? '(unknown channel)'} | ${title}`
+	: currentPubkey ? `${profs[currentPubkey]?.name ?? '(unknown profile)'} | ${title}`
+	: title;
+
 </script>
 
 <svelte:head>
-	{#if currentChannelId}
-	<title>{channels.filter(v => v.id === currentChannelId)[0]?.name ?? '(unknown channel)'} | {title}</title>
-	{:else if currentPubkey}
-	<title>{profs[currentPubkey]?.name ?? '(unknown profile)'} | {title}</title>
-	{:else}
-	<title>{title}</title>
-	{/if}
+	<title>{titleString}</title>
 	<link rel="stylesheet" href="{theme || urlDefaultTheme}">
 </svelte:head>
 <!-- svelte-ignore a11y-click-events-have-key-events -->
