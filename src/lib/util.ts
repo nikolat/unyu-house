@@ -103,14 +103,13 @@ const getEventsPhase2 = (pool: SimplePool, relays: string[], filterPhase2: Filte
 		}
 		else {
 			console.log('getEventsPhase2-2 * EOSE *');
-			console.log(eventsAll);
 		}
 		sub.unsub();
 		const profs = getFrofiles(events[0]);
 		callbackPhase2(profs, events[7], eventsQuoted);
 		if (goPhase3) {
 			if (eventsAll.length > 0) {
-				const filterPhase2: Filter<0>[] = [{kinds: [0], authors: getPubkeysForFilter(eventsAll)}];
+				const filterPhase2: Filter<0>[] = [{kinds: [0], authors: getPubkeysForFilter(eventsAll).filter(v => !(v in profs))}];
 				getEventsPhase2(pool, relays, filterPhase2, [], callbackPhase2, ()=>{}, false);
 			}
 			getEventsPhase3(pool, relays, filterPhase3, profs, eventsQuoted, callbackPhase2, callbackPhase3);
