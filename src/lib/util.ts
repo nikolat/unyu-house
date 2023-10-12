@@ -341,8 +341,11 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 	await Promise.all(pubs);
 };
 
-export const sendFav = async(pool: SimplePool, relaysToWrite: string[], noteid: string, targetPubkey: string, content: string) => {
-	const tags = [['p', targetPubkey, ''], ['e', noteid, '', '']];
+export const sendFav = async(pool: SimplePool, relaysToWrite: string[], targetEvent: NostrEvent, content: string) => {
+	const tags: string[][] = targetEvent.tags.filter(tag => tag.length >= 2 && (tag[0] === 'e' || (tag[0] === 'p' && tag[1] !== targetEvent.pubkey)));
+	tags.push(['e', targetEvent.id, '', '']);
+	tags.push(['p', targetEvent.pubkey, '']);
+	tags.push(['k', String(targetEvent.kind)]);
 	const baseEvent: UnsignedEvent<7> = {
 		kind: 7,
 		pubkey: '',

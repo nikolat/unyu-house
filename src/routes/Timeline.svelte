@@ -73,7 +73,8 @@ const callSendMessage = (noteId: string, currentChannelId: string, replyId: stri
 	sendMessage(pool, relaysToWrite, content, currentChannelId, recommendedRelay, replyId, pubkeysToReply);
 };
 
-const callSendEmoji = (pool: SimplePool, relaysToWrite: string[], noteId: string, notePubkey: string) => {
+const callSendEmoji = (pool: SimplePool, relaysToWrite: string[], targetEvent: NostrEvent) => {
+	const noteId = targetEvent.id;
 	visible[noteId] = !visible[noteId];
 	if (emojiPicker[noteId].children.length > 0) {
 		return;
@@ -84,7 +85,7 @@ const callSendEmoji = (pool: SimplePool, relaysToWrite: string[], noteId: string
 	});
 	function onEmojiSelect(emoji: BaseEmoji) {
 		visible[noteId] = false;
-		sendFav(pool, relaysToWrite, noteId, notePubkey, emoji.native);
+		sendFav(pool, relaysToWrite, targetEvent, emoji.native);
 	}
 	emojiPicker[noteId].appendChild(picker as any);
 };
@@ -233,8 +234,8 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 						<button on:click={() => {callSendMessage(note.id, rootId, replyId, pubkeysToReply)}} disabled={!loginPubkey || !inputText[note.id]}>Reply</button>
 					{/if}
 				</details>
-				<button class="fav" on:click={() => sendFav(pool, relaysToWrite, note.id, note.pubkey, '+')} disabled={!loginPubkey}><svg><use xlink:href="/heart.svg#fav"></use></svg></button>
-				<button class="emoji" on:click={() => callSendEmoji(pool, relaysToWrite, note.id, note.pubkey)} disabled={!loginPubkey}><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button>
+				<button class="fav" on:click={() => sendFav(pool, relaysToWrite, note, '+')} disabled={!loginPubkey}><svg><use xlink:href="/heart.svg#fav"></use></svg></button>
+				<button class="emoji" on:click={() => callSendEmoji(pool, relaysToWrite, note)} disabled={!loginPubkey}><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button>
 				<div bind:this={emojiPicker[note.id]} class={visible[note.id] ? '' : 'hidden'}></div>
 					{#if note.pubkey === loginPubkey}
 				<button class="delete" on:click={() => callSendDeletion(pool, relaysToWrite, note.id)} disabled={!loginPubkey || note.pubkey !== loginPubkey}><svg><use xlink:href="/trash.svg#delete"></use></svg></button>

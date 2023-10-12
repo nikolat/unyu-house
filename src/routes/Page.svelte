@@ -188,14 +188,15 @@ const applyRelays = () => {
 	subNotes?.unsub();
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
 	let filter: Filter<42>;
+	const limit = 100;
 	if (currentChannelId) {
-		filter = {kinds: [42], limit: 100, '#e': [currentChannelId]};
+		filter = {kinds: [42], limit: limit, '#e': [currentChannelId]};
 	}
 	else if (currentPubkey) {
-		filter = {kinds: [42], limit: 100, authors: [currentPubkey]};
+		filter = {kinds: [42], limit: limit, authors: [currentPubkey]};
 	}
 	else {
-		filter = {kinds: [42], limit: 100};
+		filter = {kinds: [42], limit: limit};
 	}
 	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3, loginPubkey);
 };
