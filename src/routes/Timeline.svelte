@@ -201,10 +201,10 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 				</div>
 				{/if}
 			</div>
-			{#if favList.some(ev => ev.tags.filter(tag => tag[0] === 'e' && tag[1] === note.id).length > 0 && profs[ev.pubkey])}
+			{#if favList.some(ev => ev.tags.filter(tag => tag[0] === 'e').at(-1)?.at(1) === note.id && profs[ev.pubkey])}
 				<ul class="fav-holder" role="list">
 				{#each favList as ev}
-					{#if ev.tags.filter(tag => tag[0] === 'e' && tag[1] === note.id).length > 0 && profs[ev.pubkey]}
+					{#if ev.tags.filter(tag => tag[0] === 'e').at(-1)?.at(1) === note.id && profs[ev.pubkey]}
 						{@const emojiTag = ev.tags.filter(tag => tag[0] === 'emoji')[0]}
 						{@const prof = profs[ev.pubkey]}
 						<li>
