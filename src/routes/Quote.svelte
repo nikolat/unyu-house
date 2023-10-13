@@ -47,9 +47,9 @@ const getNote = (eventText: string) => {
 			{/if}
 			<br /><time>{(new Date(1000 * note.created_at)).toLocaleString()}</time> {#if note.kind === 1}<a href="{urlToLinkNote}/{eventText}" target="_blank" rel="noopener noreferrer">kind:1</a>{:else}kind:{note.kind}{/if}
 			{#if note.kind === 42 && note.tags.some(v => v[0] === 'e' && v[3] === 'root')}
-				{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root')[0][1]}
+				{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root').at(0)?.at(1)}
 				{@const channel = channels.filter(v => v.event.id === rootId)[0]}
-				{#if channel}
+				{#if rootId && channel}
 					{@const channelId = nip19.neventEncode({id:rootId, relays:pool.seenOn(rootId), author:channel.event.pubkey})}
 					<a href="/channels/{channelId}">{channel.name}</a>
 				{:else}
