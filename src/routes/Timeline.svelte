@@ -61,7 +61,8 @@ const showContentWarning = (noteId: string) => {
 	dd?.querySelector('div.content-warning-target')?.classList.remove('hide');
 };
 
-const callSendMessage = (noteId: string, currentChannelId: string, replyId: string, pubkeysToReply:string[]) => {
+const callSendMessage = (noteToReplay: NostrEvent) => {
+	const noteId = noteToReplay.id;
 	const content = inputText[noteId];
 	if (!content)
 		return;
@@ -69,8 +70,7 @@ const callSendMessage = (noteId: string, currentChannelId: string, replyId: stri
 	const details = <HTMLDetailsElement>document.querySelector(`#note-${noteId} + dd div.action-bar details`);
 	details.open = false;
 	resetScroll();
-	const recommendedRelay = channels.filter(v => v.id === currentChannelId)[0]?.recommendedRelay ?? '';
-	sendMessage(pool, relaysToWrite, content, currentChannelId, recommendedRelay, replyId, pubkeysToReply);
+	sendMessage(pool, relaysToWrite, content, noteToReplay);
 };
 
 const callSendEmoji = (pool: SimplePool, relaysToWrite: string[], targetEvent: NostrEvent) => {
@@ -112,15 +112,14 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 		{/if}
 		<br />
 		<time>{(new Date(1000 * note.created_at)).toLocaleString()}</time>
-		{#if note.tags.filter(v => v[0] === 'e' && v[3] === 'root').length > 0}
+		{#if note.tags.some(v => v[0] === 'e' && v[3] === 'root')}
 			{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root')[0][1]}
-			{@const channel = channels.filter(v => v.id === rootId)[0]}
-			{@const channelName = (channels.filter(v => v.id === rootId)[0])?.name ?? '(unknown channel)'}
+			{@const channel = channels.filter(v => v.event.id === rootId)[0]}
 			{#if channel}
-				{@const channelId = nip19.neventEncode({id:rootId, relays:channel?.recommendedRelay ? [channel?.recommendedRelay] : [], author:channel?.pubkey ?? ''})}
-				<a href="/channels/{channelId}">{channelName}</a>
+				{@const channelId = nip19.neventEncode({id:rootId, relays:pool.seenOn(rootId), author:channel.event.pubkey})}
+				<a href="/channels/{channelId}">{channel.name}</a>
 			{:else}
-				{channelName}
+				(unknown channel)
 			{/if}
 		{/if}
 		</dt>
@@ -227,12 +226,7 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 						<svg><use xlink:href="/arrow-bold-reply.svg#reply"></use></svg><span>reply to @{#if profs[note.pubkey]}{profs[note.pubkey]?.name ?? ''}{:else}{nip19.npubEncode(note.pubkey).slice(0, 10)}...{/if}</span>
 					</summary>
 					<textarea id="input-text" bind:value={inputText[note.id]} disabled={!loginPubkey}></textarea>
-					{#if note.tags.filter(v => v[0] === 'e' && v[3] === 'root').length > 0}
-						{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root')[0][1]}
-						{@const replyId = note.id}
-						{@const pubkeysToReply = [note.pubkey, ...note.tags.filter(tag => tag[0] === 'p').map(tag => tag[1])]}
-						<button on:click={() => {callSendMessage(note.id, rootId, replyId, pubkeysToReply)}} disabled={!loginPubkey || !inputText[note.id]}>Reply</button>
-					{/if}
+					<button on:click={() => {callSendMessage(note)}} disabled={!loginPubkey || !inputText[note.id]}>Reply</button>
 				</details>
 				<button class="fav" on:click={() => sendFav(pool, relaysToWrite, note, '+')} disabled={!loginPubkey}><svg><use xlink:href="/heart.svg#fav"></use></svg></button>
 				<button class="emoji" on:click={() => callSendEmoji(pool, relaysToWrite, note)} disabled={!loginPubkey}><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button>

@@ -173,10 +173,10 @@ onMount(() => {
 			{#if pinList.length > 0}
 		<h3>Pinned Channels</h3>
 		<ul role="list">
-				{#each channels.filter(ch => pinList.includes(ch.id)) as channel}
+				{#each channels.filter(ch => pinList.includes(ch.event.id)) as channel}
 			<li>
-				<img src="{profs[channel.pubkey]?.picture || '/default.png'}" alt="" width="16" height="16">
-				<a href="/channels/{nip19.neventEncode({id:channel.id, relays:channel.recommendedRelay ? [channel.recommendedRelay] : [], author:channel.pubkey ?? ''})}">{channel.name}</a>
+				<img src="{profs[channel.event.pubkey]?.picture || '/default.png'}" alt="" width="16" height="16">
+				<a href="/channels/{nip19.neventEncode({id:channel.event.id, relays:pool.seenOn(channel.event.id), author:channel.event.pubkey})}">{channel.name}</a>
 			</li>
 				{/each}
 		</ul>
@@ -186,8 +186,8 @@ onMount(() => {
 		<ul role="list">
 			{#each channels as channel}
 			<li>
-				<img src="{profs[channel.pubkey]?.picture || '/default.png'}" alt="" width="16" height="16">
-				<a href="/channels/{nip19.neventEncode({id:channel.id, relays:channel.recommendedRelay ? [channel.recommendedRelay] : [], author:channel.pubkey ?? ''})}">{channel.name}</a>
+				<img src="{profs[channel.event.pubkey]?.picture || '/default.png'}" alt="" width="16" height="16">
+				<a href="/channels/{nip19.neventEncode({id:channel.event.id, relays:pool.seenOn(channel.event.id), author:channel.event.pubkey})}">{channel.name}</a>
 			</li>
 			{/each}
 		</ul>

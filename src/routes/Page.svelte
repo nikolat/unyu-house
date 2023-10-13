@@ -128,7 +128,7 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42|10001>, ev: NostrEvent<7|
 			return;
 		pinList = ev.tags.filter(tag => tag[0] === 'e').map(tag => tag[1]);
 	}
-	else if (ev.kind === 40 && !channels.map(v => v.id).includes(ev.id)) {
+	else if (ev.kind === 40 && !channels.map(v => v.event.id).includes(ev.id)) {
 		let channel: Channel;
 		try {
 			channel = JSON.parse(ev.content);
@@ -137,15 +137,13 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42|10001>, ev: NostrEvent<7|
 			return;
 		}
 		channel.updated_at = ev.created_at;
-		channel.id = ev.id;
-		channel.pubkey = ev.pubkey;
-		channel.recommendedRelay = pool.seenOn(ev.id)[0];
+		channel.event = ev;
 		channels = [channel, ...channels];
 	}
 	else if (ev.kind === 41) {
 		const id = ev.tags.filter(tag => tag[0] === 'e')[0][1];
-		const currentChannel: Channel = channels.filter(channel => channel.id === id)[0];
-		if (ev.pubkey !== currentChannel.pubkey || ev.created_at <= currentChannel.updated_at) {
+		const currentChannel: Channel = channels.filter(channel => channel.event.id === id)[0];
+		if (ev.pubkey !== currentChannel.event.pubkey || ev.created_at <= currentChannel.updated_at) {
 			return;
 		}
 		let newChannel: Channel;
@@ -156,10 +154,8 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42|10001>, ev: NostrEvent<7|
 			return;
 		}
 		newChannel.updated_at = ev.created_at;
-		newChannel.id = id;
-		newChannel.pubkey = ev.pubkey;
-		newChannel.recommendedRelay = currentChannel.recommendedRelay;
-		channels = [newChannel, ...channels.toSpliced(channels.findIndex(channel => channel.id === id), 1)];
+		newChannel.event = currentChannel.event;
+		channels = [newChannel, ...channels.filter(channel => channel.event.id !== id)];
 	}
 };
 
@@ -253,16 +249,15 @@ afterNavigate(() => {
 	}
 });
 
-const callSendMessage = () => {
-	if (!currentChannelId)
-		return;
+const callSendMessage = (noteToReplay: NostrEvent) => {
 	const content = inputText;
+	if (!content)
+		return;
 	inputText = '';
 	hidePostBar();
 	resetScroll();
 	const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
-	const recommendedRelay = channels.filter(v => v.id === currentChannelId)[0]?.recommendedRelay ?? '';
-	sendMessage(pool, relaysToWrite, content, currentChannelId, recommendedRelay, '', []);
+	sendMessage(pool, relaysToWrite, content, noteToReplay);
 };
 
 const showPostBar = () => {
@@ -275,7 +270,7 @@ const hidePostBar = () => {
 	input?.classList.remove('show');
 }
 
-$: titleString = currentChannelId ? `${channels.filter(v => v.id === currentChannelId)[0]?.name ?? '(unknown channel)'} | ${title}`
+$: titleString = currentChannelId ? `${channels.filter(v => v.event.id === currentChannelId)[0]?.name ?? '(unknown channel)'} | ${title}`
 	: currentPubkey ? `${profs[currentPubkey]?.name ?? '(unknown profile)'} | ${title}`
 	: title;
 
@@ -292,7 +287,7 @@ $: titleString = currentChannelId ? `${channels.filter(v => v.id === currentChan
 	<Sidebar {pool} {theme} {relaysToUse} {loginPubkey} {channels} {profs} {importRelays} {pinList} />
 	<main>
 	{#if currentChannelId}
-		{@const channel = channels.filter(v => v.id === currentChannelId)[0]}
+		{@const channel = channels.filter(v => v.event.id === currentChannelId)[0]}
 		<ChannelMetadata {channel} {pool} {profs} {loginPubkey} {relaysToUse} isQuote={false} {pinList} />
 	{:else if currentPubkey}
 		{#if profs[currentPubkey]}
@@ -334,19 +329,10 @@ $: titleString = currentChannelId ? `${channels.filter(v => v.id === currentChan
 		<h2>Error</h2>
 	{/if}
 		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {loginPubkey} {muteList} {wordList} {favList} {resetScroll} />
-	{#if currentChannelId && loginPubkey}
+	{#if currentChannelId && channels.filter(channel => channel.event.id === currentChannelId).length > 0 && loginPubkey}
 		<div id="input" class="show" on:click|stopPropagation={()=>{}}>
-			{#if loginPubkey}
-			<textarea id="input-text" bind:value={inputText}></textarea>
-				{#if inputText}
-				<button on:click={callSendMessage}>Post</button>
-				{:else}
-				<button disabled>Post</button>
-				{/if}
-			{:else}
-				<textarea id="input-text" disabled></textarea>
-				<button disabled>Post</button>
-			{/if}
+			<textarea id="input-text" bind:value={inputText} disabled={!loginPubkey}></textarea>
+			<button on:click={() => {callSendMessage(channels.filter(channel => channel.event.id === currentChannelId)[0].event)}} disabled={!loginPubkey || !inputText}>Post</button>
 		</div>
 		<button id="show-post-bar" on:click|stopPropagation={showPostBar}><svg><use xlink:href="/pencil-create.svg#pencil"></use></svg></button>
 	{/if}

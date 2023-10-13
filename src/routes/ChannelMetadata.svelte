@@ -22,19 +22,19 @@ const setChannelMetadata = (currentChannelName: string, currentChannelAbout: str
 };
 
 const callSendEditChannel = () => {
-	if (channel?.id) {
-		sendEditChannel(pool, relaysToUse, loginPubkey, channel.id, editChannelName, editChannelAbout, editChannelPicture);
+	if (channel?.event.id) {
+		sendEditChannel(pool, relaysToUse, loginPubkey, channel.event.id, editChannelName, editChannelAbout, editChannelPicture);
 	}
 };
 
 const callSendPin = (toSet: boolean) => {
-	sendPin(pool, relaysToUse, loginPubkey, channel.id, toSet);
+	sendPin(pool, relaysToUse, loginPubkey, channel.event.id, toSet);
 }
 
 </script>
 
 {#if channel}
-{@const channelId = nip19.neventEncode({id:channel.id, relays:[channel.recommendedRelay], author:channel.pubkey})}
+{@const channelId = nip19.neventEncode({id:channel.event.id, relays:pool.seenOn(channel.event.id), author:channel.event.pubkey})}
 <h2>{#if isQuote}<a href="/channels/{channelId}">{channel.name}</a>{:else}{channel.name}{/if}</h2>
 {:else}
 <h2>Now Loading...</h2>
@@ -42,21 +42,21 @@ const callSendPin = (toSet: boolean) => {
 {#if channel}
 <figure>
 	{#if channel.picture}<img src="{channel.picture}" width="100" height="100" alt="banner" />{/if}
-	{#if channel.about || profs[channel.pubkey]}
+	{#if channel.about || profs[channel.event.pubkey]}
 	<figcaption id="channel-about">
 		{#if channel.about}
 		<div>{channel.about}</div>
 		{/if}
-		{#if profs[channel.pubkey] && !isQuote}
+		{#if profs[channel.event.pubkey] && !isQuote}
 		<div id="channel-owner">
-			<img src="{profs[channel.pubkey].picture}" width="32" height="32" alt="@{profs[channel.pubkey].name}" />
-			<a href="/{nip19.npubEncode(channel.pubkey)}">@{profs[channel.pubkey].name ?? ''}</a>
+			<img src="{profs[channel.event.pubkey].picture}" width="32" height="32" alt="@{profs[channel.event.pubkey].name}" />
+			<a href="/{nip19.npubEncode(channel.event.pubkey)}">@{profs[channel.event.pubkey].name ?? ''}</a>
 		</div>
 		{/if}
 	</figcaption>
 	{/if}
 </figure>
-	{#if loginPubkey === channel.pubkey && !isQuote}
+	{#if loginPubkey === channel.event.pubkey && !isQuote}
 <details>
 	<summary>Edit Channel</summary>
 	{setChannelMetadata(channel.name, channel.about, channel.picture)}
@@ -74,7 +74,7 @@ const callSendPin = (toSet: boolean) => {
 </details>
 	{/if}
 	{#if loginPubkey && !isQuote}
-		{#if pinList.includes(channel.id)}
+		{#if pinList.includes(channel.event.id)}
 <button class="channel-metadata on" on:click={() => callSendPin(false)}><svg><use xlink:href="/bookmark.svg#pin"></use></svg></button>
 		{:else}
 <button class="channel-metadata off" on:click={() => callSendPin(true)}><svg><use xlink:href="/bookmark.svg#pin"></use></svg></button>

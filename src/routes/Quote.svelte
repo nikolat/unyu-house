@@ -35,7 +35,7 @@ const getNote = (eventText: string) => {
 	{#if note}
 	<blockquote>
 		{#if note.kind === 40}
-		{@const channel = channels.filter(v => v.id === note.id)[0]}
+		{@const channel = channels.filter(v => v.event.id === note.id)[0]}
 		<ChannelMetadata {channel} {pool} {profs} {loginPubkey} relaysToUse={{}} isQuote={true} pinList={[]} />
 		{:else}
 		<dl>
@@ -46,12 +46,15 @@ const getNote = (eventText: string) => {
 				<img src="/default.png" alt="" width="32" height="32" /><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
 			{/if}
 			<br /><time>{(new Date(1000 * note.created_at)).toLocaleString()}</time> {#if note.kind === 1}<a href="{urlToLinkNote}/{eventText}" target="_blank" rel="noopener noreferrer">kind:1</a>{:else}kind:{note.kind}{/if}
-			{#if note.kind === 42 && note.tags.filter(v => v[0] === 'e' && v[3] === 'root').length > 0}
+			{#if note.kind === 42 && note.tags.some(v => v[0] === 'e' && v[3] === 'root')}
 				{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root')[0][1]}
-				{@const channel = channels.filter(v => v.id === rootId)[0]}
-				{@const channelId = nip19.neventEncode({id:rootId, relays:[channel?.recommendedRelay], author:channel?.pubkey})}
-				{@const channelName = channel?.name ?? '(unknown channel)'}
-				{#if channel}<a href="/channels/{channelId}">{channelName}</a>{:else}{channelName}{/if}
+				{@const channel = channels.filter(v => v.event.id === rootId)[0]}
+				{#if channel}
+					{@const channelId = nip19.neventEncode({id:rootId, relays:pool.seenOn(rootId), author:channel.event.pubkey})}
+					<a href="/channels/{channelId}">{channel.name}</a>
+				{:else}
+					(unknown channel)
+				{/if}
 			{/if}
 			</dt>
 			<dd>{note.content}</dd>

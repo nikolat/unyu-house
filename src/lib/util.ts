@@ -13,9 +13,7 @@ export interface Channel {
 	about: string
 	picture: string
 	updated_at: number
-	id: string
-	pubkey: string
-	recommendedRelay: string
+	event: NostrEvent
 }
 
 export interface Profile {
@@ -50,7 +48,7 @@ export const getEventsPhase1 = (pool: SimplePool, relays: string[], filterKind42
 	sub.on('eose', () => {
 		console.log('getEventsPhase1 * EOSE *');
 		sub.unsub();
-		const channels = getChannels(pool, events[40], events[41]);
+		const channels = getChannels(events[40], events[41]);
 		const notes = getNotes(events[42]);
 		const event10000 = events[10000].length === 0 ? null : events[10000].reduce((a, b) => a.created_at > b.created_at ? a : b);
 		const pinList = getPinList(events[10001]);
@@ -195,7 +193,7 @@ const getIdsForFilter = (events: NostrEvent[]): string[] => {
 	return Array.from(ids);
 };
 
-const getChannels = (pool: SimplePool, events40: NostrEvent[], events41: NostrEvent[]): Channel[] => {
+const getChannels = (events40: NostrEvent[], events41: NostrEvent[]): Channel[] => {
 	const channelObjects: {[key: string]: Channel} = {};
 	for (const ev of events40) {
 		try {
@@ -205,15 +203,13 @@ const getChannels = (pool: SimplePool, events40: NostrEvent[], events41: NostrEv
 			continue;
 		}
 		channelObjects[ev.id].updated_at = ev.created_at;
-		channelObjects[ev.id].id = ev.id;
-		channelObjects[ev.id].pubkey = ev.pubkey;
-		channelObjects[ev.id].recommendedRelay = pool.seenOn(ev.id)[0];
+		channelObjects[ev.id].event = ev;
 	}
 	for (const ev of events41) {
 		for (const tag of ev.tags) {
 			const id = tag[1];
-			if (tag[0] === 'e' && id in channelObjects && ev.pubkey === channelObjects[id].pubkey && channelObjects[id].updated_at < ev.created_at) {
-				const savedRecommendedRelay = channelObjects[id].recommendedRelay;
+			if (tag[0] === 'e' && id in channelObjects && ev.pubkey === channelObjects[id].event.pubkey && channelObjects[id].updated_at < ev.created_at) {
+				const savedEvent = channelObjects[id].event;
 				try {
 					channelObjects[id] = JSON.parse(ev.content);
 				} catch (error) {
@@ -221,9 +217,7 @@ const getChannels = (pool: SimplePool, events40: NostrEvent[], events41: NostrEv
 					continue;
 				}
 				channelObjects[id].updated_at = ev.created_at;
-				channelObjects[id].id = id;
-				channelObjects[id].pubkey = ev.pubkey;
-				channelObjects[id].recommendedRelay = savedRecommendedRelay;
+				channelObjects[id].event = savedEvent;
 			}
 		}
 	}
@@ -296,10 +290,22 @@ export const getEvents = (pool: SimplePool, relays: string[], filters: Filter[])
 	});
 };
 
-export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], content: string, currentChannelId: string, recommendedRelay: string, replyId: string, pubkeysToReply: string[]) => {
-	const tags = [['e', currentChannelId, recommendedRelay, 'root']];
-	if (replyId) {
-		tags.push(['e', replyId, '', 'reply']);
+export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], content: string, targetEventToReply: NostrEvent) => {
+	if (pool.seenOn(targetEventToReply.id).length == 0) {
+		throw new Error(`Event to reply is not found: ${targetEventToReply.id}`);
+	}
+	const tags: string[][] = [];
+	const mentionPubkeys: Set<string> = new Set();
+	if (targetEventToReply.tags.some(tag => tag.length >= 2 && tag[0] === 'e' && tag[3] === 'root')) {
+		tags.push(targetEventToReply.tags.filter(tag => tag.length >= 2 && tag[0] === 'e' && tag[3] === 'root')[0]);
+		tags.push(['e', targetEventToReply.id, pool.seenOn(targetEventToReply.id)[0], 'reply']);
+		mentionPubkeys.add(targetEventToReply.pubkey);
+	}
+	else {
+		tags.push(['e', targetEventToReply.id, pool.seenOn(targetEventToReply.id)[0], 'root']);
+	}
+	for (const pubkeyToReply of targetEventToReply.tags.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1])) {
+		mentionPubkeys.add(pubkeyToReply);
 	}
 	const mentionIds: Set<string> = new Set();
 	const matchesIteratorId = content.matchAll(/(^|\W|\b)(nostr:(note\w{59}|nevent\w+))($|\W|\b)/g);
@@ -312,10 +318,6 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 			mentionIds.add(d.data.id);
 		}
 	}
-	for (const id of mentionIds) {
-		tags.push(['e', id, '', 'mention']);
-	}
-	const mentionPubkeys: Set<string> = new Set();
 	const matchesIteratorPubkey = content.matchAll(/(^|\W|\b)(nostr:(npub\w{59}))($|\W|\b)/g);
 	for (const match of matchesIteratorPubkey) {
 		const d = nip19.decode(match[3]);
@@ -323,8 +325,8 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 			mentionPubkeys.add(d.data);
 		}
 	}
-	for (const pubkeyToReply of pubkeysToReply) {
-		mentionPubkeys.add(pubkeyToReply);
+	for (const id of mentionIds) {
+		tags.push(['e', id, '', 'mention']);
 	}
 	for (const p of mentionPubkeys) {
 		tags.push(['p', p, '']);
