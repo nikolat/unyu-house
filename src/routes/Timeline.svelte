@@ -204,7 +204,7 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 						{#if emojiTag && ev.content === `:${emojiTag[1]}:` && emojiTag[2]}
 							<img src="{emojiTag[2]}" width="20" height="20" alt=":{emojiTag[1]}:" title=":{emojiTag[1]}:" />
 						{:else}
-							{ev.content.replace(/^\+$/, '❤').replace(/^-$/, '👎')}
+							{ev.content.replace(/^\+$/, '❤').replace(/^-$/, '👎') || '❤'}
 						{/if}
 						<img src="{prof.picture || '/default.png'}" alt="avatar of {nip19.npubEncode(ev.pubkey)}"
 							width="16" height="16" /> {prof.display_name ?? ''} <a href="/{nip19.npubEncode(ev.pubkey)}">@{prof.name ?? ''}</a> reacted</li>
