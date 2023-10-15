@@ -303,19 +303,21 @@ export class RelayConnector {
 };
 
 export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], content: string, targetEventToReply: NostrEvent) => {
-	if (pool.seenOn(targetEventToReply.id).length === 0) {
-		throw new Error(`Event to reply is not found: ${targetEventToReply.id}`);
+	const seenOn = pool.seenOn(targetEventToReply.id);
+	if (seenOn.length === 0) {
+		throw new Error(`The event to reply is not found: ${targetEventToReply.id}`);
 	}
+	const recommendeRelay = seenOn[0];
 	const tags: string[][] = [];
 	const mentionPubkeys: Set<string> = new Set();
 	const rootTag = targetEventToReply.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root');
 	if (rootTag !== undefined) {
 		tags.push(rootTag);
-		tags.push(['e', targetEventToReply.id, pool.seenOn(targetEventToReply.id)?.at(0) ?? '', 'reply']);
+		tags.push(['e', targetEventToReply.id, recommendeRelay, 'reply']);
 		mentionPubkeys.add(targetEventToReply.pubkey);
 	}
 	else {
-		tags.push(['e', targetEventToReply.id, pool.seenOn(targetEventToReply.id)?.at(0) ?? '', 'root']);
+		tags.push(['e', targetEventToReply.id, recommendeRelay, 'root']);
 	}
 	for (const pubkeyToReply of targetEventToReply.tags.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1])) {
 		mentionPubkeys.add(pubkeyToReply);
@@ -400,18 +402,18 @@ export const sendEditChannel = async(pool: SimplePool, relaysToUse: object, logi
 		console.log('sendEditChannelPhase1 * EOSE *');
 		sub.unsub();
 		if (!newestEvent) {
-			return;
+			throw new Error(`The event to edit does not exist: ${currentChannelId}`);
 		}
 		const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
 		const objContent: object = JSON.parse(newestEvent.content);
-		(objContent as any).name = name ?? '';
-		(objContent as any).about = about ?? '';
-		(objContent as any).picture = picture ?? '';
+		(objContent as any).name = name;
+		(objContent as any).about = about;
+		(objContent as any).picture = picture;
 		const baseEvent: UnsignedEvent<41> = {
 			kind: 41,
 			pubkey: '',
 			created_at: Math.floor(Date.now() / 1000),
-			tags: [['e', currentChannelId, pool.seenOn(currentChannelId)[0] ?? '']],
+			tags: [['e', currentChannelId, pool.seenOn(currentChannelId).at(0) ?? '']],
 			content: JSON.stringify(objContent)
 		};
 		const newEvent: NostrEvent<41> = await (window as any).nostr.signEvent(baseEvent);
@@ -450,15 +452,15 @@ export const sendPin = async(pool: SimplePool, relaysToUse: object, loginPubkey:
 		let content = '';
 		if (newestEvent) {
 			tags = newestEvent.tags;
-			const includes: boolean = tags.some(tag =>tag.length >= 2 && tag[0] === 'e' && tag[1] === eventId);
+			const includes: boolean = tags.some(tag => tag.length >= 2 && tag[0] === 'e' && tag[1] === eventId);
 			if ((includes && toSet) || (!includes && !toSet)) {
-				return;
+				throw new Error(`The event does not have to update: ${newestEvent.id}`);
 			}
 			if (toSet) {
 				tags = [...tags, ['e', eventId]];
 			}
 			else {
-				tags = tags.filter(tag => !(tag[0] === 'e' && tag[1] === eventId));
+				tags = tags.filter(tag => !(tag.length >= 2 && tag[0] === 'e' && tag[1] === eventId));
 			}
 			content = newestEvent.content;
 		}
@@ -467,7 +469,7 @@ export const sendPin = async(pool: SimplePool, relaysToUse: object, loginPubkey:
 				tags = [['e', eventId]];
 			}
 			else {
-				return;
+				throw new Error(`The kind 10001 event to remove the pin does not exist: ${eventId}`);
 			}
 		}
 		const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
