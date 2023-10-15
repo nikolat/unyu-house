@@ -103,10 +103,9 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 <p>Total: {notes.length} posts</p>
 <dl>
 {#each notes as note}
-	{@const rootId = note.tags.filter(v => v[0] === 'e' && v[3] === 'root').at(0)?.at(1)}
-	{@const existChannel = rootId !== undefined && channels.some(ch => ch.event.id === rootId)}
-	{#if existChannel && !muteList?.includes(note.pubkey) && !wordList?.reduce((accumulator, currentValue) => accumulator || note.content.includes(currentValue), false)}
-		{@const channel = channels.filter(v => v.event.id === rootId)[0]}
+	{@const rootId = note.tags.find(v => v[0] === 'e' && v[3] === 'root')?.at(1)}
+	{@const channel = channels.find(v => v.event.id === rootId)}
+	{#if rootId !== undefined && channel && !muteList?.includes(note.pubkey) && !wordList?.reduce((accumulator, currentValue) => accumulator || note.content.includes(currentValue), false)}
 		{@const channelId = nip19.neventEncode({id:rootId, relays:pool.seenOn(rootId), author:channel.event.pubkey})}
 		<dt id="note-{note.id}">
 		{#if profs[note.pubkey]}
@@ -195,11 +194,11 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 				</div>
 				{/if}
 			</div>
-			{#if favList.some(ev => ev.tags.filter(tag => tag[0] === 'e').at(-1)?.at(1) === note.id && profs[ev.pubkey])}
+			{#if favList.some(ev => ev.tags.findLast(tag => tag[0] === 'e')?.at(1) === note.id && profs[ev.pubkey])}
 				<ul class="fav-holder" role="list">
 				{#each favList as ev}
-					{#if ev.tags.filter(tag => tag[0] === 'e').at(-1)?.at(1) === note.id && profs[ev.pubkey]}
-						{@const emojiTag = ev.tags.filter(tag => tag[0] === 'emoji')[0]}
+					{#if ev.tags.findLast(tag => tag[0] === 'e')?.at(1) === note.id && profs[ev.pubkey]}
+						{@const emojiTag = ev.tags.find(tag => tag.length >= 3 && tag[0] === 'emoji')}
 						{@const prof = profs[ev.pubkey]}
 						<li>
 						{#if emojiTag && ev.content === `:${emojiTag[1]}:` && emojiTag[2]}

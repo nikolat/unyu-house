@@ -53,7 +53,7 @@ export const getEventsPhase1 = (pool: SimplePool, relays: string[], filterKind42
 		const event10000 = events[10000].length === 0 ? null : events[10000].reduce((a, b) => a.created_at > b.created_at ? a : b);
 		const pinList = getPinList(events[10001]);
 		callbackPhase1(loginPubkey, channels, notes, event10000, pinList);
-		const pubkeysToGet: string[] = getPubkeysForFilter(Object.values(events).reduce((a, b) => a.concat(b), []));
+		const pubkeysToGet: string[] = getPubkeysForFilter(Object.values(events).flat());
 		const idsToGet: string[] = getIdsForFilter(events[42]);
 		const filterPhase2: Filter[] = [];
 		if (pubkeysToGet.length > 0) {
@@ -120,7 +120,7 @@ const getEventsPhase3 = (pool: SimplePool, relays: string[], filterPhase3: Filte
 	sub.on('event', (ev: NostrEvent<7|40|41|42|10001>) => {
 		callbackPhase3(sub, ev);
 		const pubkeysToGet: string[] = getPubkeysForFilter([ev]).filter(v => !(v in profs));
-		const idsToGet: string[] = getIdsForFilter([ev]).filter(v => !(v in eventsQuoted.map(v => v.id)));
+		const idsToGet: string[] = getIdsForFilter([ev]).filter(v => !eventsQuoted.map(v => v.id).includes(v));
 		if (pubkeysToGet.length > 0 || idsToGet.length > 0) {
 			const filterPhase2: Filter[] = [];
 			if (pubkeysToGet.length > 0) {
@@ -140,10 +140,10 @@ const getEventsPhase3 = (pool: SimplePool, relays: string[], filterPhase3: Filte
 
 const getPubkeysForFilter = (events: NostrEvent[]): string[] => {
 	const pubkeys: Set<string> = new Set();
-	for(const ev of events.filter(v => [7, 40].concat(v.kind))) {
+	for(const ev of events.filter(ev => [7, 40].includes(ev.kind))) {
 		pubkeys.add(ev.pubkey);
 	}
-	for(const ev of events.filter(v => v.kind === 0)) {
+	for(const ev of events.filter(ev => ev.kind === 0)) {
 		//npubでの言及
 		try {
 			const content = JSON.parse(ev.content);
@@ -161,10 +161,10 @@ const getPubkeysForFilter = (events: NostrEvent[]): string[] => {
 			continue;
 		}
 	}
-	for(const ev of events.filter(v => [1, 42].concat(v.kind))) {
+	for(const ev of events.filter(ev => [1, 42].includes(ev.kind))) {
 		pubkeys.add(ev.pubkey);
 		//pタグ送信先
-		for (const pubkey of ev.tags.filter(v => v[0] === 'p').map(v => v[1])) {
+		for (const pubkey of ev.tags.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1])) {
 			pubkeys.add(pubkey);
 		}
 		//npubでの言及
@@ -241,7 +241,7 @@ const getNotes = (events42: NostrEvent[]): NostrEvent[] => {
 const getPinList = (events10001: NostrEvent[]): string[] => {
 	if (events10001.length === 0)
 		return [];
-	return events10001.reduce((a, b) => a.created_at > b.created_at ? a : b).tags.filter(v => v[0] === 'e').map(v => v[1]);
+	return events10001.reduce((a, b) => a.created_at > b.created_at ? a : b).tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]);
 };
 
 const getFrofiles = (events: NostrEvent[]): {[key: string]: Profile} => {
@@ -296,13 +296,14 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 	}
 	const tags: string[][] = [];
 	const mentionPubkeys: Set<string> = new Set();
-	if (targetEventToReply.tags.some(tag => tag.length >= 2 && tag[0] === 'e' && tag[3] === 'root')) {
-		tags.push(targetEventToReply.tags.filter(tag => tag.length >= 2 && tag[0] === 'e' && tag[3] === 'root')[0]);
-		tags.push(['e', targetEventToReply.id, pool.seenOn(targetEventToReply.id)[0], 'reply']);
+	const rootTag = targetEventToReply.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root');
+	if (rootTag !== undefined) {
+		tags.push(rootTag);
+		tags.push(['e', targetEventToReply.id, pool.seenOn(targetEventToReply.id)?.at(0) ?? '', 'reply']);
 		mentionPubkeys.add(targetEventToReply.pubkey);
 	}
 	else {
-		tags.push(['e', targetEventToReply.id, pool.seenOn(targetEventToReply.id)[0], 'root']);
+		tags.push(['e', targetEventToReply.id, pool.seenOn(targetEventToReply.id)?.at(0) ?? '', 'root']);
 	}
 	for (const pubkeyToReply of targetEventToReply.tags.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1])) {
 		mentionPubkeys.add(pubkeyToReply);
@@ -437,7 +438,7 @@ export const sendPin = async(pool: SimplePool, relaysToUse: object, loginPubkey:
 		let content = '';
 		if (newestEvent) {
 			tags = newestEvent.tags;
-			const includes: boolean = tags.filter(tag => tag[0] === 'e').map(tag => tag[1]).includes(eventId);
+			const includes: boolean = tags.some(tag =>tag.length >= 2 && tag[0] === 'e' && tag[1] === eventId);
 			if ((includes && toSet) || (!includes && !toSet)) {
 				return;
 			}
@@ -527,8 +528,8 @@ export const getRelaysToUse = (relaysSelected: string, pool: SimplePool, loginPu
 					else {
 						const ev: NostrEvent = events.reduce((a: NostrEvent, b: NostrEvent) => a.created_at > b.created_at ? a : b)
 						const newRelays: {[key: string]: GetRelays} = {};
-						for (const tag of ev.tags.filter(tag => tag[0] === 'r')) {
-							newRelays[tag[1]] = {'read': !Object.hasOwn(tag, 2) || tag[2] === 'read', 'write': !Object.hasOwn(tag, 2) || tag[2] === 'write'};
+						for (const tag of ev.tags.filter(tag => tag.length >= 2 && tag[0] === 'r')) {
+							newRelays[tag[1]] = {'read': tag.length === 2 || tag[2] === 'read', 'write': tag.length === 2 || tag[2] === 'write'};
 						}
 						resolve(newRelays);
 					}

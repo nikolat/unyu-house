@@ -52,19 +52,19 @@ const resetScroll = () => {
 const callbackPhase1 = async (loginPubkey: string, channelsNew: Channel[], notesNew: NostrEvent[], event10000: NostrEvent<10000> | null, pinListNew: string[]) => {
 	channels = channelsNew;
 	if (currentChannelId) {
-		notes = notesNew.filter(ev => ev.tags.some(tag => tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root'));
+		notes = notesNew.filter(ev => ev.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root'));
 	}
 	else {
 		notes = notesNew;
 	}
-	muteList = event10000?.tags.filter(v => v[0] === 'p').map(v => v[1]) ?? [];
-	wordList = event10000?.tags.filter(v => v[0] === 'word').map(v => v[1]) ?? [];
+	muteList = event10000?.tags.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1]) ?? [];
+	wordList = event10000?.tags.filter(tag => tag.length >= 2 && tag[0] === 'word').map(tag => tag[1]) ?? [];
 	if (loginPubkey && event10000?.content) {
 		try {
 			const content = await (window as any).nostr.nip04.decrypt(loginPubkey, event10000.content);
 			const list: string[][] = JSON.parse(content);
-			muteList = muteList.concat(list.filter(v => v[0] === 'p').map(v => v[1]));
-			wordList = wordList.concat(list.filter(v => v[0] === 'word').map(v => v[1]));
+			muteList = muteList.concat(list.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1]));
+			wordList = wordList.concat(list.filter(tag => tag.length >= 2 && tag[0] === 'word').map(tag => tag[1]));
 		} catch (error) {
 			console.warn(error);
 		}
@@ -126,7 +126,7 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42|10001>, ev: NostrEvent<7|
 	else if (ev.kind === 10001) {
 		if (ev.pubkey !== loginPubkey)
 			return;
-		pinList = ev.tags.filter(tag => tag[0] === 'e').map(tag => tag[1]);
+		pinList = ev.tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]);
 	}
 	else if (ev.kind === 40 && !channels.map(v => v.event.id).includes(ev.id)) {
 		let channel: Channel;
@@ -141,8 +141,11 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42|10001>, ev: NostrEvent<7|
 		channels = [channel, ...channels];
 	}
 	else if (ev.kind === 41) {
-		const id = ev.tags.filter(tag => tag[0] === 'e')[0][1];
-		const currentChannel: Channel = channels.filter(channel => channel.event.id === id)[0];
+		const id = ev.tags.find(tag => tag.length >= 2 && tag[0] === 'e')?.at(1);
+		const currentChannel = channels.find(channel => channel.event.id === id);
+		if (currentChannel === undefined) {
+			return
+		}
 		if (ev.pubkey !== currentChannel.event.pubkey || ev.created_at <= currentChannel.updated_at) {
 			return;
 		}
@@ -270,7 +273,7 @@ const hidePostBar = () => {
 	input?.classList.remove('show');
 }
 
-$: titleString = currentChannelId ? `${channels.filter(v => v.event.id === currentChannelId)[0]?.name ?? '(unknown channel)'} | ${title}`
+$: titleString = currentChannelId ? `${channels.find(v => v.event.id === currentChannelId)?.name ?? '(unknown channel)'} | ${title}`
 	: currentPubkey ? `${profs[currentPubkey]?.name ?? '(unknown profile)'} | ${title}`
 	: title;
 
@@ -287,8 +290,10 @@ $: titleString = currentChannelId ? `${channels.filter(v => v.event.id === curre
 	<Sidebar {pool} {theme} {relaysToUse} {loginPubkey} {channels} {profs} {importRelays} {pinList} />
 	<main>
 	{#if currentChannelId}
-		{@const channel = channels.filter(v => v.event.id === currentChannelId)[0]}
+		{@const channel = channels.find(v => v.event.id === currentChannelId)}
+		{#if channel}
 		<ChannelMetadata {channel} {pool} {profs} {loginPubkey} {relaysToUse} isQuote={false} {pinList} />
+		{/if}
 	{:else if currentPubkey}
 		{#if profs[currentPubkey]}
 		<h2><img src="{profs[currentPubkey].picture || './default.png'}" alt="@{profs[currentPubkey].name ?? ''}" width="32" height="32"> {profs[currentPubkey].display_name ?? ''} @{profs[currentPubkey].name ?? ''}</h2>
@@ -329,12 +334,15 @@ $: titleString = currentChannelId ? `${channels.filter(v => v.event.id === curre
 		<h2>Error</h2>
 	{/if}
 		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {loginPubkey} {muteList} {wordList} {favList} {resetScroll} />
-	{#if currentChannelId && channels.filter(channel => channel.event.id === currentChannelId).length > 0 && loginPubkey}
+	{#if currentChannelId && loginPubkey}
+		{@const channel = channels.find(channel => channel.event.id === currentChannelId)}
+		{#if channel !== undefined}
 		<div id="input" class="show" on:click|stopPropagation={()=>{}}>
 			<textarea id="input-text" bind:value={inputText} disabled={!loginPubkey}></textarea>
-			<button on:click={() => {callSendMessage(channels.filter(channel => channel.event.id === currentChannelId)[0].event)}} disabled={!loginPubkey || !inputText}>Post</button>
+			<button on:click={() => {callSendMessage(channel.event)}} disabled={!loginPubkey || !inputText}>Post</button>
 		</div>
 		<button id="show-post-bar" on:click|stopPropagation={showPostBar}><svg><use xlink:href="/pencil-create.svg#pencil"></use></svg></button>
+		{/if}
 	{/if}
 	</main>
 </div>
