@@ -126,30 +126,36 @@ export class RelayConnector {
 			const profs = this.#getFrofiles(events[0]);
 			this.#callbackPhase2(profs, events[7], eventsQuoted);
 			if (goPhase3) {
+				const pubkeysObtained = Object.keys(profs);
 				if (eventsAll.length > 0) {
-					const filterPhase2: Filter<0>[] = [{kinds: [0], authors: this.#getPubkeysForFilter(eventsAll).filter(v => !(v in profs))}];
-					this.#getEventsPhase2(filterPhase2, [], false);
+					const pubkeysToGet: string[] = this.#getPubkeysForFilter(eventsAll).filter(v => !pubkeysObtained.includes(v));
+					if (pubkeysToGet.length > 0) {
+						const filterPhase2: Filter<0>[] = [{kinds: [0], authors: pubkeysToGet}];
+						this.#getEventsPhase2(filterPhase2, [], false);
+					}
 				}
-				this.#getEventsPhase3(filterPhase3, profs, eventsQuoted);
+				this.#getEventsPhase3(filterPhase3, pubkeysObtained, eventsQuoted.map(v => v.id));
 			}
 		});
 	};
 
-	#getEventsPhase3 = (filterPhase3: Filter<7|40|41|42|10001>[], profs: {[key: string]: Profile}, eventsQuoted: NostrEvent[]) => {
+	#getEventsPhase3 = (filterPhase3: Filter<7|40|41|42|10001>[], pubkeysObtained: string[], idsObtained: string[]) => {
 		const sub: Sub<7|40|41|42|10001> = this.#pool.sub(this.#relays, filterPhase3);
 		sub.on('event', (ev: NostrEvent<7|40|41|42|10001>) => {
 			this.#callbackPhase3(sub, ev);
-			const pubkeysToGet: string[] = this.#getPubkeysForFilter([ev]).filter(v => !(v in profs));
-			const idsToGet: string[] = this.#getIdsForFilter([ev]).filter(v => !eventsQuoted.map(v => v.id).includes(v));
+			const pubkeysToGet: string[] = this.#getPubkeysForFilter([ev]).filter(v => !pubkeysObtained.includes(v));
+			const idsToGet: string[] = this.#getIdsForFilter([ev]).filter(v => !idsObtained.includes(v));
 			if (pubkeysToGet.length > 0 || idsToGet.length > 0) {
 				const filterPhase2: Filter[] = [];
 				if (pubkeysToGet.length > 0) {
+					pubkeysObtained = pubkeysObtained.concat(pubkeysToGet);
 					filterPhase2.push({kinds: [0], authors: pubkeysToGet});
 				}
 				if (idsToGet.length > 0) {
+					idsObtained = idsObtained.concat(idsToGet);
 					filterPhase2.push({ids: idsToGet});
 				}
-				this.#getEventsPhase2(filterPhase2, filterPhase3, false);
+				this.#getEventsPhase2(filterPhase2, [], false);
 			}
 		});
 		sub.on('eose', () => {
