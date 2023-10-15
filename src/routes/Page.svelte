@@ -209,7 +209,7 @@ onMount(() => {
 			}
 		});
 	}
-	if (Object.keys(relaysToUse).length == 0) {
+	if (Object.keys(relaysToUse).length === 0) {
 		relaysToUse = defaultRelays;
 		storedRelaysToUse.set(relaysToUse);
 	}
@@ -247,7 +247,7 @@ afterNavigate(() => {
 			}
 		});
 	}
-	if (Object.keys(relaysToUse).length == 0) {
+	if (Object.keys(relaysToUse).length === 0) {
 		relaysToUse = defaultRelays;
 		storedRelaysToUse.set(relaysToUse);
 	}

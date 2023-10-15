@@ -303,7 +303,7 @@ export class RelayConnector {
 };
 
 export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], content: string, targetEventToReply: NostrEvent) => {
-	if (pool.seenOn(targetEventToReply.id).length == 0) {
+	if (pool.seenOn(targetEventToReply.id).length === 0) {
 		throw new Error(`Event to reply is not found: ${targetEventToReply.id}`);
 	}
 	const tags: string[][] = [];
