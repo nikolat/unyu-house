@@ -105,7 +105,7 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 {#each notes as note}
 	{@const rootId = note.tags.find(v => v[0] === 'e' && v[3] === 'root')?.at(1)}
 	{@const channel = channels.find(v => v.event.id === rootId)}
-	{#if rootId !== undefined && channel && !muteList?.includes(note.pubkey) && !wordList?.reduce((accumulator, currentValue) => accumulator || note.content.includes(currentValue), false)}
+	{#if rootId !== undefined && channel !== undefined && !muteList.includes(note.pubkey) && !wordList.reduce((accumulator, currentValue) => accumulator || note.content.includes(currentValue), false)}
 		{@const channelId = nip19.neventEncode({id:rootId, relays:pool.seenOn(rootId), author:channel.event.pubkey})}
 		<dt id="note-{note.id}">
 		{#if profs[note.pubkey]}

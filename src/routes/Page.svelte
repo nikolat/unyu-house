@@ -1,5 +1,5 @@
 <script lang='ts'>
-import { sendMessage, type Channel, type Profile, getExpandTagsList, type GetRelays, getRelaysToUse, getEventsPhase1, urlDefaultTheme } from '$lib/util';
+import { sendMessage, type Channel, type Profile, getExpandTagsList, type GetRelays, getRelaysToUse, RelayConnector, urlDefaultTheme } from '$lib/util';
 import { storedCurrentChannelId, storedCurrentPubkey, storedLoginpubkey, storedNeedApplyRelays, storedRelaysToUse, storedTheme } from '$lib/store';
 import { defaultRelays, title } from '$lib/config';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
@@ -197,7 +197,8 @@ const applyRelays = () => {
 	else {
 		filter = {kinds: [42], limit: limit};
 	}
-	getEventsPhase1(pool, relaysToRead, filter, callbackPhase1, callbackPhase2, callbackPhase3, loginPubkey);
+	const rc = new RelayConnector(pool, relaysToRead, loginPubkey, filter, callbackPhase1, callbackPhase2, callbackPhase3);
+	rc.getEventsPhase1();
 };
 
 onMount(() => {
