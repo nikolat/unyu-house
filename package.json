@@ -12,10 +12,10 @@
 	"devDependencies": {
 		"@emoji-mart/data": "^1.1.2",
 		"@sveltejs/adapter-auto": "^2.0.0",
-		"@sveltejs/kit": "^1.25.1",
+		"@sveltejs/kit": "^1.25.2",
 		"@types/emoji-mart": "^3.0.10",
 		"emoji-mart": "^5.5.2",
-		"nostr-tools": "^1.16.0",
+		"nostr-tools": "^1.17.0",
 		"svelte": "^4.2.1",
 		"svelte-check": "^3.5.2",
 		"tslib": "^2.4.1",
