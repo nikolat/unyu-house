@@ -222,12 +222,17 @@ export class RelayConnector {
 	#getChannels = (events40: NostrEvent[], events41: NostrEvent[]): Channel[] => {
 		const channelObjects: {[key: string]: Channel} = {};
 		for (const ev of events40) {
+			let json: any;
 			try {
-				channelObjects[ev.id] = JSON.parse(ev.content);
+				json = JSON.parse(ev.content);
 			} catch (error) {
 				console.warn(error);
 				continue;
 			}
+			if (['name', 'about'].some(metadata => !Object.hasOwn(json, metadata))) {
+				continue;
+			}
+			channelObjects[ev.id] = json;
 			channelObjects[ev.id].updated_at = ev.created_at;
 			channelObjects[ev.id].event = ev;
 		}
@@ -236,12 +241,17 @@ export class RelayConnector {
 				const id = tag[1];
 				if (tag[0] === 'e' && id in channelObjects && ev.pubkey === channelObjects[id].event.pubkey && channelObjects[id].updated_at < ev.created_at) {
 					const savedEvent = channelObjects[id].event;
+					let json: any;
 					try {
-						channelObjects[id] = JSON.parse(ev.content);
+						json = JSON.parse(ev.content);
 					} catch (error) {
 						console.warn(error);
 						continue;
 					}
+					if (['name', 'about'].some(metadata => !Object.hasOwn(json, metadata))) {
+						continue;
+					}
+					channelObjects[id] = json;
 					channelObjects[id].updated_at = ev.created_at;
 					channelObjects[id].event = savedEvent;
 				}
