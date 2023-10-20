@@ -16,6 +16,8 @@ export let profs: {[key: string]: Profile};
 export let importRelays: Function;
 export let theme: string;
 export let pinList: string[];
+export let muteList: string[];
+export let wordList: string[];
 
 let relaysSelected: string;
 storedRelaysSelected.subscribe((value) => {
@@ -185,10 +187,12 @@ onMount(() => {
 		<h3>All Channels</h3>
 		<ul role="list">
 			{#each channels as channel}
+				{#if !muteList.includes(channel.event.pubkey) && !wordList.reduce((accumulator, currentValue) => accumulator || channel.name.includes(currentValue), false)}
 			<li>
 				<img src="{profs[channel.event.pubkey]?.picture || '/default.png'}" alt="" width="16" height="16">
 				<a href="/channels/{nip19.neventEncode({id:channel.event.id, relays:pool.seenOn(channel.event.id), author:channel.event.pubkey})}">{channel.name}</a>
 			</li>
+				{/if}
 			{/each}
 		</ul>
 	</nav>
