@@ -105,22 +105,35 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 {#each notes as note}
 	{@const rootId = note.tags.find(v => v[0] === 'e' && v[3] === 'root')?.at(1)}
 	{@const channel = channels.find(v => v.event.id === rootId)}
-	{#if rootId !== undefined && channel !== undefined && !muteList.includes(note.pubkey) && !wordList.reduce((accumulator, currentValue) => accumulator || note.content.includes(currentValue), false)}
-		{@const channelId = nip19.neventEncode({id:rootId, relays:pool.seenOn(rootId), author:channel.event.pubkey})}
-		<dt id="note-{note.id}">
-		{#if profs[note.pubkey]}
-			<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>
-		{:else}
-			<img src="/default.png" alt="" width="32" height="32"><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
-		{/if}
-		<br />
-		<time>{(new Date(1000 * note.created_at)).toLocaleString()}</time>
-		<a href="/channels/{channelId}">{channel.name}</a>
-		</dt>
-		<dd>
-		{#if true}
+	{#if rootId !== undefined && channel !== undefined}
+		{@const isMutedNotePubkey = muteList.includes(note.pubkey)}
+		{@const isMutedNoteWord = wordList.reduce((accumulator, currentValue) => accumulator || note.content.includes(currentValue), false)}
+		{@const isMutedChannelPubkey = muteList.includes(channel.event.pubkey)}
+		{@const isMutedChannelWord = muteList.includes(channel.name)}
+		{@const isMuted = isMutedNotePubkey || isMutedNoteWord || isMutedChannelPubkey || isMutedChannelWord}
+		{#if !isMuted}
+			{@const channelId = nip19.neventEncode({id:rootId, relays:pool.seenOn(rootId), author:channel.event.pubkey})}
+			<dt id="note-{note.id}">
+			{#if profs[note.pubkey]}
+				<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>
+			{:else}
+				<img src="/default.png" alt="" width="32" height="32"><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
+			{/if}
+				<br />
+				<time>{(new Date(1000 * note.created_at)).toLocaleString()}</time>
+				<a href="/channels/{channelId}">{channel.name}</a>
+			</dt>
 			{@const replyTags = note.tags.filter(v => v[0] === 'e' && v[3] === 'reply')}
 			{@const replyPubkeys = note.tags.filter(v => v[0] === 'p').map(v => v[1])}
+			{@const r = getExpandTagsList(note.content, note.tags.filter(v => v[0] === 'emoji'))}
+			{@const matchesIterator = r[0]}
+			{@const plainTexts = r[1]}
+			{@const emojiUrls = r[2]}
+			{@const imageUrls = getImageUrls(note.content)}
+			{@const videoUrls = getVideoUrls(note.content)}
+			{@const audioUrls = getAudioUrls(note.content)}
+			{@const contentWarningTag = note.tags.filter(tag => tag[0] === 'content-warning')}
+			<dd>
 			{#if replyTags.length > 0 || replyPubkeys.length > 0}
 				<div class="info-header">
 				{#if replyTags.length > 0}
@@ -131,69 +144,61 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 				{/each}
 				</div>
 			{/if}
-			{@const r = getExpandTagsList(note.content, note.tags.filter(v => v[0] === 'emoji'))}
-			{@const matchesIterator = r[0]}
-			{@const plainTexts = r[1]}
-			{@const emojiUrls = r[2]}
-			{@const imageUrls = getImageUrls(note.content)}
-			{@const videoUrls = getVideoUrls(note.content)}
-			{@const audioUrls = getAudioUrls(note.content)}
-			{@const contentWarningTag = note.tags.filter(tag => tag[0] === 'content-warning')}
-			<div class="content-warning-reason {contentWarningTag.length > 0 ? '' : 'hide'}">Content Warning{#if contentWarningTag.length > 0 && contentWarningTag[0][1]}<br />Reason: {contentWarningTag[0][1]}{/if}</div>
-			<button class="content-warning-show {contentWarningTag.length > 0 ? '' : 'hide'}" on:click={() => showContentWarning(note.id)}>Show Content</button>
-			<div class="content-warning-target {contentWarningTag.length > 0 ? 'hide' : ''}">
-				<div class="content">
-				{plainTexts.shift()}
-				{#each matchesIterator as match}
-					{#if /https?:\/\/\S+/.test(match[1]) }
-						<a href="{match[1]}" target="_blank" rel="noopener noreferrer">{match[1]}</a>
-					{:else if /nostr:npub\w{59}/.test(match[2])}
-						{@const matchedText = match[2]}
-						{@const npubText = matchedText.replace(/nostr:/, '')}
-						{@const d = nip19.decode(npubText)}
-						{#if d.type === 'npub'}
-							<a href="/{npubText}">@{profs[d.data]?.name ?? (npubText.slice(0, 10) + '...')}</a>
-						{:else}
-							{matchedText}
-						{/if}
-					{:else if /nostr:note\w{59}/.test(match[3])}
-						{@const matchedText = match[3]}
-						<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} />
-					{:else if /nostr:nevent\w+/.test(match[4])}
-						{@const matchedText = match[4]}
-						<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} />
-					{:else if match[5]}
-						{@const matchedText = match[5]}
-						<img src="{emojiUrls[matchedText]}" alt="{matchedText}" title="{matchedText}" class="emoji" />
-					{/if}
+				<div class="content-warning-reason {contentWarningTag.length > 0 ? '' : 'hide'}">Content Warning{#if contentWarningTag.length > 0 && contentWarningTag[0][1]}<br />Reason: {contentWarningTag[0][1]}{/if}</div>
+				<button class="content-warning-show {contentWarningTag.length > 0 ? '' : 'hide'}" on:click={() => showContentWarning(note.id)}>Show Content</button>
+				<div class="content-warning-target {contentWarningTag.length > 0 ? 'hide' : ''}">
+					<div class="content">
 					{plainTexts.shift()}
+			{#each matchesIterator as match}
+				{#if /https?:\/\/\S+/.test(match[1]) }
+						<a href="{match[1]}" target="_blank" rel="noopener noreferrer">{match[1]}</a>
+				{:else if /nostr:npub\w{59}/.test(match[2])}
+					{@const matchedText = match[2]}
+					{@const npubText = matchedText.replace(/nostr:/, '')}
+					{@const d = nip19.decode(npubText)}
+					{#if d.type === 'npub'}
+						<a href="/{npubText}">@{profs[d.data]?.name ?? (npubText.slice(0, 10) + '...')}</a>
+					{:else}
+						{matchedText}
+					{/if}
+				{:else if /nostr:note\w{59}/.test(match[3])}
+					{@const matchedText = match[3]}
+					<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} />
+				{:else if /nostr:nevent\w+/.test(match[4])}
+					{@const matchedText = match[4]}
+					<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} />
+				{:else if match[5]}
+					{@const matchedText = match[5]}
+					<img src="{emojiUrls[matchedText]}" alt="{matchedText}" title="{matchedText}" class="emoji" />
+				{/if}
+				{plainTexts.shift()}
+			{/each}
+					</div>
+			{#if imageUrls.length > 0}
+					<div class="image-holder">
+				{#each imageUrls as imageUrl}
+						<figure><a href="{imageUrl}" target="_blank" rel="noopener noreferrer"><img src="{imageUrl}" alt="auto load" /></a></figure>
 				{/each}
+					</div>
+			{/if}
+			{#if videoUrls.length > 0}
+					<div class="video-holder">
+				{#each videoUrls as videoUrl}
+						<video controls preload="metadata">
+							<track kind="captions">
+							<source src="{videoUrl}">
+						</video>
+				{/each}
+					</div>
+			{/if}
+			{#if audioUrls.length > 0}
+					<div class="audio-holder">
+				{#each audioUrls as audioUrl}
+						<audio controls preload="metadata" src="{audioUrl}"></audio>
+				{/each}
+					</div>
+			{/if}
 				</div>
-				{#if imageUrls.length > 0}
-				<div class="image-holder">
-					{#each imageUrls as imageUrl}
-					<figure><a href="{imageUrl}" target="_blank" rel="noopener noreferrer"><img src="{imageUrl}" alt="auto load" /></a></figure>
-					{/each}
-				</div>
-				{/if}
-				{#if videoUrls.length > 0}
-				<div class="video-holder">
-					{#each videoUrls as videoUrl}
-					<video controls preload="metadata">
-						<track kind="captions">
-						<source src="{videoUrl}">
-					</video>
-					{/each}
-				</div>
-				{/if}
-				{#if audioUrls.length > 0}
-				<div class="audio-holder">
-					{#each audioUrls as audioUrl}
-					<audio controls preload="metadata" src="{audioUrl}"></audio>
-					{/each}
-				</div>
-				{/if}
-			</div>
 			{#if favList.some(ev => ev.tags.findLast(tag => tag[0] === 'e')?.at(1) === note.id && profs[ev.pubkey])}
 				<ul class="fav-holder" role="list">
 				{#each favList as ev}
@@ -212,44 +217,44 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 				{/each}
 				</ul>
 			{/if}
-		{/if}
-			<div class="action-bar">
-				{#if loginPubkey}
-				<details>
-					<summary>
-						<svg><use xlink:href="/arrow-bold-reply.svg#reply"></use></svg><span>reply to @{#if profs[note.pubkey]}{profs[note.pubkey]?.name ?? ''}{:else}{nip19.npubEncode(note.pubkey).slice(0, 10)}...{/if}</span>
-					</summary>
-					<textarea id="input-text" bind:value={inputText[note.id]} disabled={!loginPubkey}></textarea>
-					<button on:click={() => {callSendMessage(note)}} disabled={!loginPubkey || !inputText[note.id]}>Reply</button>
-				</details>
-				<button class="fav" on:click={() => sendFav(pool, relaysToWrite, note, '+')} disabled={!loginPubkey}><svg><use xlink:href="/heart.svg#fav"></use></svg></button>
-				<button class="emoji" on:click={() => callSendEmoji(pool, relaysToWrite, note)} disabled={!loginPubkey}><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button>
-				<div bind:this={emojiPicker[note.id]} class={visible[note.id] ? '' : 'hidden'}></div>
-					{#if note.pubkey === loginPubkey}
-				<button class="delete" on:click={() => callSendDeletion(pool, relaysToWrite, note.id)} disabled={!loginPubkey || note.pubkey !== loginPubkey}><svg><use xlink:href="/trash.svg#delete"></use></svg></button>
+				<div class="action-bar">
+					{#if loginPubkey}
+					<details>
+						<summary>
+							<svg><use xlink:href="/arrow-bold-reply.svg#reply"></use></svg><span>reply to @{#if profs[note.pubkey]}{profs[note.pubkey]?.name ?? ''}{:else}{nip19.npubEncode(note.pubkey).slice(0, 10)}...{/if}</span>
+						</summary>
+						<textarea id="input-text" bind:value={inputText[note.id]} disabled={!loginPubkey}></textarea>
+						<button on:click={() => {callSendMessage(note)}} disabled={!loginPubkey || !inputText[note.id]}>Reply</button>
+					</details>
+					<button class="fav" on:click={() => sendFav(pool, relaysToWrite, note, '+')} disabled={!loginPubkey}><svg><use xlink:href="/heart.svg#fav"></use></svg></button>
+					<button class="emoji" on:click={() => callSendEmoji(pool, relaysToWrite, note)} disabled={!loginPubkey}><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button>
+					<div bind:this={emojiPicker[note.id]} class={visible[note.id] ? '' : 'hidden'}></div>
+						{#if note.pubkey === loginPubkey}
+					<button class="delete" on:click={() => callSendDeletion(pool, relaysToWrite, note.id)} disabled={!loginPubkey || note.pubkey !== loginPubkey}><svg><use xlink:href="/trash.svg#delete"></use></svg></button>
+						{/if}
 					{/if}
-				{/if}
-				<details>
-					<summary><svg><use xlink:href="/more-horizontal.svg#more"></use></svg></summary>
-					<dl class="details">
-						<dt>User ID</dt>
-						<dd><code>{nip19.npubEncode(note.pubkey)}</code></dd>
-						<dt>Event ID</dt>
-						<dd><code>{nip19.neventEncode({id:note.id, relays:pool.seenOn(note.id), author:note.pubkey})}</code></dd>
-						<dt>Event JSON</dt>
-						<dd><pre class="json-view"><code>{JSON.stringify(note, undefined, 2)}</code></pre></dd>
-						<dt>Relays seen on</dt>
-						<dd>
-							<ul>
-							{#each pool.seenOn(note.id) as relay}
-								<li>{relay}</li>
-							{/each}
-							</ul>
-						</dd>
-					</dl>
-				</details>
-			</div>
-		</dd>
+					<details>
+						<summary><svg><use xlink:href="/more-horizontal.svg#more"></use></svg></summary>
+						<dl class="details">
+							<dt>User ID</dt>
+							<dd><code>{nip19.npubEncode(note.pubkey)}</code></dd>
+							<dt>Event ID</dt>
+							<dd><code>{nip19.neventEncode({id:note.id, relays:pool.seenOn(note.id), author:note.pubkey})}</code></dd>
+							<dt>Event JSON</dt>
+							<dd><pre class="json-view"><code>{JSON.stringify(note, undefined, 2)}</code></pre></dd>
+							<dt>Relays seen on</dt>
+							<dd>
+								<ul>
+								{#each pool.seenOn(note.id) as relay}
+									<li>{relay}</li>
+								{/each}
+								</ul>
+							</dd>
+						</dl>
+					</details>
+				</div>
+			</dd>
+		{/if}
 	{/if}
 {/each}
 </dl>
