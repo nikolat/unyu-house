@@ -7,6 +7,7 @@ import { browser } from '$app/environment';
 import { storedLoginpubkey, storedTheme, storedRelaysSelected, storedNeedApplyRelays } from '$lib/store';
 import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile, type GetRelays } from '$lib/util';
 import { onMount } from 'svelte';
+  import SidebarChannel from './SidebarChannel.svelte';
 
 export let pool: SimplePool;
 export let relaysToUse: {[key: string]: GetRelays};
@@ -56,20 +57,18 @@ const callSendCreateChannel = () => {
 
 const changeTheme = () => {
 	const container = document.getElementById('container');
-	if ((<HTMLInputElement>document.getElementById('theme-dark')).checked) {
+	if(theme === urlDarkTheme) {
 		storedTheme.set(urlDarkTheme);
 		container?.classList.remove('light');
 		container?.classList.add('dark');
-	}
-	else if ((<HTMLInputElement>document.getElementById('theme-light')).checked) {
+	} else {
 		storedTheme.set(urlLightTheme);
 		container?.classList.remove('dark');
 		container?.classList.add('light');
 	}
 };
 
-const changeRelays = (relay: string) => {
-	relaysSelected = relay;
+const changeRelays = () => {
 	storedRelaysSelected.set(relaysSelected);
 	importRelays(relaysSelected);
 };
@@ -92,71 +91,50 @@ onMount(() => {
 </script>
 
 <div id="sidebar">
-	<section id="login">
-		<h2>Login</h2>
-		{#if loginPubkey}
-		<button on:click={logout}>Logout</button>
-		{:else}
-		<button on:click={login}>Login with Browser Extension (NIP-07)</button>
-		{/if}
+	<h3>Config</h3>
+	<section class="config">
+		<div>Login</div>
+		<div>
+			{#if loginPubkey}
+			<button on:click={logout}>Logout</button>
+			{:else}
+			<button on:click={login}>Login with Browser Extension (NIP-07)</button>
+			{/if}
+		</div>
 	</section>
-	<section id="theme">
-		<h2>Theme</h2>
-		<form>
-			<ul>
-				<li>
-					<input on:change={changeTheme} type="radio" value="dark" name="theme" id="theme-dark" checked={theme === urlDarkTheme}>
-					<label for="theme-dark">Dark theme</label>
-				</li>
-				<li>
-					<input on:change={changeTheme} type="radio" value="light" name="theme" id="theme-light" checked={theme === urlLightTheme}>
-					<label for="theme-light">Light theme</label>
-				</li>
-			</ul>
-		</form>
+	<section class="config">
+		<div>Theme</div>
+		<select bind:value={theme} on:change={changeTheme}>
+			<option value={urlDarkTheme}>Dark Theme</option>
+			<option value={urlLightTheme}>Light Theme</option>
+		</select>
 	</section>
-	<section id="relays">
-		<h2>Relays</h2>
-		{#if loginPubkey}
-		<form>
-			<ul>
-				<li>
-					<input on:change={() => changeRelays('kind3')} type="radio" value="kind3" name="relay" id="relay-kind3" checked={relaysSelected === 'kind3'}>
-					<label for="relay-kind3">kind3</label>
-				</li>
-				<li>
-					<input on:change={() => changeRelays('kind10002')} type="radio" value="kind10002" name="relay" id="relay-kind10002" checked={relaysSelected === 'kind10002'}>
-					<label for="relay-kind10002">kind10002</label>
-				</li>
-				<li>
-					<input on:change={() => changeRelays('nip07')} type="radio" value="nip07" name="relay" id="relay-nip07" checked={relaysSelected === 'nip07'}>
-					<label for="relay-nip07">NIP-07</label>
-				</li>
-				<li>
-					<input on:change={() => changeRelays('default')} type="radio" value="default" name="relay" id="relay-default" checked={relaysSelected === 'default'}>
-					<label for="relay-default">Default</label>
-				</li>
-			</ul>
-		</form>
-		{/if}
-		<table>
-			<tr>
-				<th>r</th>
-				<th>w</th>
-				<th>relay</th>
-			</tr>
-			{#each Object.entries(relaysToUse) as relay}
-			<tr>
-				<td><input type="checkbox" checked={relay[1].read} disabled /></td>
-				<td><input type="checkbox" checked={relay[1].write} disabled /></td>
-				<td>{relay[0]}</td>
-			</tr>
-			{/each}
-		</table>
+	<h3>Relays</h3>
+	{#if loginPubkey}
+	<section class="config">
+		<div>リレーリスト取得</div>
+		<select bind:value={relaysSelected} on:change={changeRelays}>
+			<option value="kind3">Kind 3</option>
+			<option value="kind10002">Kind 10002</option>
+			<option value="nip07">NIP-07</option>
+			<option value="default">Default</option>
+		</select>
 	</section>
-	<nav id="channels">
-		<h2>Channels</h2>
-		<p>Total: {channels.length} channels</p>
+	{/if}
+	{#each Object.entries(relaysToUse) as relay}
+	<section class="config">
+		<div>{relay[0]}</div>
+		<div>
+			<label for="relay_read">
+				<input type="checkbox" name="relay_read" checked={relay[1].read} disabled />
+			</label>
+			<label for="relay_write">
+				<input type="checkbox" name="relay_write" checked={relay[1].write} disabled />
+			</label>
+		</div>
+	</section>
+	{/each}
+	<section id="channels">
 		{#if loginPubkey}
 		<details>
 			<summary>Create New Channel</summary>
@@ -174,30 +152,25 @@ onMount(() => {
 		</details>
 			{#if pinList.length > 0}
 		<h3>Pinned Channels</h3>
-		<ul role="list">
+		<div>
 				{#each channels.filter(ch => pinList.includes(ch.event.id)) as channel}
-			<li>
-				<img src="{profs[channel.event.pubkey]?.picture || '/default.png'}" alt="" width="16" height="16">
-				<a href="/channels/{nip19.neventEncode({id:channel.event.id, relays:pool.seenOn(channel.event.id), author:channel.event.pubkey})}">{channel.name}</a>
-			</li>
+			<SidebarChannel picture={profs[channel.event.pubkey]?.picture} url={nip19.neventEncode({id:channel.event.id, relays:pool.seenOn(channel.event.id), author:channel.event.pubkey})} channelName={channel.name}></SidebarChannel>
 				{/each}
-		</ul>
+		</div>
 			{/if}
 		{/if}
 		<h3>All Channels</h3>
-		<ul role="list">
+		<div>
 			{#each channels as channel}
 				{#if !muteList.includes(channel.event.pubkey) && !wordList.reduce((accumulator, currentValue) => accumulator || channel.name.includes(currentValue), false)}
-			<li>
-				<img src="{profs[channel.event.pubkey]?.picture || '/default.png'}" alt="" width="16" height="16">
-				<a href="/channels/{nip19.neventEncode({id:channel.event.id, relays:pool.seenOn(channel.event.id), author:channel.event.pubkey})}">{channel.name}</a>
-			</li>
+			<SidebarChannel picture={profs[channel.event.pubkey]?.picture} url={nip19.neventEncode({id:channel.event.id, relays:pool.seenOn(channel.event.id), author:channel.event.pubkey})} channelName={channel.name}></SidebarChannel>
 				{/if}
 			{/each}
-		</ul>
-	</nav>
-	<section>
-		<h2>GitHub</h2>
+		</div>
+		<p>Total: {channels.length} channels</p>
+	</section>
+	<section class="config">
+		<div>GitHub</div>
 		<p><a href="https://github.com/nikolat/unyu-house">nikolat/unyu-house</a></p>
 	</section>
 </div>
@@ -210,20 +183,22 @@ onMount(() => {
 	height: calc(100% - 3em);
 	overflow-y: scroll;
 	transition: width 0.1s;
+	max-width: 100%;
 }
 @media screen and (min-width: 1080px) {
 	#sidebar {
-		min-width: 20%;
+		width: 500px;
 	}
 }
-#sidebar table {
-	table-layout: auto;
-	width: auto;
+
+.config {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 20px;
 }
-#sidebar th {
-	text-align: center;
-}
-details {
+
+/* details {
 	display: inline-block;
 }
 details input,
@@ -232,6 +207,6 @@ details textarea {
 }
 ul {
 	list-style: none;
-}
+} */
 
 </style>
