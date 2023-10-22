@@ -3,7 +3,7 @@ import { onMount } from 'svelte';
 import { afterNavigate } from '$app/navigation';
 import { storedCurrentChannelId, storedCurrentPubkey, storedNeedApplyRelays } from '$lib/store';
 import { nip19 } from 'nostr-tools';
-import Page from '../../Page.svelte';
+import Page from '$lib/components/Page.svelte';
 
 const currentPubkey = null;
 

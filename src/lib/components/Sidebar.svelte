@@ -7,7 +7,7 @@ import { browser } from '$app/environment';
 import { storedLoginpubkey, storedTheme, storedRelaysSelected, storedNeedApplyRelays } from '$lib/store';
 import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile, type GetRelays } from '$lib/util';
 import { onMount } from 'svelte';
-  import SidebarChannel from './SidebarChannel.svelte';
+import SidebarChannel from '$lib/components/SidebarChannel.svelte';
 
 export let pool: SimplePool;
 export let relaysToUse: {[key: string]: GetRelays};
@@ -125,10 +125,12 @@ onMount(() => {
 	<section class="config">
 		<div>{relay[0]}</div>
 		<div>
-			<label for="relay_read">
+			<label for="relay_read" class="control">
+				<div class="control__indicator">r</div>
 				<input type="checkbox" name="relay_read" checked={relay[1].read} disabled />
 			</label>
-			<label for="relay_write">
+			<label for="relay_write" class="control">
+				<div class="control__indicator"></div>
 				<input type="checkbox" name="relay_write" checked={relay[1].write} disabled />
 			</label>
 		</div>
@@ -196,6 +198,11 @@ onMount(() => {
 	align-items: center;
 	justify-content: space-between;
 	padding: 10px 20px;
+}
+
+.control {
+	display: flex;
+	align-items: center;
 }
 
 /* details {
