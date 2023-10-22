@@ -125,12 +125,10 @@ onMount(() => {
 	<section class="config">
 		<div>{relay[0]}</div>
 		<div>
-			<label for="relay_read" class="control">
-				<div class="control__indicator">r</div>
+			<label for="relay_read">
 				<input type="checkbox" name="relay_read" checked={relay[1].read} disabled />
 			</label>
-			<label for="relay_write" class="control">
-				<div class="control__indicator"></div>
+			<label for="relay_write">
 				<input type="checkbox" name="relay_write" checked={relay[1].write} disabled />
 			</label>
 		</div>
@@ -198,11 +196,6 @@ onMount(() => {
 	align-items: center;
 	justify-content: space-between;
 	padding: 10px 20px;
-}
-
-.control {
-	display: flex;
-	align-items: center;
 }
 
 /* details {
