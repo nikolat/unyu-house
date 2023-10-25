@@ -1,6 +1,6 @@
 <script lang='ts'>
 import { sendMessage, type Channel, type Profile, getExpandTagsList, type GetRelays, getRelaysToUse, RelayConnector, urlDefaultTheme } from '$lib/util';
-import { storedCurrentChannelId, storedCurrentPubkey, storedLoginpubkey, storedNeedApplyRelays, storedRelaysToUse, storedTheme } from '$lib/store';
+import { storedCurrentChannelId, storedCurrentPubkey, storedCurrentEvent, storedLoginpubkey, storedNeedApplyRelays, storedRelaysToUse, storedTheme } from '$lib/store';
 import { defaultRelays, title } from '$lib/config';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
 import { afterUpdate, onDestroy, onMount } from 'svelte';
@@ -17,6 +17,7 @@ let relaysToUse: {[key: string]: GetRelays};
 let theme: string;
 let currentChannelId: string | null;
 let currentPubkey: string | null;
+let currentEvent: nip19.EventPointer | null;
 let loginPubkey: string;
 let muteList: string[] = [];
 let wordList: string[] = [];
@@ -40,6 +41,9 @@ storedCurrentChannelId.subscribe((value) => {
 });
 storedCurrentPubkey.subscribe((value) => {
 	currentPubkey = value;
+});
+storedCurrentEvent.subscribe((value) => {
+	currentEvent = value;
 });
 storedLoginpubkey.subscribe((value) => {
 	loginPubkey = value;
@@ -194,6 +198,9 @@ const applyRelays = () => {
 	else if (currentPubkey) {
 		filter = {kinds: [42], limit: limit, authors: [currentPubkey]};
 	}
+	else if (currentEvent) {
+		filter = {ids: [currentEvent.id]};
+	}
 	else {
 		filter = {kinds: [42], limit: limit};
 	}
@@ -294,6 +301,8 @@ $: titleString = currentChannelId ? `${channels.find(v => v.event.id === current
 		{@const channel = channels.find(v => v.event.id === currentChannelId)}
 		{#if channel}
 		<ChannelMetadata {channel} {pool} {profs} {loginPubkey} {relaysToUse} isQuote={false} {pinList} />
+		{:else}
+		<h2>Channel View</h2>
 		{/if}
 	{:else if currentPubkey}
 		{#if profs[currentPubkey]}
@@ -327,9 +336,17 @@ $: titleString = currentChannelId ? `${channels.find(v => v.event.id === current
 			{/if}
 			{#if profs[currentPubkey].website}<p id="profile-website"><a href="{profs[currentPubkey].website}" target="_blank" rel="noopener noreferrer">{profs[currentPubkey].website}</a></p>{/if}
 		{:else}
-		<h2>Now Loading...</h2>
+		<h2>Profile View</h2>
 		{/if}
-	{:else if currentChannelId === null && currentPubkey === null}
+	{:else if currentEvent}
+		{@const rootId = notes.at(0)?.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1)}
+		{@const channel = channels.find(v => v.event.id === rootId)}
+		{#if channel}
+		<ChannelMetadata {channel} {pool} {profs} {loginPubkey} {relaysToUse} isQuote={false} {pinList} />
+		{:else}
+		<h2>Event View</h2>
+		{/if}
+	{:else if currentChannelId === null && currentPubkey === null && currentEvent === null}
 		<h2>Global timeline</h2>
 	{:else}
 		<h2>Error</h2>
