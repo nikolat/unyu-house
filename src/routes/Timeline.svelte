@@ -120,7 +120,7 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 				<img src="/default.png" alt="" width="32" height="32"><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
 			{/if}
 				<br />
-				<time>{(new Date(1000 * note.created_at)).toLocaleString()}</time>
+				<a href="/{nip19.neventEncode(note)}"><time>{(new Date(1000 * note.created_at)).toLocaleString()}</time></a>
 				<a href="/channels/{channelId}">{channel.name}</a>
 			</dt>
 			{@const replyTags = note.tags.filter(v => v[0] === 'e' && v[3] === 'reply')}

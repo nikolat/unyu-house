@@ -1,11 +1,12 @@
 <script lang='ts'>
 import { onMount } from 'svelte';
 import { afterNavigate } from '$app/navigation';
-import { storedCurrentChannelId, storedCurrentPubkey, storedNeedApplyRelays } from '$lib/store';
+import { storedCurrentChannelId, storedCurrentPubkey, storedCurrentEvent, storedNeedApplyRelays } from '$lib/store';
 import { nip19 } from 'nostr-tools';
 import Page from '../../Page.svelte';
 
 const currentPubkey = null;
+const currentEvent = null;
 
 export let data: any;
 let currentChannelId: string;
@@ -35,6 +36,7 @@ onMount(() => {
 	currentChannelId = getChannelId(data.params.id);
 	storedCurrentChannelId.set(currentChannelId);
 	storedCurrentPubkey.set(currentPubkey);
+	storedCurrentEvent.set(currentEvent);
 	const input = document.getElementById('input');
 	input?.classList.remove('show');
 });
@@ -42,6 +44,7 @@ afterNavigate(() => {
 	currentChannelId = getChannelId(data.params.id);
 	storedCurrentChannelId.set(currentChannelId);
 	storedCurrentPubkey.set(currentPubkey);
+	storedCurrentEvent.set(currentEvent);
 	storedNeedApplyRelays.set(true);
 	const sidebar = document.getElementById('sidebar');
 	const main = document.querySelector('main');
