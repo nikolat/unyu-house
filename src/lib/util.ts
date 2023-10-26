@@ -2,7 +2,7 @@ import {
 	SimplePool,
 	nip19,
 	type Event as NostrEvent,
-	type UnsignedEvent,
+	type EventTemplate,
 	type Filter,
 	type Sub,
 } from 'nostr-tools';
@@ -356,9 +356,8 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 	for (const p of mentionPubkeys) {
 		tags.push(['p', p, '']);
 	}
-	const baseEvent: UnsignedEvent<42> = {
+	const baseEvent: EventTemplate<42> = {
 		kind: 42,
-		pubkey: '',
 		created_at: Math.floor(Date.now() / 1000),
 		tags: tags,
 		content: content
@@ -373,9 +372,8 @@ export const sendFav = async(pool: SimplePool, relaysToWrite: string[], targetEv
 	tags.push(['e', targetEvent.id, '', '']);
 	tags.push(['p', targetEvent.pubkey, '']);
 	tags.push(['k', String(targetEvent.kind)]);
-	const baseEvent: UnsignedEvent<7> = {
+	const baseEvent: EventTemplate<7> = {
 		kind: 7,
-		pubkey: '',
 		created_at: Math.floor(Date.now() / 1000),
 		tags: tags,
 		content: content
@@ -386,9 +384,8 @@ export const sendFav = async(pool: SimplePool, relaysToWrite: string[], targetEv
 };
 
 export const sendCreateChannel = async(pool: SimplePool, relaysToWrite: string[], name: string, about: string, picture: string) => {
-	const baseEvent: UnsignedEvent<40> = {
+	const baseEvent: EventTemplate<40> = {
 		kind: 40,
-		pubkey: '',
 		created_at: Math.floor(Date.now() / 1000),
 		tags: [],
 		content: JSON.stringify({name: name ?? '', about: about ?? '', picture: picture ?? ''})
@@ -419,9 +416,8 @@ export const sendEditChannel = async(pool: SimplePool, relaysToUse: object, logi
 		(objContent as any).name = name;
 		(objContent as any).about = about;
 		(objContent as any).picture = picture;
-		const baseEvent: UnsignedEvent<41> = {
+		const baseEvent: EventTemplate<41> = {
 			kind: 41,
-			pubkey: '',
 			created_at: Math.floor(Date.now() / 1000),
 			tags: [['e', currentChannelId, pool.seenOn(currentChannelId).at(0) ?? '']],
 			content: JSON.stringify(objContent)
@@ -434,9 +430,8 @@ export const sendEditChannel = async(pool: SimplePool, relaysToUse: object, logi
 };
 
 export const sendDeletion = async(pool: SimplePool, relaysToWrite: string[], eventId: string) => {
-	const baseEvent: UnsignedEvent<5> = {
+	const baseEvent: EventTemplate<5> = {
 		kind: 5,
-		pubkey: '',
 		created_at: Math.floor(Date.now() / 1000),
 		tags: [['e', eventId]],
 		content: ''
@@ -483,9 +478,8 @@ export const sendPin = async(pool: SimplePool, relaysToUse: object, loginPubkey:
 			}
 		}
 		const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
-		const baseEvent: UnsignedEvent<10001> = {
+		const baseEvent: EventTemplate<10001> = {
 			kind: 10001,
-			pubkey: '',
 			created_at: Math.floor(Date.now() / 1000),
 			tags: tags,
 			content: content
@@ -499,9 +493,8 @@ export const sendPin = async(pool: SimplePool, relaysToUse: object, loginPubkey:
 
 //for debug
 export const sendProfile = async(pool: SimplePool, relaysToWrite: string[], objProfile: object) => {
-	const baseEvent: UnsignedEvent<0> = {
+	const baseEvent: EventTemplate<0> = {
 		kind: 0,
-		pubkey: '',
 		created_at: Math.floor(Date.now() / 1000),
 		tags: [],
 		content: JSON.stringify(objProfile)
