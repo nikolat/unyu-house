@@ -162,7 +162,7 @@ onMount(() => {
 		<h3>All Channels</h3>
 		<div>
 			{#each channels as channel}
-				{#if !muteList.includes(channel.event.pubkey) && !wordList.reduce((accumulator, currentValue) => accumulator || channel.name.includes(currentValue), false)}
+				{#if !muteList.includes(channel.event.pubkey) && !wordList.some(word => channel.name.includes(word))}
 			<SidebarChannel picture={profs[channel.event.pubkey]?.picture} url={nip19.neventEncode(channel.event)} channelName={channel.name}></SidebarChannel>
 				{/if}
 			{/each}

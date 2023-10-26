@@ -107,9 +107,9 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 	{@const channel = channels.find(v => v.event.id === rootId)}
 	{#if rootId !== undefined && channel !== undefined}
 		{@const isMutedNotePubkey = muteList.includes(note.pubkey)}
-		{@const isMutedNoteWord = wordList.reduce((accumulator, currentValue) => accumulator || note.content.includes(currentValue), false)}
+		{@const isMutedNoteWord = wordList.some(word => note.content.includes(word))}
 		{@const isMutedChannelPubkey = muteList.includes(channel.event.pubkey)}
-		{@const isMutedChannelWord = wordList.reduce((accumulator, currentValue) => accumulator || channel.name.includes(currentValue), false)}
+		{@const isMutedChannelWord = wordList.some(word => channel.name.includes(word))}
 		{@const isMuted = isMutedNotePubkey || isMutedNoteWord || isMutedChannelPubkey || isMutedChannelWord}
 		{#if !isMuted}
 			{@const npub = nip19.npubEncode(note.pubkey)}
