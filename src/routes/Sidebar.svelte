@@ -187,7 +187,7 @@ onMount(() => {
 }
 @media screen and (min-width: 1080px) {
 	#sidebar {
-		width: 500px;
+		min-width: 500px;
 	}
 }
 
