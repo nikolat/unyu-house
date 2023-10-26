@@ -53,13 +53,13 @@ svg {
 	width: 0%;
 }
 :global(#container.expand-sidebar #sidebar) {
-	width: calc(100vw - (100vw - 100%));
+	width: 100%;
 }
 :global(#container.expand-sidebar #input) {
 	visibility: hidden;
 }
 :global(#container:not(.expand-sidebar) main) {
-	width: calc(100vw - (100vw - 100%));
+	width: 100%;
 }
 :global(#container:not(.expand-sidebar) #sidebar) {
 	width: 0%;
