@@ -1,6 +1,6 @@
 <script lang='ts'>
-import { sendEditChannel, type Channel, type Profile, sendPin, type GetRelays } from "$lib/util";
-import { SimplePool, nip19 } from "nostr-tools";
+import { sendEditChannel, type Channel, type Profile, sendPin, type GetRelays } from '$lib/util';
+import { SimplePool, nip19 } from 'nostr-tools';
 
 export let channel: Channel;
 export let pool: SimplePool;
@@ -34,8 +34,7 @@ const callSendPin = (toSet: boolean) => {
 </script>
 
 {#if channel}
-{@const channelId = nip19.neventEncode({id:channel.event.id, relays:pool.seenOn(channel.event.id), author:channel.event.pubkey})}
-<h2>{#if isQuote}<a href="/channels/{channelId}">{channel.name}</a>{:else}{channel.name}{/if}</h2>
+<h2>{#if isQuote}<a href="/channels/{nip19.neventEncode(channel.event)}">{channel.name}</a>{:else}{channel.name}{/if}</h2>
 {:else}
 <h2>Now Loading...</h2>
 {/if}
