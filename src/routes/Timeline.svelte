@@ -112,16 +112,17 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 		{@const isMutedChannelWord = wordList.reduce((accumulator, currentValue) => accumulator || channel.name.includes(currentValue), false)}
 		{@const isMuted = isMutedNotePubkey || isMutedNoteWord || isMutedChannelPubkey || isMutedChannelWord}
 		{#if !isMuted}
-			{@const channelId = nip19.neventEncode({id:rootId, relays:pool.seenOn(rootId), author:channel.event.pubkey})}
+			{@const npub = nip19.npubEncode(note.pubkey)}
+			{@const nevent = nip19.neventEncode(note)}
 			<dt id="note-{note.id}">
 			{#if profs[note.pubkey]}
-				<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>
+				<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {npub}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} <a href="/{npub}">@{profs[note.pubkey]?.name ?? ''}</a>
 			{:else}
-				<img src="/default.png" alt="" width="32" height="32"><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
+				<img src="/default.png" alt="" width="32" height="32"><a href="/{npub}">@{npub.slice(0, 10)}...</a>
 			{/if}
 				<br />
-				<a href="/{nip19.neventEncode(note)}"><time>{(new Date(1000 * note.created_at)).toLocaleString()}</time></a>
-				<a href="/channels/{channelId}">{channel.name}</a>
+				<a href="/{nevent}"><time>{(new Date(1000 * note.created_at)).toLocaleString()}</time></a>
+				<a href="/channels/{nip19.neventEncode(channel.event)}">{channel.name}</a>
 			</dt>
 			{@const replyTags = note.tags.filter(v => v[0] === 'e' && v[3] === 'reply')}
 			{@const replyPubkeys = note.tags.filter(v => v[0] === 'p').map(v => v[1])}
@@ -140,7 +141,7 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 					<a href="#note-{replyTags[0][1]}">&gt;&gt;</a>
 				{/if}
 				{#each replyPubkeys as pubkey}
-					&nbsp;@{profs[pubkey]?.name ?? (nip19.npubEncode(pubkey).slice(0, 10) + '...')}
+					&nbsp;@{profs[pubkey]?.name ?? (npub.slice(0, 10) + '...')}
 				{/each}
 				</div>
 			{/if}
@@ -205,14 +206,15 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 					{#if ev.tags.findLast(tag => tag[0] === 'e')?.at(1) === note.id && profs[ev.pubkey]}
 						{@const emojiTag = ev.tags.find(tag => tag.length >= 3 && tag[0] === 'emoji')}
 						{@const prof = profs[ev.pubkey]}
+						{@const npubFaved = nip19.npubEncode(ev.pubkey)}
 						<li>
 						{#if emojiTag && ev.content === `:${emojiTag[1]}:` && emojiTag[2]}
 							<img src="{emojiTag[2]}" width="20" height="20" alt=":{emojiTag[1]}:" title=":{emojiTag[1]}:" />
 						{:else}
 							{ev.content.replace(/^\+$/, '❤').replace(/^-$/, '👎') || '❤'}
 						{/if}
-						<img src="{prof.picture || '/default.png'}" alt="avatar of {nip19.npubEncode(ev.pubkey)}"
-							width="16" height="16" /> {prof.display_name ?? ''} <a href="/{nip19.npubEncode(ev.pubkey)}">@{prof.name ?? ''}</a> reacted</li>
+						<img src="{prof.picture || '/default.png'}" alt="avatar of {npubFaved}"
+							width="16" height="16" /> {prof.display_name ?? ''} <a href="/{npubFaved}">@{prof.name ?? ''}</a> reacted</li>
 					{/if}
 				{/each}
 				</ul>
@@ -221,7 +223,7 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 					{#if loginPubkey}
 					<details>
 						<summary>
-							<svg><use xlink:href="/arrow-bold-reply.svg#reply"></use></svg><span>reply to @{#if profs[note.pubkey]}{profs[note.pubkey]?.name ?? ''}{:else}{nip19.npubEncode(note.pubkey).slice(0, 10)}...{/if}</span>
+							<svg><use xlink:href="/arrow-bold-reply.svg#reply"></use></svg><span>reply to @{#if profs[note.pubkey]}{profs[note.pubkey]?.name ?? ''}{:else}{npub.slice(0, 10)}...{/if}</span>
 						</summary>
 						<textarea id="input-text" bind:value={inputText[note.id]} disabled={!loginPubkey}></textarea>
 						<button on:click={() => {callSendMessage(note)}} disabled={!loginPubkey || !inputText[note.id]}>Reply</button>
@@ -237,9 +239,9 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 						<summary><svg><use xlink:href="/more-horizontal.svg#more"></use></svg></summary>
 						<dl class="details">
 							<dt>User ID</dt>
-							<dd><code>{nip19.npubEncode(note.pubkey)}</code></dd>
+							<dd><code>{npub}</code></dd>
 							<dt>Event ID</dt>
-							<dd><code>{nip19.neventEncode({id:note.id, relays:pool.seenOn(note.id), author:note.pubkey})}</code></dd>
+							<dd><code>{nevent}</code></dd>
 							<dt>Event JSON</dt>
 							<dd><pre class="json-view"><code>{JSON.stringify(note, undefined, 2)}</code></pre></dd>
 							<dt>Relays seen on</dt>

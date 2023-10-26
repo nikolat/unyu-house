@@ -40,20 +40,20 @@ const getNote = (eventText: string) => {
 		<ChannelMetadata {channel} {pool} {profs} {loginPubkey} relaysToUse={{}} isQuote={true} pinList={[]} />
 			{/if}
 		{:else}
+		{@const npub = nip19.npubEncode(note.pubkey)}
 		<dl>
 			<dt>
 			{#if profs[note.pubkey]}
-				<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>
+				<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {npub}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} <a href="/{npub}">@{profs[note.pubkey]?.name ?? ''}</a>
 			{:else}
-				<img src="/default.png" alt="" width="32" height="32" /><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
+				<img src="/default.png" alt="" width="32" height="32" /><a href="/{npub}">@{npub.slice(0, 10)}...</a>
 			{/if}
 			<br /><time>{(new Date(1000 * note.created_at)).toLocaleString()}</time> {#if note.kind === 1}<a href="{urlToLinkNote}/{eventText}" target="_blank" rel="noopener noreferrer">kind:1</a>{:else}kind:{note.kind}{/if}
 			{#if note.kind === 42 && note.tags.some(v => v[0] === 'e' && v[3] === 'root')}
 				{@const rootId = note.tags.find(v => v[0] === 'e' && v[3] === 'root')?.at(1)}
 				{@const channel = channels.find(v => v.event.id === rootId)}
 				{#if rootId && channel}
-					{@const channelId = nip19.neventEncode({id:rootId, relays:pool.seenOn(rootId), author:channel.event.pubkey})}
-					<a href="/channels/{channelId}">{channel.name}</a>
+					<a href="/channels/{nip19.neventEncode(channel.event)}">{channel.name}</a>
 				{:else}
 					(unknown channel)
 				{/if}
