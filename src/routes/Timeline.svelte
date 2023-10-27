@@ -73,6 +73,12 @@ const callSendMessage = (noteToReplay: NostrEvent) => {
 	sendMessage(pool, relaysToWrite, content, noteToReplay);
 };
 
+const submitFromKeyboard = (event: KeyboardEvent, noteToReplay: NostrEvent) => {
+	if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+		callSendMessage(noteToReplay);
+	}
+}
+
 const callSendEmoji = (pool: SimplePool, relaysToWrite: string[], targetEvent: NostrEvent) => {
 	const noteId = targetEvent.id;
 	visible[noteId] = !visible[noteId];
@@ -225,7 +231,7 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 						<summary>
 							<svg><use xlink:href="/arrow-bold-reply.svg#reply"></use></svg><span>reply to @{#if profs[note.pubkey]}{profs[note.pubkey]?.name ?? ''}{:else}{npub.slice(0, 10)}...{/if}</span>
 						</summary>
-						<textarea id="input-text" bind:value={inputText[note.id]} disabled={!loginPubkey}></textarea>
+						<textarea id="input-text" bind:value={inputText[note.id]} on:keydown={(e) => {submitFromKeyboard(e, note)}} disabled={!loginPubkey}></textarea>
 						<button on:click={() => {callSendMessage(note)}} disabled={!loginPubkey || !inputText[note.id]}>Reply</button>
 					</details>
 					<button class="fav" on:click={() => sendFav(pool, relaysToWrite, note, '+')} disabled={!loginPubkey}><svg><use xlink:href="/heart.svg#fav"></use></svg></button>

@@ -271,6 +271,12 @@ const callSendMessage = (noteToReplay: NostrEvent) => {
 	sendMessage(pool, relaysToWrite, content, noteToReplay);
 };
 
+const submitFromKeyboard = (event: KeyboardEvent, noteToReplay: NostrEvent) => {
+	if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+		callSendMessage(noteToReplay);
+	}
+}
+
 const showPostBar = () => {
 	const input = document.getElementById('input');
 	input?.classList.add('show');
@@ -356,7 +362,7 @@ $: titleString = currentChannelId ? `${channels.find(v => v.event.id === current
 		{@const channel = channels.find(channel => channel.event.id === currentChannelId)}
 		{#if channel !== undefined}
 		<div id="input" class="show" on:click|stopPropagation={()=>{}}>
-			<textarea id="input-text" bind:value={inputText} disabled={!loginPubkey}></textarea>
+			<textarea id="input-text" bind:value={inputText} on:keydown={(e) => {submitFromKeyboard(e, channel.event)}} disabled={!loginPubkey}></textarea>
 			<button on:click={() => {callSendMessage(channel.event)}} disabled={!loginPubkey || !inputText}>Post</button>
 		</div>
 		<button id="show-post-bar" on:click|stopPropagation={showPostBar}><svg><use xlink:href="/pencil-create.svg#pencil"></use></svg></button>
