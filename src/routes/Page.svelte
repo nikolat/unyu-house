@@ -12,7 +12,7 @@ import ChannelMetadata from './ChannelMetadata.svelte';
 import Timeline from './Timeline.svelte';
 
 let pool: SimplePool = new SimplePool();
-let subNotes: Sub<7|40|41|42|10001>;
+let subNotes: Sub<7|40|41|42|10000|10001>;
 let relaysToUse: {[key: string]: GetRelays};
 let theme: string;
 let currentChannelId: string | null;
@@ -112,7 +112,7 @@ const callbackPhase2 = (profsNew: {[key: string]: Profile}, favListNew: NostrEve
 	}
 };
 
-const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42|10001>, ev: NostrEvent<7|40|41|42|10001>) => {
+const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42|10000|10001>, ev: NostrEvent<7|40|41|42|10000|10001>) => {
 	subNotes = subNotesPhase3;
 	if (ev.kind === 42 && !notes.map(v => v.id).includes(ev.id)) {
 		if (currentChannelId) {
@@ -129,6 +129,11 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42|10001>, ev: NostrEvent<7|
 	else if (ev.kind === 7 && !favList.map(v => v.id).includes(ev.id)) {
 		favList.push(ev);
 		favList = favList;
+	}
+	else if (ev.kind === 10000) {
+		if (ev.pubkey !== loginPubkey)
+			return;
+		muteChannels = ev.tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]);
 	}
 	else if (ev.kind === 10001) {
 		if (ev.pubkey !== loginPubkey)
@@ -310,7 +315,7 @@ $: titleString = currentChannelId ? `${channels.find(v => v.event.id === current
 	{#if currentChannelId}
 		{@const channel = channels.find(v => v.event.id === currentChannelId)}
 		{#if channel}
-		<ChannelMetadata {channel} {pool} {profs} {loginPubkey} {relaysToUse} isQuote={false} {pinList} />
+		<ChannelMetadata {channel} {pool} {profs} {loginPubkey} {relaysToUse} isQuote={false} {pinList} {muteChannels} />
 		{:else}
 		<h2>Channel View</h2>
 		{/if}
@@ -352,7 +357,7 @@ $: titleString = currentChannelId ? `${channels.find(v => v.event.id === current
 		{@const rootId = notes.at(0)?.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1)}
 		{@const channel = channels.find(v => v.event.id === rootId)}
 		{#if channel}
-		<ChannelMetadata {channel} {pool} {profs} {loginPubkey} {relaysToUse} isQuote={false} {pinList} />
+		<ChannelMetadata {channel} {pool} {profs} {loginPubkey} {relaysToUse} isQuote={false} {pinList} {muteChannels} />
 		{:else}
 		<h2>Event View</h2>
 		{/if}

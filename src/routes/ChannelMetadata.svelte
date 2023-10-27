@@ -1,5 +1,5 @@
 <script lang='ts'>
-import { sendEditChannel, type Channel, type Profile, sendPin, type GetRelays } from '$lib/util';
+import { type Channel, type Profile, sendPin, type GetRelays, sendMute, sendEditChannel } from '$lib/util';
 import { SimplePool, nip19 } from 'nostr-tools';
 
 export let channel: Channel;
@@ -9,6 +9,7 @@ export let loginPubkey: string;
 export let relaysToUse: {[key: string]: GetRelays};
 export let isQuote: boolean;
 export let pinList: string[];
+export let muteChannels: string[];
 
 let editChannelName: string;
 let editChannelAbout: string;
@@ -29,6 +30,10 @@ const callSendEditChannel = () => {
 
 const callSendPin = (toSet: boolean) => {
 	sendPin(pool, relaysToUse, loginPubkey, channel.event.id, toSet);
+}
+
+const callSendMute = (toSet: boolean) => {
+	sendMute(pool, relaysToUse, loginPubkey, channel.event.id, toSet);
 }
 
 </script>
@@ -77,6 +82,11 @@ const callSendPin = (toSet: boolean) => {
 <button class="channel-metadata on" on:click={() => callSendPin(false)}><svg><use xlink:href="/bookmark.svg#pin"></use></svg></button>
 		{:else}
 <button class="channel-metadata off" on:click={() => callSendPin(true)}><svg><use xlink:href="/bookmark.svg#pin"></use></svg></button>
+		{/if}
+		{#if muteChannels.includes(channel.event.id)}
+<button class="channel-metadata on" on:click={() => callSendMute(false)}><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button>
+		{:else}
+<button class="channel-metadata off" on:click={() => callSendMute(true)}><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button>
 		{/if}
 	{/if}
 {/if}
