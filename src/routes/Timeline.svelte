@@ -20,6 +20,7 @@ export let profs: {[key: string]: Profile};
 export let channels: Channel[];
 export let loginPubkey: string;
 export let muteList: string[];
+export let muteChannels: string[];
 export let wordList: string[];
 export let favList: NostrEvent[];
 export let resetScroll: Function;
@@ -113,10 +114,11 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 	{@const channel = channels.find(v => v.event.id === rootId)}
 	{#if rootId !== undefined && channel !== undefined}
 		{@const isMutedNotePubkey = muteList.includes(note.pubkey)}
+		{@const isMutedNoteChannel = muteChannels.includes(rootId)}
 		{@const isMutedNoteWord = wordList.some(word => note.content.includes(word))}
 		{@const isMutedChannelPubkey = muteList.includes(channel.event.pubkey)}
 		{@const isMutedChannelWord = wordList.some(word => channel.name.includes(word))}
-		{@const isMuted = isMutedNotePubkey || isMutedNoteWord || isMutedChannelPubkey || isMutedChannelWord}
+		{@const isMuted = isMutedNotePubkey || isMutedNoteChannel || isMutedNoteWord || isMutedChannelPubkey || isMutedChannelWord}
 		{#if !isMuted}
 			{@const npub = nip19.npubEncode(note.pubkey)}
 			{@const nevent = nip19.neventEncode(note)}
@@ -170,10 +172,10 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 					{/if}
 				{:else if /nostr:note\w{59}/.test(match[3])}
 					{@const matchedText = match[3]}
-					<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} />
+					<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} {muteList} {muteChannels} {wordList} />
 				{:else if /nostr:nevent\w+/.test(match[4])}
 					{@const matchedText = match[4]}
-					<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} />
+					<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} {muteList} {muteChannels} {wordList} />
 				{:else if match[5]}
 					{@const matchedText = match[5]}
 					<img src="{emojiUrls[matchedText]}" alt="{matchedText}" title="{matchedText}" class="emoji" />
@@ -209,7 +211,7 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 			{#if favList.some(ev => ev.tags.findLast(tag => tag[0] === 'e')?.at(1) === note.id && profs[ev.pubkey])}
 				<ul class="fav-holder" role="list">
 				{#each favList as ev}
-					{#if ev.tags.findLast(tag => tag[0] === 'e')?.at(1) === note.id && profs[ev.pubkey]}
+					{#if ev.tags.findLast(tag => tag[0] === 'e')?.at(1) === note.id && profs[ev.pubkey] && !muteList.includes(ev.pubkey)}
 						{@const emojiTag = ev.tags.find(tag => tag.length >= 3 && tag[0] === 'emoji')}
 						{@const prof = profs[ev.pubkey]}
 						{@const npubFaved = nip19.npubEncode(ev.pubkey)}

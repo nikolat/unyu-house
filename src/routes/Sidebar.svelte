@@ -18,6 +18,7 @@ export let importRelays: Function;
 export let theme: string;
 export let pinList: string[];
 export let muteList: string[];
+export let muteChannels: string[];
 export let wordList: string[];
 
 let relaysSelected: string;
@@ -162,7 +163,7 @@ onMount(() => {
 		<h3>All Channels</h3>
 		<div>
 			{#each channels as channel}
-				{#if !muteList.includes(channel.event.pubkey) && !wordList.some(word => channel.name.includes(word))}
+				{#if !muteList.includes(channel.event.pubkey) && !muteChannels.includes(channel.event.id) && !wordList.some(word => channel.name.includes(word))}
 			<SidebarChannel picture={profs[channel.event.pubkey]?.picture} url={nip19.neventEncode(channel.event)} channelName={channel.name}></SidebarChannel>
 				{/if}
 			{/each}

@@ -20,6 +20,7 @@ let currentPubkey: string | null;
 let currentEvent: nip19.EventPointer | null;
 let loginPubkey: string;
 let muteList: string[] = [];
+let muteChannels: string[] = [];
 let wordList: string[] = [];
 let pinList: string[] = [];
 let favList: NostrEvent[] = [];
@@ -62,12 +63,14 @@ const callbackPhase1 = async (loginPubkey: string, channelsNew: Channel[], notes
 		notes = notesNew;
 	}
 	muteList = event10000?.tags.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1]) ?? [];
+	muteChannels = event10000?.tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]) ?? [];
 	wordList = event10000?.tags.filter(tag => tag.length >= 2 && tag[0] === 'word').map(tag => tag[1]) ?? [];
 	if (loginPubkey && event10000?.content) {
 		try {
 			const content = await (window as any).nostr.nip04.decrypt(loginPubkey, event10000.content);
 			const list: string[][] = JSON.parse(content);
 			muteList = muteList.concat(list.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1]));
+			muteChannels = muteChannels.concat(list.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]));
 			wordList = wordList.concat(list.filter(tag => tag.length >= 2 && tag[0] === 'word').map(tag => tag[1]));
 		} catch (error) {
 			console.warn(error);
@@ -186,6 +189,7 @@ const applyRelays = () => {
 	notesQuoted = [];
 	profs = {};
 	muteList = [];
+	muteChannels = [];
 	pinList = [];
 	favList = [];
 	subNotes?.unsub();
@@ -301,7 +305,7 @@ $: titleString = currentChannelId ? `${channels.find(v => v.event.id === current
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div id="container" on:click={hidePostBar}>
 	<Header {title} />
-	<Sidebar {pool} {theme} {relaysToUse} {loginPubkey} {channels} {profs} {importRelays} {pinList} {muteList} {wordList} />
+	<Sidebar {pool} {theme} {relaysToUse} {loginPubkey} {channels} {profs} {importRelays} {pinList} {muteList} {muteChannels} {wordList} />
 	<main>
 	{#if currentChannelId}
 		{@const channel = channels.find(v => v.event.id === currentChannelId)}
@@ -357,7 +361,7 @@ $: titleString = currentChannelId ? `${channels.find(v => v.event.id === current
 	{:else}
 		<h2>Error</h2>
 	{/if}
-		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {loginPubkey} {muteList} {wordList} {favList} {resetScroll} />
+		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {loginPubkey} {muteList} {muteChannels} {wordList} {favList} {resetScroll} />
 	{#if currentChannelId && loginPubkey}
 		{@const channel = channels.find(channel => channel.event.id === currentChannelId)}
 		{#if channel !== undefined}
