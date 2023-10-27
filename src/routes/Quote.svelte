@@ -41,6 +41,8 @@ const getNote = (eventText: string) => {
 			{/if}
 		{:else}
 		{@const npub = nip19.npubEncode(note.pubkey)}
+		{@const rootId = note.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1)}
+		{@const linkid = note.kind === 1 ? nip19.noteEncode(note.id) : nip19.neventEncode(note)}
 		<dl>
 			<dt>
 			{#if profs[note.pubkey]}
@@ -48,9 +50,13 @@ const getNote = (eventText: string) => {
 			{:else}
 				<img src="/default.png" alt="" width="32" height="32" /><a href="/{npub}">@{npub.slice(0, 10)}...</a>
 			{/if}
-			<br /><time>{(new Date(1000 * note.created_at)).toLocaleString()}</time> {#if note.kind === 1}<a href="{urlToLinkNote}/{eventText}" target="_blank" rel="noopener noreferrer">kind:1</a>{:else}kind:{note.kind}{/if}
-			{#if note.kind === 42 && note.tags.some(v => v[0] === 'e' && v[3] === 'root')}
-				{@const rootId = note.tags.find(v => v[0] === 'e' && v[3] === 'root')?.at(1)}
+			<br />
+			{#if note.kind === 42}
+			<a href="/{linkid}"><time>{(new Date(1000 * note.created_at)).toLocaleString()}</time></a>
+			{:else}
+			<a href="{urlToLinkNote}/{linkid}" target="_blank" rel="noopener noreferrer"><time>{(new Date(1000 * note.created_at)).toLocaleString()}</time></a>
+			{/if}kind:{note.kind}
+			{#if note.kind === 42 && rootId !== undefined}
 				{@const channel = channels.find(v => v.event.id === rootId)}
 				{#if rootId && channel}
 					<a href="/channels/{nip19.neventEncode(channel.event)}">{channel.name}</a>
