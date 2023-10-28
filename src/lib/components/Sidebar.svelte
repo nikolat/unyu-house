@@ -7,7 +7,7 @@ import { browser } from '$app/environment';
 import { storedLoginpubkey, storedTheme, storedRelaysSelected, storedNeedApplyRelays } from '$lib/store';
 import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile, type GetRelays } from '$lib/util';
 import { onMount } from 'svelte';
-  import SidebarChannel from './SidebarChannel.svelte';
+import SidebarChannel from '$lib/components/SidebarChannel.svelte';
 
 export let pool: SimplePool;
 export let relaysToUse: {[key: string]: GetRelays};
