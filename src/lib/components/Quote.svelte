@@ -15,6 +15,9 @@ export let notesQuoted: NostrEvent[];
 export let channels: Channel[];
 export let profs: {[key: string]: Profile};
 export let loginPubkey: string;
+export let muteList: string[];
+export let muteChannels: string[];
+export let wordList: string[];
 
 const getNote = (eventText: string) => {
 	const d = nip19.decode(eventText);
@@ -26,42 +29,60 @@ const getNote = (eventText: string) => {
 	}
 	return null;
 };
-const eventText = matchedText.replace(/nostr:/, '')
-const note = getNote(eventText)
-const channel = channels.find(v => v.event.id === note?.id)
 
 </script>
 
-{#if note}
-<blockquote>
-	{#if note.kind === 40}
-		{#if channel !== undefined}
-	<ChannelMetadata {channel} {pool} {profs} {loginPubkey} relaysToUse={{}} isQuote={true} pinList={[]} />
+{#if true}
+	{@const eventText = matchedText.replace(/nostr:/, '')}
+	{@const note = getNote(eventText)}
+	{#if note}
+		{@const isMutedNotePubkey = muteList.includes(note.pubkey)}
+		{@const isMutedNoteChannel = muteChannels.includes(note.id)}
+		{@const isMutedNoteWord = wordList.some(word => note.content.includes(word))}
+		{@const isMuted = isMutedNotePubkey || isMutedNoteChannel || isMutedNoteWord}
+		{#if !isMuted}
+	<blockquote>
+			{#if note.kind === 40}
+			{@const channel = channels.find(v => v.event.id === note.id)}
+				{#if channel !== undefined}
+		<ChannelMetadata {channel} {pool} {profs} {loginPubkey} relaysToUse={{}} isQuote={true} pinList={[]} muteChannels={[]} />
+				{:else}
+				{matchedText}
+				{/if}
+			{:else}
+		{@const npub = nip19.npubEncode(note.pubkey)}
+		{@const rootId = note.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1)}
+		{@const linkid = note.kind === 1 ? nip19.noteEncode(note.id) : nip19.neventEncode(note)}
+		<dl>
+			<dt>
+				{#if profs[note.pubkey]}
+				<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {npub}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} <a href="/{npub}">@{profs[note.pubkey]?.name ?? ''}</a>
+				{:else}
+				<img src="/default.png" alt="" width="32" height="32" /><a href="/{npub}">@{npub.slice(0, 10)}...</a>
+				{/if}
+			<br />
+				{#if note.kind === 42}
+			<a href="/{linkid}"><time>{(new Date(1000 * note.created_at)).toLocaleString()}</time></a>
+				{:else}
+			<a href="{urlToLinkNote}/{linkid}" target="_blank" rel="noopener noreferrer"><time>{(new Date(1000 * note.created_at)).toLocaleString()}</time></a>
+				{/if}kind:{note.kind}
+				{#if note.kind === 42 && rootId !== undefined}
+				{@const channel = channels.find(v => v.event.id === rootId)}
+					{#if rootId && channel}
+					<a href="/channels/{nip19.neventEncode(channel.event)}">{channel.name}</a>
+					{:else}
+					(unknown channel)
+					{/if}
+				{/if}
+			</dt>
+			<dd>{note.content}</dd>
+		</dl>
+			{/if}
+	</blockquote>
+		{:else}
+	(Muted)
 		{/if}
 	{:else}
-	<dl>
-		<dt>
-		{#if profs[note.pubkey]}
-			<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {nip19.npubEncode(note.pubkey)}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} <a href="/{nip19.npubEncode(note.pubkey)}">@{profs[note.pubkey]?.name ?? ''}</a>
-		{:else}
-			<img src="/default.png" alt="" width="32" height="32" /><a href="/{nip19.npubEncode(note.pubkey)}">@{nip19.npubEncode(note.pubkey).slice(0, 10)}...</a>
-		{/if}
-		<br /><time>{(new Date(1000 * note.created_at)).toLocaleString()}</time> {#if note.kind === 1}<a href="{urlToLinkNote}/{eventText}" target="_blank" rel="noopener noreferrer">kind:1</a>{:else}kind:{note.kind}{/if}
-		{#if note.kind === 42 && note.tags.some(v => v[0] === 'e' && v[3] === 'root')}
-			{@const rootId = note.tags.find(v => v[0] === 'e' && v[3] === 'root')?.at(1)}
-			{@const channel = channels.find(v => v.event.id === rootId)}
-			{#if rootId && channel}
-				{@const channelId = nip19.neventEncode({id:rootId, relays:pool.seenOn(rootId), author:channel.event.pubkey})}
-				<a href="/channels/{channelId}">{channel.name}</a>
-			{:else}
-				(unknown channel)
-			{/if}
-		{/if}
-		</dt>
-		<dd>{note.content}</dd>
-	</dl>
+		{matchedText}
 	{/if}
-</blockquote>
-{:else}
-	{matchedText}
 {/if}

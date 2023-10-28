@@ -1,23 +1,13 @@
 <script lang='ts'>
 export let title: string;
 const expandSidebar = () => {
-	const sidebar = document.getElementById('sidebar');
-	const main = document.querySelector('main');
-	const input = document.getElementById('input');
-	if (sidebar && main) {
-		if (main.style.width !== '0%') {
-			sidebar.style.width = 'calc(100vw - (100vw - 100%))';
-			main.style.width = '0%';
-			if (input) {
-				input.style.visibility = 'hidden';
-			}
+	const container = document.getElementById('container');
+	if (container) {
+		if (container.classList.contains('expand-sidebar')) {
+			container.classList.remove('expand-sidebar');
 		}
 		else {
-			sidebar.style.width = '0%';
-			main.style.width = 'calc(100vw - (100vw - 100%))';
-			if (input) {
-				input.style.visibility = 'visible';
-			}
+			container.classList.add('expand-sidebar');
 		}
 	}
 }
@@ -58,6 +48,24 @@ h1 {
 svg {
 	width: 20px;
 	height: 20px;
+}
+:global(#container.expand-sidebar main) {
+	width: 0%;
+}
+:global(#container.expand-sidebar #sidebar) {
+	width: 100%;
+}
+:global(#container.expand-sidebar #input) {
+	visibility: hidden;
+}
+:global(#container:not(.expand-sidebar) main) {
+	width: 100%;
+}
+:global(#container:not(.expand-sidebar) #sidebar) {
+	width: 0%;
+}
+:global(#container:not(.expand-sidebar) #input) {
+	visibility: visible;
 }
 :global(#container.dark #toggle) {
 	fill: white;

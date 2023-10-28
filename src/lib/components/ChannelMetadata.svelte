@@ -1,6 +1,6 @@
 <script lang='ts'>
-import { sendEditChannel, type Channel, type Profile, sendPin, type GetRelays } from "$lib/util";
-import { SimplePool, nip19 } from "nostr-tools";
+import { type Channel, type Profile, sendPin, type GetRelays, sendMute, sendEditChannel } from '$lib/util';
+import { SimplePool, nip19 } from 'nostr-tools';
 
 export let channel: Channel;
 export let pool: SimplePool;
@@ -9,6 +9,7 @@ export let loginPubkey: string;
 export let relaysToUse: {[key: string]: GetRelays};
 export let isQuote: boolean;
 export let pinList: string[];
+export let muteChannels: string[];
 
 let editChannelName: string;
 let editChannelAbout: string;
@@ -31,11 +32,14 @@ const callSendPin = (toSet: boolean) => {
 	sendPin(pool, relaysToUse, loginPubkey, channel.event.id, toSet);
 }
 
+const callSendMute = (toSet: boolean) => {
+	sendMute(pool, relaysToUse, loginPubkey, channel.event.id, toSet);
+}
+
 </script>
 
 {#if channel}
-{@const channelId = nip19.neventEncode({id:channel.event.id, relays:pool.seenOn(channel.event.id), author:channel.event.pubkey})}
-<h2>{#if isQuote}<a href="/channels/{channelId}">{channel.name}</a>{:else}{channel.name}{/if}</h2>
+<h2>{#if isQuote}<a href="/channels/{nip19.neventEncode(channel.event)}">{channel.name}</a>{:else}{channel.name}{/if}</h2>
 {:else}
 <h2>Now Loading...</h2>
 {/if}
@@ -78,6 +82,11 @@ const callSendPin = (toSet: boolean) => {
 <button class="channel-metadata on" on:click={() => callSendPin(false)}><svg><use xlink:href="/bookmark.svg#pin"></use></svg></button>
 		{:else}
 <button class="channel-metadata off" on:click={() => callSendPin(true)}><svg><use xlink:href="/bookmark.svg#pin"></use></svg></button>
+		{/if}
+		{#if muteChannels.includes(channel.event.id)}
+<button class="channel-metadata on" on:click={() => callSendMute(false)}><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button>
+		{:else}
+<button class="channel-metadata off" on:click={() => callSendMute(true)}><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button>
 		{/if}
 	{/if}
 {/if}

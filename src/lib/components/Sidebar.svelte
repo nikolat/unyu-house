@@ -18,6 +18,7 @@ export let importRelays: Function;
 export let theme: string;
 export let pinList: string[];
 export let muteList: string[];
+export let muteChannels: string[];
 export let wordList: string[];
 
 let relaysSelected: string;
@@ -154,7 +155,7 @@ onMount(() => {
 		<h3>Pinned Channels</h3>
 		<div>
 				{#each channels.filter(ch => pinList.includes(ch.event.id)) as channel}
-			<SidebarChannel picture={profs[channel.event.pubkey]?.picture} url={nip19.neventEncode({id:channel.event.id, relays:pool.seenOn(channel.event.id), author:channel.event.pubkey})} channelName={channel.name}></SidebarChannel>
+			<SidebarChannel picture={profs[channel.event.pubkey]?.picture} url={nip19.neventEncode(channel.event)} channelName={channel.name}></SidebarChannel>
 				{/each}
 		</div>
 			{/if}
@@ -162,8 +163,8 @@ onMount(() => {
 		<h3>All Channels</h3>
 		<div>
 			{#each channels as channel}
-				{#if !muteList.includes(channel.event.pubkey) && !wordList.reduce((accumulator, currentValue) => accumulator || channel.name.includes(currentValue), false)}
-			<SidebarChannel picture={profs[channel.event.pubkey]?.picture} url={nip19.neventEncode({id:channel.event.id, relays:pool.seenOn(channel.event.id), author:channel.event.pubkey})} channelName={channel.name}></SidebarChannel>
+				{#if !muteList.includes(channel.event.pubkey) && !muteChannels.includes(channel.event.id) && !wordList.some(word => channel.name.includes(word))}
+			<SidebarChannel picture={profs[channel.event.pubkey]?.picture} url={nip19.neventEncode(channel.event)} channelName={channel.name}></SidebarChannel>
 				{/if}
 			{/each}
 		</div>
@@ -187,7 +188,7 @@ onMount(() => {
 }
 @media screen and (min-width: 1080px) {
 	#sidebar {
-		width: 500px;
+		min-width: 500px;
 	}
 }
 

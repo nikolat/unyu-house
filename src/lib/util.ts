@@ -2,7 +2,7 @@ import {
 	SimplePool,
 	nip19,
 	type Event as NostrEvent,
-	type UnsignedEvent,
+	type EventTemplate,
 	type Filter,
 	type Sub,
 } from 'nostr-tools';
@@ -85,14 +85,14 @@ export class RelayConnector {
 			const filterPhase3Base: Filter<42> = this.#filterKind42;
 			filterPhase3Base.since = events[42].map(ev => ev.created_at).reduce((a, b) => Math.max(a, b), 0) + 1;
 			filterPhase3Base.limit = 1;
-			const filterPhase3: Filter<7|40|41|42|10001>[] = [filterPhase3Base];
+			const filterPhase3: Filter<7|40|41|42|10000|10001>[] = [filterPhase3Base];
 			if (this.#loginPubkey) {
 				filterPhase2.push(
 					{kinds: [7], authors: [this.#loginPubkey], '#e': notes.map(v => v.id)},
 					{kinds: [7], '#p': [this.#loginPubkey], '#e': notes.map(v => v.id)}
 				);
 				filterPhase3.push(
-					{kinds: [7, 10001], authors: [this.#loginPubkey], limit: 1},
+					{kinds: [7, 10000, 10001], authors: [this.#loginPubkey], limit: 1},
 					{kinds: [7], '#p': [this.#loginPubkey], limit: 1},
 					{kinds: [40, 41], limit: 1}
 				);
@@ -101,7 +101,7 @@ export class RelayConnector {
 		});
 	};
 
-	#getEventsPhase2 = (filterPhase2: Filter[], filterPhase3: Filter<7|40|41|42|10001>[], goPhase3: Boolean) => {
+	#getEventsPhase2 = (filterPhase2: Filter[], filterPhase3: Filter<7|40|41|42|10000|10001>[], goPhase3: Boolean) => {
 		const sub: Sub = this.#pool.sub(this.#relays, filterPhase2);
 		const events: {[key: number]: NostrEvent[]} = {0: [], 7: []};
 		const eventsQuoted: NostrEvent[] = [];
@@ -139,9 +139,9 @@ export class RelayConnector {
 		});
 	};
 
-	#getEventsPhase3 = (filterPhase3: Filter<7|40|41|42|10001>[], pubkeysObtained: string[], idsObtained: string[]) => {
-		const sub: Sub<7|40|41|42|10001> = this.#pool.sub(this.#relays, filterPhase3);
-		sub.on('event', (ev: NostrEvent<7|40|41|42|10001>) => {
+	#getEventsPhase3 = (filterPhase3: Filter<7|40|41|42|10000|10001>[], pubkeysObtained: string[], idsObtained: string[]) => {
+		const sub: Sub<7|40|41|42|10000|10001> = this.#pool.sub(this.#relays, filterPhase3);
+		sub.on('event', (ev: NostrEvent<7|40|41|42|10000|10001>) => {
 			this.#callbackPhase3(sub, ev);
 			const pubkeysToGet: string[] = this.#getPubkeysForFilter([ev]).filter(v => !pubkeysObtained.includes(v));
 			const idsToGet: string[] = this.#getIdsForFilter([ev]).filter(v => !idsObtained.includes(v));
@@ -356,9 +356,8 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 	for (const p of mentionPubkeys) {
 		tags.push(['p', p, '']);
 	}
-	const baseEvent: UnsignedEvent<42> = {
+	const baseEvent: EventTemplate<42> = {
 		kind: 42,
-		pubkey: '',
 		created_at: Math.floor(Date.now() / 1000),
 		tags: tags,
 		content: content
@@ -373,9 +372,8 @@ export const sendFav = async(pool: SimplePool, relaysToWrite: string[], targetEv
 	tags.push(['e', targetEvent.id, '', '']);
 	tags.push(['p', targetEvent.pubkey, '']);
 	tags.push(['k', String(targetEvent.kind)]);
-	const baseEvent: UnsignedEvent<7> = {
+	const baseEvent: EventTemplate<7> = {
 		kind: 7,
-		pubkey: '',
 		created_at: Math.floor(Date.now() / 1000),
 		tags: tags,
 		content: content
@@ -386,9 +384,8 @@ export const sendFav = async(pool: SimplePool, relaysToWrite: string[], targetEv
 };
 
 export const sendCreateChannel = async(pool: SimplePool, relaysToWrite: string[], name: string, about: string, picture: string) => {
-	const baseEvent: UnsignedEvent<40> = {
+	const baseEvent: EventTemplate<40> = {
 		kind: 40,
-		pubkey: '',
 		created_at: Math.floor(Date.now() / 1000),
 		tags: [],
 		content: JSON.stringify({name: name ?? '', about: about ?? '', picture: picture ?? ''})
@@ -419,9 +416,8 @@ export const sendEditChannel = async(pool: SimplePool, relaysToUse: object, logi
 		(objContent as any).name = name;
 		(objContent as any).about = about;
 		(objContent as any).picture = picture;
-		const baseEvent: UnsignedEvent<41> = {
+		const baseEvent: EventTemplate<41> = {
 			kind: 41,
-			pubkey: '',
 			created_at: Math.floor(Date.now() / 1000),
 			tags: [['e', currentChannelId, pool.seenOn(currentChannelId).at(0) ?? '']],
 			content: JSON.stringify(objContent)
@@ -434,9 +430,8 @@ export const sendEditChannel = async(pool: SimplePool, relaysToUse: object, logi
 };
 
 export const sendDeletion = async(pool: SimplePool, relaysToWrite: string[], eventId: string) => {
-	const baseEvent: UnsignedEvent<5> = {
+	const baseEvent: EventTemplate<5> = {
 		kind: 5,
-		pubkey: '',
 		created_at: Math.floor(Date.now() / 1000),
 		tags: [['e', eventId]],
 		content: ''
@@ -446,17 +441,25 @@ export const sendDeletion = async(pool: SimplePool, relaysToWrite: string[], eve
 	await Promise.all(pubs);
 };
 
+export const sendMute = async(pool: SimplePool, relaysToUse: object, loginPubkey: string, eventId: string, toSet: boolean) => {
+	await sendPinOrMute(pool, relaysToUse, loginPubkey, eventId, toSet, 10000);
+};
+
 export const sendPin = async(pool: SimplePool, relaysToUse: object, loginPubkey: string, eventId: string, toSet: boolean) => {
+	await sendPinOrMute(pool, relaysToUse, loginPubkey, eventId, toSet, 10001);
+};
+
+const sendPinOrMute = async(pool: SimplePool, relaysToUse: object, loginPubkey: string, eventId: string, toSet: boolean, kind: number) => {
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
-	const sub: Sub<10001> = pool.sub(relaysToRead, [{kinds: [10001], authors: [loginPubkey]}]);
-	let newestEvent: NostrEvent<10001>;
-	sub.on('event', (ev: NostrEvent<10001>) => {
+	const sub: Sub = pool.sub(relaysToRead, [{kinds: [kind], authors: [loginPubkey]}]);
+	let newestEvent: NostrEvent;
+	sub.on('event', (ev: NostrEvent) => {
 		if (ev.pubkey === loginPubkey && (!newestEvent || newestEvent.created_at < ev.created_at)) {
 			newestEvent = ev;
 		}
 	});
 	sub.on('eose', async () => {
-		console.log('sendPinPhase1 * EOSE *');
+		console.log('sendPinOrMutePhase1 * EOSE *');
 		sub.unsub();
 		let tags;
 		let content = '';
@@ -479,29 +482,27 @@ export const sendPin = async(pool: SimplePool, relaysToUse: object, loginPubkey:
 				tags = [['e', eventId]];
 			}
 			else {
-				throw new Error(`The kind 10001 event to remove the pin does not exist: ${eventId}`);
+				throw new Error(`The kind ${kind} event to remove the pin does not exist: ${eventId}`);
 			}
 		}
 		const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
-		const baseEvent: UnsignedEvent<10001> = {
-			kind: 10001,
-			pubkey: '',
+		const baseEvent: EventTemplate = {
+			kind: kind,
 			created_at: Math.floor(Date.now() / 1000),
 			tags: tags,
 			content: content
 		};
-		const newEvent: NostrEvent<10001> = await (window as any).nostr.signEvent(baseEvent);
+		const newEvent: NostrEvent = await (window as any).nostr.signEvent(baseEvent);
 		const pubs = pool.publish(relaysToWrite, newEvent);
 		await Promise.all(pubs);
-		console.log('sendPinPhase2 * Complete *');
+		console.log('sendPinOrMutePhase2 * Complete *');
 	});
 };
 
 //for debug
 export const sendProfile = async(pool: SimplePool, relaysToWrite: string[], objProfile: object) => {
-	const baseEvent: UnsignedEvent<0> = {
+	const baseEvent: EventTemplate<0> = {
 		kind: 0,
-		pubkey: '',
 		created_at: Math.floor(Date.now() / 1000),
 		tags: [],
 		content: JSON.stringify(objProfile)
