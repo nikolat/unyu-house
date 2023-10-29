@@ -316,7 +316,7 @@ $: titleString = currentChannelId ? `${channels.find(v => v.event.id === current
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div id="container" on:click={hidePostBar}>
-	<Header {title} />
+	<Header {title} {profs} {loginPubkey} />
 	<Sidebar {pool} {theme} {relaysToUse} {loginPubkey} {channels} {profs} {importRelays} {pinList} {muteList} {muteChannels} {wordList} />
 	<main>
 	{#if currentChannelId}
