@@ -119,7 +119,7 @@ onMount(() => {
 	<h3>Relays</h3>
 	{#if loginPubkey}
 	<section class="config">
-		<div>リレーリスト取得</div>
+		<div>Get Relay List</div>
 		<select bind:value={relaysSelected} on:change={changeRelays}>
 			<option value="kind3">Kind 3</option>
 			<option value="kind10002">Kind 10002</option>
