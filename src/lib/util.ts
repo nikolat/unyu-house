@@ -7,6 +7,12 @@ import {
 	type Sub,
 } from 'nostr-tools';
 import { defaultRelays, relaysToGetRelays } from './config';
+import type { NostrAPI } from './@types/nostr';
+
+interface Window {
+	nostr?: NostrAPI;
+}
+declare const window: Window & typeof globalThis
 
 export interface Channel {
 	name: string
@@ -399,7 +405,9 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 		tags: tags,
 		content: content
 	};
-	const newEvent: NostrEvent<42> = await (window as any).nostr.signEvent(baseEvent);
+	if (window.nostr === undefined)
+		return;
+	const newEvent = await window.nostr.signEvent(baseEvent);
 	const pubs = pool.publish(relaysToWrite, newEvent);
 	await Promise.all(pubs);
 };
@@ -415,7 +423,9 @@ export const sendFav = async(pool: SimplePool, relaysToWrite: string[], targetEv
 		tags: tags,
 		content: content
 	};
-	const newEvent: NostrEvent<7> = await (window as any).nostr.signEvent(baseEvent);
+	if (window.nostr === undefined)
+		return;
+	const newEvent = await window.nostr.signEvent(baseEvent);
 	const pubs = pool.publish(relaysToWrite, newEvent);
 	await Promise.all(pubs);
 };
@@ -427,7 +437,9 @@ export const sendCreateChannel = async(pool: SimplePool, relaysToWrite: string[]
 		tags: [],
 		content: JSON.stringify({name: name ?? '', about: about ?? '', picture: picture ?? ''})
 	};
-	const newEvent: NostrEvent<40> = await (window as any).nostr.signEvent(baseEvent);
+	if (window.nostr === undefined)
+		return;
+	const newEvent = await window.nostr.signEvent(baseEvent);
 	const pubs = pool.publish(relaysToWrite, newEvent);
 	await Promise.all(pubs);
 };
@@ -459,7 +471,9 @@ export const sendEditChannel = async(pool: SimplePool, relaysToUse: object, logi
 			tags: [['e', currentChannelId, pool.seenOn(currentChannelId).at(0) ?? '']],
 			content: JSON.stringify(objContent)
 		};
-		const newEvent: NostrEvent<41> = await (window as any).nostr.signEvent(baseEvent);
+		if (window.nostr === undefined)
+			return;
+		const newEvent = await window.nostr.signEvent(baseEvent);
 		const pubs = pool.publish(relaysToWrite, newEvent);
 		await Promise.all(pubs);
 		console.log('sendEditChannelPhase2 * Complete *');
@@ -473,7 +487,9 @@ export const sendDeletion = async(pool: SimplePool, relaysToWrite: string[], eve
 		tags: [['e', eventId]],
 		content: ''
 	};
-	const newEvent: NostrEvent<5> = await (window as any).nostr.signEvent(baseEvent);
+	if (window.nostr === undefined)
+		return;
+	const newEvent = await window.nostr.signEvent(baseEvent);
 	const pubs = pool.publish(relaysToWrite, newEvent);
 	await Promise.all(pubs);
 };
@@ -529,7 +545,9 @@ const sendPinOrMute = async(pool: SimplePool, relaysToUse: object, loginPubkey: 
 			tags: tags,
 			content: content
 		};
-		const newEvent: NostrEvent = await (window as any).nostr.signEvent(baseEvent);
+		if (window.nostr === undefined)
+			return;
+		const newEvent = await window.nostr.signEvent(baseEvent);
 		const pubs = pool.publish(relaysToWrite, newEvent);
 		await Promise.all(pubs);
 		console.log('sendPinOrMutePhase2 * Complete *');
@@ -544,7 +562,9 @@ export const sendProfile = async(pool: SimplePool, relaysToWrite: string[], objP
 		tags: [],
 		content: JSON.stringify(objProfile)
 	};
-	const newEvent: NostrEvent<0> = await (window as any).nostr.signEvent(baseEvent);
+	if (window.nostr === undefined)
+		return;
+	const newEvent = await window.nostr.signEvent(baseEvent);
 	const pubs = pool.publish(relaysToWrite, newEvent);
 	await Promise.all(pubs);
 };
@@ -598,7 +618,9 @@ export const getRelaysToUse = (relaysSelected: string, pool: SimplePool, loginPu
 				});
 			});
 		case 'nip07':
-			return (window as any).nostr.getRelays();
+			if (window.nostr === undefined || window.nostr.getRelays === undefined)
+				return Promise.resolve({});
+			return window.nostr.getRelays();
 		case 'default':
 		default:
 			return Promise.resolve(defaultRelays);

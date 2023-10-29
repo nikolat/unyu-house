@@ -1,7 +1,9 @@
 <script lang='ts'>
 import { sendMessage, type Channel, type Profile, getExpandTagsList, type GetRelays, getRelaysToUse, RelayConnector, urlDefaultTheme } from '$lib/util';
+import type { NostrAPI } from '$lib/@types/nostr';
 import { storedCurrentChannelId, storedCurrentPubkey, storedCurrentEvent, storedLoginpubkey, storedNeedApplyRelays, storedRelaysToUse, storedTheme } from '$lib/store';
 import { defaultRelays, title } from '$lib/config';
+import { browser } from '$app/environment';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
 import { afterUpdate, onDestroy, onMount } from 'svelte';
 import type { Unsubscriber } from 'svelte/store';
@@ -10,6 +12,10 @@ import Sidebar from './Sidebar.svelte';
 import Header from './Header.svelte';
 import ChannelMetadata from './ChannelMetadata.svelte';
 import Timeline from './Timeline.svelte';
+
+interface Window {
+	nostr?: NostrAPI;
+}
 
 let pool: SimplePool = new SimplePool();
 let subNotes: Sub<7|40|41|42|10000|10001>;
@@ -65,9 +71,10 @@ const callbackPhase1 = async (loginPubkey: string, channelsNew: Channel[], notes
 	muteList = event10000?.tags.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1]) ?? [];
 	muteChannels = event10000?.tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]) ?? [];
 	wordList = event10000?.tags.filter(tag => tag.length >= 2 && tag[0] === 'word').map(tag => tag[1]) ?? [];
-	if (loginPubkey && event10000?.content) {
+	const nostr = (window as Window).nostr;
+	if (loginPubkey && event10000?.content && browser && nostr?.nip04?.decrypt) {
 		try {
-			const content = await (window as any).nostr.nip04.decrypt(loginPubkey, event10000.content);
+			const content = await nostr.nip04.decrypt(loginPubkey, event10000.content);
 			const list: string[][] = JSON.parse(content);
 			muteList = muteList.concat(list.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1]));
 			muteChannels = muteChannels.concat(list.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]));

@@ -8,6 +8,11 @@ import { storedLoginpubkey, storedTheme, storedRelaysSelected, storedNeedApplyRe
 import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile, type GetRelays } from '$lib/util';
 import { onMount } from 'svelte';
 import SidebarChannel from '$lib/components/SidebarChannel.svelte';
+import type { NostrAPI } from '$lib/@types/nostr';
+
+interface Window {
+	nostr?: NostrAPI;
+}
 
 export let pool: SimplePool;
 export let relaysToUse: {[key: string]: GetRelays};
@@ -35,9 +40,10 @@ let newChannelAbout: string;
 let newChannelPicture: string;
 
 const login = async() => {
-	if (browser && (window as any).nostr?.getPublicKey) {
+	const nostr = (window as Window).nostr;
+	if (browser && nostr?.getPublicKey) {
 		try {
-			loginPubkey = await (window as any).nostr.getPublicKey();
+			loginPubkey = await nostr.getPublicKey();
 			storedLoginpubkey.set(loginPubkey);
 			storedNeedApplyRelays.set(true);
 		} catch (error) {
