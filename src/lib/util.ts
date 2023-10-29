@@ -209,7 +209,14 @@ export class RelayConnector {
 		for (const ev of events) {
 			const matchesIterator = ev.content.matchAll(/nostr:(note\w{59}|nevent\w+)/g);
 			for (const match of matchesIterator) {
-				const d = nip19.decode(match[1]);
+				let d;
+				try {
+					d = nip19.decode(match[1]);
+				} catch (error) {
+					console.warn(error);
+					console.info(ev);
+					continue;
+				}
 				if (d.type === 'note')
 					ids.add(d.data);
 				else if (d.type === 'nevent')
