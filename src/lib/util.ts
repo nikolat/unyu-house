@@ -171,20 +171,29 @@ export class RelayConnector {
 		}
 		for(const ev of events.filter(ev => ev.kind === 0)) {
 			//npubでの言及
+			let content;
 			try {
-				const content = JSON.parse(ev.content);
-				if (!content.about)
-					continue;
-				const matchesIteratorNpub = (content.about as string).matchAll(/nostr:(npub\w{59})/g);
-				for (const match of matchesIteratorNpub) {
-					const d = nip19.decode(match[1]);
-					if (d.type === 'npub') {
-						pubkeys.add(d.data);
-					}
-				}
+				content = JSON.parse(ev.content);
 			} catch (error) {
 				console.warn(error);
+				console.info(ev);
 				continue;
+			}
+			if (!content.about)
+				continue;
+			const matchesIteratorNpub = (content.about as string).matchAll(/nostr:(npub\w{59})/g);
+			for (const match of matchesIteratorNpub) {
+				let d;
+				try {
+					d = nip19.decode(match[1]);
+				} catch (error) {
+					console.warn(error);
+					console.info(ev);
+					continue;
+				}
+				if (d.type === 'npub') {
+					pubkeys.add(d.data);
+				}
 			}
 		}
 		for(const ev of events.filter(ev => [1, 42].includes(ev.kind))) {
@@ -196,7 +205,14 @@ export class RelayConnector {
 			//npubでの言及
 			const matchesIteratorNpub = ev.content.matchAll(/nostr:(npub\w{59})/g);
 			for (const match of matchesIteratorNpub) {
-				const d = nip19.decode(match[1]);
+				let d;
+				try {
+					d = nip19.decode(match[1]);
+				} catch (error) {
+					console.warn(error);
+					console.info(ev);
+					continue;
+				}
 				if (d.type === 'npub')
 					pubkeys.add(d.data);
 			}
@@ -342,7 +358,14 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 	const mentionIds: Set<string> = new Set();
 	const matchesIteratorId = content.matchAll(/(^|\W|\b)(nostr:(note\w{59}|nevent\w+))($|\W|\b)/g);
 	for (const match of matchesIteratorId) {
-		const d = nip19.decode(match[3]);
+		let d;
+		try {
+			d = nip19.decode(match[3]);
+		} catch (error) {
+			console.warn(error);
+			console.info(content);
+			continue;
+		}
 		if (d.type === 'note') {
 			mentionIds.add(d.data);
 		}
@@ -352,7 +375,14 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 	}
 	const matchesIteratorPubkey = content.matchAll(/(^|\W|\b)(nostr:(npub\w{59}))($|\W|\b)/g);
 	for (const match of matchesIteratorPubkey) {
-		const d = nip19.decode(match[3]);
+		let d;
+		try {
+			d = nip19.decode(match[3]);
+		} catch (error) {
+			console.warn(error);
+			console.info(content);
+			continue;
+		}
 		if (d.type === 'npub') {
 			mentionPubkeys.add(d.data);
 		}
