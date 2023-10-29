@@ -126,12 +126,8 @@ onMount(() => {
 	<section class="config">
 		<div>{relay[0]}</div>
 		<div>
-			<label for="relay_read">
-				<input type="checkbox" name="relay_read" checked={relay[1].read} disabled />
-			</label>
-			<label for="relay_write">
-				<input type="checkbox" name="relay_write" checked={relay[1].write} disabled />
-			</label>
+			<input type="checkbox" name="relay_read" checked={relay[1].read} disabled />
+			<input type="checkbox" name="relay_write" checked={relay[1].write} disabled />
 		</div>
 	</section>
 	{/each}
