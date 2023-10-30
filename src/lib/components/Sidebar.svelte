@@ -5,7 +5,7 @@ import {
 } from 'nostr-tools';
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
-import { storedLoginpubkey, storedTheme, storedRelaysSelected, storedNeedApplyRelays } from '$lib/store';
+import { storedIsLoggedin, storedLoginpubkey, storedTheme, storedRelaysSelected, storedNeedApplyRelays } from '$lib/store';
 import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile, type GetRelays } from '$lib/util';
 import { onMount } from 'svelte';
 import SidebarChannel from '$lib/components/SidebarChannel.svelte';
@@ -17,6 +17,7 @@ interface Window {
 
 export let pool: SimplePool;
 export let relaysToUse: {[key: string]: GetRelays};
+export let isLoggedin: boolean;
 export let loginPubkey: string;
 export let channels: Channel[];
 export let profs: {[key: string]: Profile};
@@ -45,19 +46,23 @@ const login = async() => {
 	if (browser && nostr?.getPublicKey) {
 		try {
 			loginPubkey = await nostr.getPublicKey();
-			storedLoginpubkey.set(loginPubkey);
-			storedNeedApplyRelays.set(true);
 		} catch (error) {
 			console.error(error);
+			return;
 		}
+		storedIsLoggedin.set(true);
+		storedLoginpubkey.set(loginPubkey);
+		storedNeedApplyRelays.set(true);
 	}
 	else if (browser && nostr === undefined) {
 		goto('https://scrapbox.io/nostr/nos2x%E3%81%AE%E3%82%BB%E3%83%83%E3%83%88%E3%82%A2%E3%83%83%E3%83%97%E3%81%A8%E4%BD%BF%E3%81%84%E6%96%B9');
 	}
 };
 const logout = () => {
+	storedIsLoggedin.set(false);
 	storedLoginpubkey.set('');
-	storedNeedApplyRelays.set(true);
+	relaysSelected = 'default';
+	importRelays(relaysSelected);
 };
 const callSendCreateChannel = () => {
 	const [channelName, channelAbout, channelPicture] = [newChannelName, newChannelAbout, newChannelPicture];
@@ -106,7 +111,7 @@ onMount(() => {
 	<section class="config">
 		<div>Login</div>
 		<div>
-			{#if loginPubkey}
+			{#if isLoggedin}
 			<button on:click={logout}>Logout</button>
 			{:else}
 			<button on:click={login}>Login with Browser Extension (NIP-07)</button>
@@ -127,7 +132,7 @@ onMount(() => {
 		<select bind:value={relaysSelected} on:change={changeRelays}>
 			<option value="kind3">Kind 3</option>
 			<option value="kind10002">Kind 10002</option>
-			<option value="nip07">NIP-07</option>
+			{#if isLoggedin}<option value="nip07">NIP-07</option>{/if}
 			<option value="default">Default</option>
 		</select>
 	</section>
@@ -143,6 +148,7 @@ onMount(() => {
 	{/each}
 	<section id="channels">
 		{#if loginPubkey}
+			{#if isLoggedin}
 		<details>
 			<summary>Create New Channel</summary>
 			<form>
@@ -157,6 +163,7 @@ onMount(() => {
 				<button on:click={callSendCreateChannel} disabled={!newChannelName}>Create</button>
 			</form>
 		</details>
+			{/if}
 			{#if pinList.length > 0}
 		<h3>Pinned Channels</h3>
 		<div>

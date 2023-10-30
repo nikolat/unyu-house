@@ -45,7 +45,7 @@ const getNote = (eventText: string) => {
 			{#if note.kind === 40}
 			{@const channel = channels.find(v => v.event.id === note.id)}
 				{#if channel !== undefined}
-		<ChannelMetadata {channel} {pool} {profs} {loginPubkey} relaysToUse={{}} isQuote={true} pinList={[]} muteChannels={[]} />
+		<ChannelMetadata {channel} {pool} {profs} isLoggedin={false} {loginPubkey} relaysToUse={{}} isQuote={true} pinList={[]} muteChannels={[]} />
 				{:else}
 				{matchedText}
 				{/if}
