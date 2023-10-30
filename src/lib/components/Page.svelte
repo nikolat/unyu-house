@@ -378,12 +378,12 @@ $: titleString = currentChannelId ? `${channels.find(v => v.event.id === current
 		<h2>Error</h2>
 	{/if}
 		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {isLoggedin} {loginPubkey} {muteList} {muteChannels} {wordList} {favList} {resetScroll} {importRelays} />
-	{#if currentChannelId && loginPubkey}
+	{#if currentChannelId && isLoggedin}
 		{@const channel = channels.find(channel => channel.event.id === currentChannelId)}
 		{#if channel !== undefined}
 		<div id="input" class="show" on:click|stopPropagation={()=>{}}>
-			<textarea id="input-text" bind:value={inputText} on:keydown={(e) => {submitFromKeyboard(e, channel.event)}} disabled={!loginPubkey}></textarea>
-			<button on:click={() => {callSendMessage(channel.event)}} disabled={!loginPubkey || !inputText}>Post</button>
+			<textarea id="input-text" bind:value={inputText} on:keydown={(e) => {submitFromKeyboard(e, channel.event)}}></textarea>
+			<button on:click={() => {callSendMessage(channel.event)}} disabled={!inputText}>Post</button>
 		</div>
 		<button id="show-post-bar" on:click|stopPropagation={showPostBar}><svg><use xlink:href="/pencil-create.svg#pencil"></use></svg></button>
 		{/if}
