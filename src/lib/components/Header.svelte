@@ -5,15 +5,7 @@ export let title: string;
 export let profs: {[key: string]: Profile};
 export let loginPubkey: string;
 const expandSidebar = () => {
-	const container = document.getElementById('container');
-	if (container) {
-		if (container.classList.contains('expand-sidebar')) {
-			container.classList.remove('expand-sidebar');
-		}
-		else {
-			container.classList.add('expand-sidebar');
-		}
-	}
+	document.getElementById('container')?.classList.toggle('expand-sidebar');
 }
 </script>
 
