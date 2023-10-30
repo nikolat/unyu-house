@@ -5,6 +5,7 @@ import { SimplePool, nip19 } from 'nostr-tools';
 export let channel: Channel;
 export let pool: SimplePool;
 export let profs: {[key: string]: Profile};
+export let isLoggedin: boolean;
 export let loginPubkey: string;
 export let relaysToUse: {[key: string]: GetRelays};
 export let isQuote: boolean;
@@ -60,7 +61,7 @@ const callSendMute = (toSet: boolean) => {
 	</figcaption>
 	{/if}
 </figure>
-	{#if loginPubkey === channel.event.pubkey && !isQuote}
+	{#if isLoggedin && loginPubkey === channel.event.pubkey && !isQuote}
 <details>
 	<summary>Edit Channel</summary>
 	{setChannelMetadata(channel.name, channel.about, channel.picture)}
@@ -77,7 +78,7 @@ const callSendMute = (toSet: boolean) => {
 	</form>
 </details>
 	{/if}
-	{#if loginPubkey && !isQuote}
+	{#if isLoggedin && loginPubkey && !isQuote}
 		{#if pinList.includes(channel.event.id)}
 <button class="channel-metadata on" on:click={() => callSendPin(false)}><svg><use xlink:href="/bookmark.svg#pin"></use></svg></button>
 		{:else}

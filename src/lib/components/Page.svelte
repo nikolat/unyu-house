@@ -1,7 +1,7 @@
 <script lang='ts'>
 import { sendMessage, type Channel, type Profile, getExpandTagsList, type GetRelays, getRelaysToUse, RelayConnector, urlDefaultTheme } from '$lib/util';
 import type { NostrAPI } from '$lib/@types/nostr';
-import { storedCurrentChannelId, storedCurrentPubkey, storedCurrentEvent, storedLoginpubkey, storedNeedApplyRelays, storedRelaysToUse, storedTheme } from '$lib/store';
+import { storedIsLoggedin, storedLoginpubkey, storedCurrentChannelId, storedCurrentPubkey, storedCurrentEvent, storedNeedApplyRelays, storedRelaysToUse, storedTheme } from '$lib/store';
 import { defaultRelays, title } from '$lib/config';
 import { browser } from '$app/environment';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
@@ -24,6 +24,7 @@ let theme: string;
 let currentChannelId: string | null;
 let currentPubkey: string | null;
 let currentEvent: nip19.EventPointer | null;
+let isLoggedin: boolean;
 let loginPubkey: string;
 let muteList: string[] = [];
 let muteChannels: string[] = [];
@@ -52,6 +53,9 @@ storedCurrentPubkey.subscribe((value) => {
 storedCurrentEvent.subscribe((value) => {
 	currentEvent = value;
 });
+storedIsLoggedin.subscribe((value) => {
+	isLoggedin = value;
+});
 storedLoginpubkey.subscribe((value) => {
 	loginPubkey = value;
 });
@@ -72,7 +76,7 @@ const callbackPhase1 = async (loginPubkey: string, channelsNew: Channel[], notes
 	muteChannels = event10000?.tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]) ?? [];
 	wordList = event10000?.tags.filter(tag => tag.length >= 2 && tag[0] === 'word').map(tag => tag[1]) ?? [];
 	const nostr = (window as Window).nostr;
-	if (loginPubkey && event10000?.content && browser && nostr?.nip04?.decrypt) {
+	if (isLoggedin && loginPubkey && event10000?.content && browser && nostr?.nip04?.decrypt) {
 		try {
 			const content = await nostr.nip04.decrypt(loginPubkey, event10000.content);
 			const list: string[][] = JSON.parse(content);
@@ -317,12 +321,12 @@ $: titleString = currentChannelId ? `${channels.find(v => v.event.id === current
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div id="container" on:click={hidePostBar}>
 	<Header {title} {profs} {loginPubkey} />
-	<Sidebar {pool} {theme} {relaysToUse} {loginPubkey} {channels} {profs} {importRelays} {pinList} {muteList} {muteChannels} {wordList} />
+	<Sidebar {pool} {theme} {relaysToUse} {isLoggedin} {loginPubkey} {channels} {profs} {importRelays} {pinList} {muteList} {muteChannels} {wordList} />
 	<main>
 	{#if currentChannelId}
 		{@const channel = channels.find(v => v.event.id === currentChannelId)}
 		{#if channel}
-		<ChannelMetadata {channel} {pool} {profs} {loginPubkey} {relaysToUse} isQuote={false} {pinList} {muteChannels} />
+		<ChannelMetadata {channel} {pool} {profs} {isLoggedin} {loginPubkey} {relaysToUse} isQuote={false} {pinList} {muteChannels} />
 		{:else}
 		<h2>Channel View</h2>
 		{/if}
@@ -364,7 +368,7 @@ $: titleString = currentChannelId ? `${channels.find(v => v.event.id === current
 		{@const rootId = notes.at(0)?.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1)}
 		{@const channel = channels.find(v => v.event.id === rootId)}
 		{#if channel}
-		<ChannelMetadata {channel} {pool} {profs} {loginPubkey} {relaysToUse} isQuote={false} {pinList} {muteChannels} />
+		<ChannelMetadata {channel} {pool} {profs} {isLoggedin} {loginPubkey} {relaysToUse} isQuote={false} {pinList} {muteChannels} />
 		{:else}
 		<h2>Event View</h2>
 		{/if}
@@ -373,7 +377,7 @@ $: titleString = currentChannelId ? `${channels.find(v => v.event.id === current
 	{:else}
 		<h2>Error</h2>
 	{/if}
-		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {loginPubkey} {muteList} {muteChannels} {wordList} {favList} {resetScroll} />
+		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {isLoggedin} {loginPubkey} {muteList} {muteChannels} {wordList} {favList} {resetScroll} {importRelays} />
 	{#if currentChannelId && loginPubkey}
 		{@const channel = channels.find(channel => channel.event.id === currentChannelId)}
 		{#if channel !== undefined}

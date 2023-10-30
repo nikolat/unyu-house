@@ -6,6 +6,8 @@ import {
 	type Event as NostrEvent,
 } from 'nostr-tools';
 import { sendFav, sendDeletion, sendMessage, getExpandTagsList , type Profile, type Channel } from '$lib/util';
+import { storedLoginpubkey, storedNeedApplyRelays, storedRelaysSelected, storedRelaysToUse } from '$lib/store';
+import { defaultRelays } from '$lib/config';
 import Quote from './Quote.svelte';
 import data from '@emoji-mart/data';
 import { Picker } from 'emoji-mart';
@@ -18,12 +20,14 @@ export let notes: NostrEvent[];
 export let notesQuoted: NostrEvent[];
 export let profs: {[key: string]: Profile};
 export let channels: Channel[];
+export let isLoggedin: boolean;
 export let loginPubkey: string;
 export let muteList: string[];
 export let muteChannels: string[];
 export let wordList: string[];
 export let favList: NostrEvent[];
 export let resetScroll: Function;
+export let importRelays: Function;
 
 let emojiPicker: {[key: string]: HTMLElement} = {};
 let visible: {[key: string]: boolean} = {};
@@ -104,6 +108,15 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 	notes = notes.filter(ev => ev.id !== noteId);
 	await sendDeletion(pool, relaysToWrite, noteId);
 };
+
+const loginAsThisAccount = (pubkey: string) => {
+	loginPubkey = pubkey;
+	storedLoginpubkey.set(loginPubkey);
+	storedRelaysToUse.set(defaultRelays);
+	const relaysSelected = 'default';
+	storedRelaysSelected.set(relaysSelected);
+	importRelays(relaysSelected);
+}
 
 </script>
 
@@ -228,20 +241,22 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 				</ul>
 			{/if}
 				<div class="action-bar">
-					{#if loginPubkey}
+					{#if isLoggedin}
 					<details>
 						<summary>
 							<svg><use xlink:href="/arrow-bold-reply.svg#reply"></use></svg><span>reply to @{#if profs[note.pubkey]}{profs[note.pubkey]?.name ?? ''}{:else}{npub.slice(0, 10)}...{/if}</span>
 						</summary>
-						<textarea id="input-text" bind:value={inputText[note.id]} on:keydown={(e) => {submitFromKeyboard(e, note)}} disabled={!loginPubkey}></textarea>
-						<button on:click={() => {callSendMessage(note)}} disabled={!loginPubkey || !inputText[note.id]}>Reply</button>
+						<textarea id="input-text" bind:value={inputText[note.id]} on:keydown={(e) => {submitFromKeyboard(e, note)}}></textarea>
+						<button on:click={() => {callSendMessage(note)}} disabled={!inputText[note.id]}>Reply</button>
 					</details>
-					<button class="fav" on:click={() => sendFav(pool, relaysToWrite, note, '+')} disabled={!loginPubkey}><svg><use xlink:href="/heart.svg#fav"></use></svg></button>
-					<button class="emoji" on:click={() => callSendEmoji(pool, relaysToWrite, note)} disabled={!loginPubkey}><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button>
+					<button class="fav" on:click={() => sendFav(pool, relaysToWrite, note, '+')}><svg><use xlink:href="/heart.svg#fav"></use></svg></button>
+					<button class="emoji" on:click={() => callSendEmoji(pool, relaysToWrite, note)}><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button>
 					<div bind:this={emojiPicker[note.id]} class={visible[note.id] ? '' : 'hidden'}></div>
 						{#if note.pubkey === loginPubkey}
-					<button class="delete" on:click={() => callSendDeletion(pool, relaysToWrite, note.id)} disabled={!loginPubkey || note.pubkey !== loginPubkey}><svg><use xlink:href="/trash.svg#delete"></use></svg></button>
+					<button class="delete" on:click={() => callSendDeletion(pool, relaysToWrite, note.id)}><svg><use xlink:href="/trash.svg#delete"></use></svg></button>
 						{/if}
+					{:else}
+					<button class="login-as-this-account" on:click={() => loginAsThisAccount(note.pubkey)}><svg><use xlink:href="/eye.svg#login-as-this-account"></use></svg></button>
 					{/if}
 					<details>
 						<summary><svg><use xlink:href="/more-horizontal.svg#more"></use></svg></summary>
@@ -320,7 +335,8 @@ dd dl .json-view > code {
 }
 dd button.fav,
 dd button.emoji,
-dd button.delete {
+dd button.delete,
+dd button.login-as-this-account {
 	background-color: transparent;
 	border: none;
 	outline: none;
@@ -330,7 +346,8 @@ dd button.delete {
 }
 dd button.fav > svg,
 dd button.emoji > svg,
-dd button.delete > svg {
+dd button.delete > svg,
+dd button.login-as-this-account > svg {
 	width: 24px;
 	height: 24px;
 }
@@ -381,12 +398,14 @@ div.hidden {
 :global(#container.dark button.fav,
 	#container.dark button.emoji,
 	#container.dark button.delete,
+	#container.dark button.login-as-this-account,
 	#container.dark details) {
 	fill: white;
 }
 :global(#container.light button.fav,
 	#container.light button.emoji,
 	#container.light button.delete,
+	#container.light button.login-as-this-account,
 	#container.light details) {
 	fill: black;
 }

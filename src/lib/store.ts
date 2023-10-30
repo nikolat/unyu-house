@@ -1,6 +1,7 @@
 import type { nip19 } from 'nostr-tools';
 import { writable, type Writable } from 'svelte/store';
 
+export const storedIsLoggedin = writable(false);
 export const storedLoginpubkey = writable('');
 export const storedRelaysSelected = writable('default');
 export const storedRelaysToUse = writable({});
