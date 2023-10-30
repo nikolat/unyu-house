@@ -5,7 +5,7 @@ import {
 } from 'nostr-tools';
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
-import { storedIsLoggedin, storedLoginpubkey, storedTheme, storedRelaysSelected, storedNeedApplyRelays } from '$lib/store';
+import { storedIsLoggedin, storedLoginpubkey, storedTheme, storedRelaysSelected } from '$lib/store';
 import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile, type GetRelays } from '$lib/util';
 import { onMount } from 'svelte';
 import SidebarChannel from '$lib/components/SidebarChannel.svelte';
@@ -52,7 +52,8 @@ const login = async() => {
 		}
 		storedIsLoggedin.set(true);
 		storedLoginpubkey.set(loginPubkey);
-		storedNeedApplyRelays.set(true);
+		relaysSelected = 'default';
+		importRelays(relaysSelected);
 	}
 	else if (browser && nostr === undefined) {
 		goto('https://scrapbox.io/nostr/nos2x%E3%81%AE%E3%82%BB%E3%83%83%E3%83%88%E3%82%A2%E3%83%83%E3%83%97%E3%81%A8%E4%BD%BF%E3%81%84%E6%96%B9');
