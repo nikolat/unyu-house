@@ -7,9 +7,10 @@ import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 import { storedIsLoggedin, storedLoginpubkey, storedTheme, storedRelaysSelected } from '$lib/store';
 import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile, type GetRelays } from '$lib/util';
+import { urlNIP07guide } from '$lib/config';
+import type { NostrAPI } from '$lib/@types/nostr';
 import { onMount } from 'svelte';
 import SidebarChannel from '$lib/components/SidebarChannel.svelte';
-import type { NostrAPI } from '$lib/@types/nostr';
 
 interface Window {
 	nostr?: NostrAPI;
@@ -56,7 +57,7 @@ const login = async() => {
 		importRelays(relaysSelected);
 	}
 	else if (browser && nostr === undefined) {
-		goto('https://scrapbox.io/nostr/nos2x%E3%81%AE%E3%82%BB%E3%83%83%E3%83%88%E3%82%A2%E3%83%83%E3%83%97%E3%81%A8%E4%BD%BF%E3%81%84%E6%96%B9');
+		goto(urlNIP07guide);
 	}
 };
 const logout = () => {
