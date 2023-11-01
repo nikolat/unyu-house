@@ -1,5 +1,5 @@
 <script lang='ts'>
-import { sendMessage, type Channel, type Profile, getExpandTagsList, type GetRelays, getRelaysToUse, RelayConnector, urlDefaultTheme } from '$lib/util';
+import { type Channel, type Profile, getExpandTagsList, type GetRelays, getRelaysToUse, RelayConnector, urlDefaultTheme } from '$lib/util';
 import type { NostrAPI } from '$lib/@types/nostr';
 import { storedIsLoggedin, storedLoginpubkey, storedCurrentChannelId, storedCurrentPubkey, storedCurrentEvent, storedNeedApplyRelays, storedRelaysToUse, storedTheme } from '$lib/store';
 import { defaultRelays, title } from '$lib/config';
@@ -12,6 +12,7 @@ import Sidebar from './Sidebar.svelte';
 import Header from './Header.svelte';
 import ChannelMetadata from './ChannelMetadata.svelte';
 import Timeline from './Timeline.svelte';
+import Post from './Post.svelte';
 
 interface Window {
 	nostr?: NostrAPI;
@@ -35,7 +36,6 @@ let channels: Channel[] = [];
 let notes: NostrEvent[] = [];
 let notesQuoted: NostrEvent[] = [];
 let profs: {[key: string]: Profile} = {};
-let inputText: string;
 let unsubscribeApplyRelays: Unsubscriber | null;
 let scrolled: boolean = false;
 storedRelaysToUse.subscribe((value) => {
@@ -280,31 +280,8 @@ afterNavigate(() => {
 	}
 });
 
-const callSendMessage = (noteToReplay: NostrEvent) => {
-	const content = inputText;
-	if (!content)
-		return;
-	inputText = '';
-	hidePostBar();
-	resetScroll();
-	const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
-	sendMessage(pool, relaysToWrite, content, noteToReplay);
-};
-
-const submitFromKeyboard = (event: KeyboardEvent, noteToReplay: NostrEvent) => {
-	if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-		callSendMessage(noteToReplay);
-	}
-}
-
-const showPostBar = () => {
-	const input = document.getElementById('input');
-	input?.classList.add('show');
-};
-
 const hidePostBar = () => {
-	const input = document.getElementById('input');
-	input?.classList.remove('show');
+	document.getElementById('input')?.classList.remove('show');
 }
 
 $: titleString = currentChannelId ? `${channels.find(v => v.event.id === currentChannelId)?.name ?? '(unknown channel)'} | ${title}`
@@ -378,15 +355,8 @@ $: titleString = currentChannelId ? `${channels.find(v => v.event.id === current
 		<h2>Error</h2>
 	{/if}
 		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {isLoggedin} {loginPubkey} {muteList} {muteChannels} {wordList} {favList} {resetScroll} {importRelays} />
-	{#if currentChannelId && isLoggedin}
-		{@const channel = channels.find(channel => channel.event.id === currentChannelId)}
-		{#if channel !== undefined}
-		<div id="input" class="show" on:click|stopPropagation={()=>{}}>
-			<textarea id="input-text" bind:value={inputText} on:keydown={(e) => {submitFromKeyboard(e, channel.event)}}></textarea>
-			<button on:click={() => {callSendMessage(channel.event)}} disabled={!inputText}>Post</button>
-		</div>
-		<button id="show-post-bar" on:click|stopPropagation={showPostBar}><svg><use xlink:href="/pencil-create.svg#pencil"></use></svg></button>
-		{/if}
+	{#if currentChannelId && isLoggedin && channels.some(channel => channel.event.id === currentChannelId)}
+		<Post {pool} {currentChannelId} {relaysToUse} {channels} {hidePostBar} {resetScroll} />
 	{/if}
 	</main>
 </div>
@@ -418,41 +388,8 @@ main {
 	overflow-y: scroll;
 	word-break: break-all;
 }
-#input {
-	position: fixed;
-	width: 100%;
-	height: 8em;
-	bottom: -8em;
-	left: -0.5em;
-	background-color: rgba(64, 32, 128, 0.7);
-	transition: bottom 0.1s;
-}
-#input.show {
-	bottom: 0;
-}
-#input > textarea {
-	margin: 1em 1em 0.5em 1em;
-	width: calc(100% - 2em);
-	height: 3.5em;
-}
-#input > button {
-	margin-left: 1em;
-}
 #profile-about {
 	white-space: pre-wrap;
-}
-#show-post-bar {
-	position: fixed;
-	right: 1em;
-	bottom: 1em;
-	background-color: transparent;
-}
-#show-post-bar svg {
-	width: 24px;
-	height: 24px;
-}
-#input.show+#show-post-bar {
-	display: none;
 }
 :global(#container.dark #show-post-bar) {
 	fill: white;
