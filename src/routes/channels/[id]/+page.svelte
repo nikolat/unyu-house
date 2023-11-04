@@ -37,8 +37,6 @@ onMount(() => {
 	storedCurrentChannelId.set(currentChannelId);
 	storedCurrentPubkey.set(currentPubkey);
 	storedCurrentEvent.set(currentEvent);
-	const input = document.getElementById('input');
-	input?.classList.remove('show');
 });
 afterNavigate(() => {
 	currentChannelId = getChannelId(data.params.id);
@@ -46,15 +44,7 @@ afterNavigate(() => {
 	storedCurrentPubkey.set(currentPubkey);
 	storedCurrentEvent.set(currentEvent);
 	storedNeedApplyRelays.set(true);
-	const sidebar = document.getElementById('sidebar');
-	const main = document.querySelector('main');
-	const input = document.getElementById('input');
-	input?.classList.remove('show');
-	if (sidebar && main && input) {
-		sidebar.style.width = '0%';
-		main.style.width = 'calc(100vw - (100vw - 100%))';
-		input.style.visibility = 'visible';
-	}
+	document.getElementById('container')?.classList.remove('expand-sidebar');
 });
 </script>
 
