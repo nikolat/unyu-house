@@ -43,7 +43,7 @@ const getImageUrls = (content: string) => {
 	return urls;
 };
 const getVideoUrls = (content: string) => {
-	const matchesIterator = content.matchAll(/https?:\/\/\S+\.mp4/g);
+	const matchesIterator = content.matchAll(/https?:\/\/\S+\.(mp4|mov)/g);
 	const urls = [];
 	for (const match of matchesIterator) {
 		urls.push(match[0]);
