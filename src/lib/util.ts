@@ -258,7 +258,7 @@ export class RelayConnector {
 				console.warn(error);
 				continue;
 			}
-			if (['name', 'about'].some(metadata => !Object.hasOwn(json, metadata))) {
+			if (['name'].some(metadata => !Object.hasOwn(json, metadata))) {
 				continue;
 			}
 			channelObjects[ev.id] = json;
@@ -277,7 +277,7 @@ export class RelayConnector {
 						console.warn(error);
 						continue;
 					}
-					if (['name', 'about'].some(metadata => !Object.hasOwn(json, metadata))) {
+					if (['name'].some(metadata => !Object.hasOwn(json, metadata))) {
 						continue;
 					}
 					channelObjects[id] = json;
