@@ -202,9 +202,15 @@ onMount(() => {
 	max-width: 100%;
 }
 @media screen and (min-width: 1080px) {
-	#sidebar {
-		min-width: 500px;
-	}
+    #sidebar {
+        min-width: 380px;
+    }
+}
+
+@media screen and (min-width: 1400px) {
+    #sidebar {
+        min-width: 500px;
+    }
 }
 
 .config {
