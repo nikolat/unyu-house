@@ -518,21 +518,39 @@ const sendPinOrMute = async(pool: SimplePool, relaysToUse: object, loginPubkey: 
 	sub.on('eose', async () => {
 		console.log('sendPinOrMutePhase1 * EOSE *');
 		sub.unsub();
+		if (window.nostr === undefined)
+			return;
 		let tags;
 		let content = '';
 		if (newestEvent) {
 			tags = newestEvent.tags;
-			const includes: boolean = tags.some(tag => tag.length >= 2 && tag[0] === tagName && tag[1] === eventId);
+			const publicList = newestEvent.tags.filter(tag => tag.length >= 2 && tag[0] === tagName).map(tag => tag[1]);
+			let list: string[][];
+			try {
+				const content = await window.nostr.nip04.decrypt(loginPubkey, newestEvent.content);
+				list = JSON.parse(content);
+			} catch (error) {
+				console.warn(error);
+				return;
+			}
+			const privateList = list.filter(tag => tag.length >= 2 && tag[0] === tagName).map(tag => tag[1]);
+			const includes: boolean = [...publicList, ...privateList].includes(eventId);
 			if ((includes && toSet) || (!includes && !toSet)) {
 				throw new Error(`The event does not have to update: ${newestEvent.id}`);
 			}
 			if (toSet) {
 				tags = [...tags, [tagName, eventId]];
+				content = newestEvent.content;
 			}
 			else {
-				tags = tags.filter(tag => !(tag.length >= 2 && tag[0] === tagName && tag[1] === eventId));
+				if (publicList.includes(eventId)) {
+					tags = tags.filter(tag => !(tag.length >= 2 && tag[0] === tagName && tag[1] === eventId));
+					content = newestEvent.content;
+				}
+				else {
+					content = await window.nostr.nip04.encrypt(loginPubkey, JSON.stringify(list.filter(tag => !(tag.length >= 2 && tag[0] === tagName && tag[1] === eventId))));
+				}
 			}
-			content = newestEvent.content;
 		}
 		else {
 			if (toSet) {
@@ -549,8 +567,6 @@ const sendPinOrMute = async(pool: SimplePool, relaysToUse: object, loginPubkey: 
 			tags: tags,
 			content: content
 		};
-		if (window.nostr === undefined)
-			return;
 		const newEvent = await window.nostr.signEvent(baseEvent);
 		const pubs = pool.publish(relaysToWrite, newEvent);
 		await Promise.all(pubs);
