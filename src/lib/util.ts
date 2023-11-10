@@ -494,15 +494,19 @@ export const sendDeletion = async(pool: SimplePool, relaysToWrite: string[], eve
 	await Promise.all(pubs);
 };
 
+export const sendMuteUser = async(pool: SimplePool, relaysToUse: object, loginPubkey: string, pubkey: string, toSet: boolean) => {
+	await sendPinOrMute(pool, relaysToUse, loginPubkey, pubkey, toSet, 10000, 'p');
+};
+
 export const sendMute = async(pool: SimplePool, relaysToUse: object, loginPubkey: string, eventId: string, toSet: boolean) => {
-	await sendPinOrMute(pool, relaysToUse, loginPubkey, eventId, toSet, 10000);
+	await sendPinOrMute(pool, relaysToUse, loginPubkey, eventId, toSet, 10000, 'e');
 };
 
 export const sendPin = async(pool: SimplePool, relaysToUse: object, loginPubkey: string, eventId: string, toSet: boolean) => {
-	await sendPinOrMute(pool, relaysToUse, loginPubkey, eventId, toSet, 10001);
+	await sendPinOrMute(pool, relaysToUse, loginPubkey, eventId, toSet, 10001, 'e');
 };
 
-const sendPinOrMute = async(pool: SimplePool, relaysToUse: object, loginPubkey: string, eventId: string, toSet: boolean, kind: number) => {
+const sendPinOrMute = async(pool: SimplePool, relaysToUse: object, loginPubkey: string, eventId: string, toSet: boolean, kind: number, tagName: string) => {
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
 	const sub: Sub = pool.sub(relaysToRead, [{kinds: [kind], authors: [loginPubkey]}]);
 	let newestEvent: NostrEvent;
@@ -518,21 +522,21 @@ const sendPinOrMute = async(pool: SimplePool, relaysToUse: object, loginPubkey: 
 		let content = '';
 		if (newestEvent) {
 			tags = newestEvent.tags;
-			const includes: boolean = tags.some(tag => tag.length >= 2 && tag[0] === 'e' && tag[1] === eventId);
+			const includes: boolean = tags.some(tag => tag.length >= 2 && tag[0] === tagName && tag[1] === eventId);
 			if ((includes && toSet) || (!includes && !toSet)) {
 				throw new Error(`The event does not have to update: ${newestEvent.id}`);
 			}
 			if (toSet) {
-				tags = [...tags, ['e', eventId]];
+				tags = [...tags, [tagName, eventId]];
 			}
 			else {
-				tags = tags.filter(tag => !(tag.length >= 2 && tag[0] === 'e' && tag[1] === eventId));
+				tags = tags.filter(tag => !(tag.length >= 2 && tag[0] === tagName && tag[1] === eventId));
 			}
 			content = newestEvent.content;
 		}
 		else {
 			if (toSet) {
-				tags = [['e', eventId]];
+				tags = [[tagName, eventId]];
 			}
 			else {
 				throw new Error(`The kind ${kind} event to remove the pin does not exist: ${eventId}`);

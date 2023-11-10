@@ -310,7 +310,7 @@ $: titleString = currentChannelId ? `${channels.find(v => v.event.id === current
 		{/if}
 	{:else if currentPubkey}
 		{#if profs[currentPubkey]}
-		<ProfileMetadata {profs} {currentPubkey} />
+		<ProfileMetadata {pool} {profs} {currentPubkey} {isLoggedin} {loginPubkey} {relaysToUse} {muteList} />
 		{:else}
 		<h2>Profile View</h2>
 		{/if}
