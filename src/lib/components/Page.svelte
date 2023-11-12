@@ -7,7 +7,7 @@ import { browser } from '$app/environment';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
 import { afterUpdate, onDestroy, onMount } from 'svelte';
 import type { Unsubscriber } from 'svelte/store';
-import { SimplePool, nip19, type Event as NostrEvent, type Sub, type Filter } from 'nostr-tools';
+import { SimplePool, nip19, type Event as NostrEvent, type Sub, type Filter, utils } from 'nostr-tools';
 import Sidebar from './Sidebar.svelte';
 import Header from './Header.svelte';
 import ChannelMetadata from './ChannelMetadata.svelte';
@@ -129,18 +129,15 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42|10000|10001>, ev: NostrEv
 	if (ev.kind === 42 && !notes.map(v => v.id).includes(ev.id)) {
 		if (currentChannelId) {
 			if (ev.tags.some(tag => tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root')) {
-				notes.push(ev);
-				notes = notes;
+				notes = utils.insertEventIntoAscendingList(notes, ev);
 			}
 		}
 		else {
-			notes.push(ev);
-			notes = notes;
+			notes = utils.insertEventIntoAscendingList(notes, ev);
 		}
 	}
 	else if (ev.kind === 7 && !favList.map(v => v.id).includes(ev.id)) {
-		favList.push(ev);
-		favList = favList;
+		favList = utils.insertEventIntoAscendingList(favList, ev);
 	}
 	else if (ev.kind === 10000) {
 		if (ev.pubkey !== loginPubkey)
