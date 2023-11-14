@@ -10,3 +10,4 @@ export const storedNeedApplyRelays = writable(false);
 export const storedCurrentChannelId: Writable<string | null> = writable('');
 export const storedCurrentPubkey: Writable<string | null> = writable('');
 export const storedCurrentEvent: Writable<nip19.EventPointer | null> = writable(null);
+export const storedCurrentHashtag: Writable<string | null> = writable('');

@@ -1,7 +1,7 @@
 <script lang='ts'>
 import { type Channel, type Profile, type GetRelays, getRelaysToUse, RelayConnector, urlDefaultTheme } from '$lib/util';
 import type { NostrAPI } from '$lib/@types/nostr';
-import { storedIsLoggedin, storedLoginpubkey, storedCurrentChannelId, storedCurrentPubkey, storedCurrentEvent, storedNeedApplyRelays, storedRelaysToUse, storedTheme } from '$lib/store';
+import { storedIsLoggedin, storedLoginpubkey, storedCurrentChannelId, storedCurrentPubkey, storedCurrentHashtag, storedCurrentEvent, storedNeedApplyRelays, storedRelaysToUse, storedTheme } from '$lib/store';
 import { defaultRelays, title } from '$lib/config';
 import { browser } from '$app/environment';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
@@ -26,6 +26,7 @@ let theme: string;
 let currentChannelId: string | null;
 let currentPubkey: string | null;
 let currentEvent: nip19.EventPointer | null;
+let currentHashtag: string | null;
 let isLoggedin: boolean;
 let loginPubkey: string;
 let muteList: string[] = [];
@@ -50,6 +51,9 @@ storedCurrentChannelId.subscribe((value) => {
 });
 storedCurrentPubkey.subscribe((value) => {
 	currentPubkey = value;
+});
+storedCurrentHashtag.subscribe((value) => {
+	currentHashtag = value;
 });
 storedCurrentEvent.subscribe((value) => {
 	currentEvent = value;
@@ -216,6 +220,9 @@ const applyRelays = () => {
 	else if (currentPubkey) {
 		filter = {kinds: [42], limit: limit, authors: [currentPubkey]};
 	}
+	else if (currentHashtag) {
+		filter = {kinds: [42], limit: limit, '#t': [currentHashtag]};
+	}
 	else if (currentEvent) {
 		filter = {ids: [currentEvent.id]};
 	}
@@ -311,6 +318,8 @@ $: titleString = currentChannelId ? `${channels.find(v => v.event.id === current
 		{:else}
 		<h2>Profile View</h2>
 		{/if}
+	{:else if currentHashtag}
+		<h2>Hashtag timeline</h2>
 	{:else if currentEvent}
 		{@const rootId = notes.at(0)?.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1)}
 		{@const channel = channels.find(v => v.event.id === rootId)}
@@ -319,7 +328,7 @@ $: titleString = currentChannelId ? `${channels.find(v => v.event.id === current
 		{:else}
 		<h2>Event View</h2>
 		{/if}
-	{:else if currentChannelId === null && currentPubkey === null && currentEvent === null}
+	{:else if currentChannelId === null && currentPubkey === null && currentHashtag === null && currentEvent === null}
 		<h2>Global timeline</h2>
 	{:else}
 		<h2>Error</h2>

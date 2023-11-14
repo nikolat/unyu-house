@@ -1,41 +1,25 @@
 <script lang='ts'>
 import { onMount } from 'svelte';
 import { afterNavigate } from '$app/navigation';
-import { storedCurrentChannelId, storedCurrentPubkey, storedCurrentHashtag, storedCurrentEvent, storedNeedApplyRelays } from '$lib/store';
-import { nip19 } from 'nostr-tools';
+import { storedCurrentChannelId, storedCurrentPubkey, storedCurrentEvent, storedNeedApplyRelays, storedCurrentHashtag } from '$lib/store';
 import Page from '$lib/components/Page.svelte';
 
 const currentChannelId = null;
-const currentHashtag = null;
 const currentEvent = null;
+const currentPubkey = null;
 
 export let data: any;
-let currentPubkey: string;
-
-const getPubkey = (urlId: string) => {
-	if (/^npub/.test(urlId)) {
-		const d = nip19.decode(urlId);
-		if (d.type === 'npub') {
-			return d.data;
-		}
-		else {
-			throw new TypeError(`"${urlId}" must be npub`);
-		}
-	}
-	else {
-		throw new TypeError(`"${urlId}" has no pubkey`);
-	}
-};
+let currentHashtag: string;
 
 onMount(() => {
-	currentPubkey = getPubkey(data.params.id);
+	currentHashtag = data.params.id;
 	storedCurrentChannelId.set(currentChannelId);
 	storedCurrentPubkey.set(currentPubkey);
 	storedCurrentHashtag.set(currentHashtag);
 	storedCurrentEvent.set(currentEvent);
 });
 afterNavigate(() => {
-	currentPubkey = getPubkey(data.params.id);
+	currentHashtag = data.params.id;
 	storedCurrentChannelId.set(currentChannelId);
 	storedCurrentPubkey.set(currentPubkey);
 	storedCurrentHashtag.set(currentHashtag);
