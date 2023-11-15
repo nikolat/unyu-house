@@ -193,7 +193,7 @@ const loginAsThisAccount = (pubkey: string) => {
 					{@const matchedText = match[5]}
 					<a href="/hashtag/{encodeURI(matchedText.replace('#', ''))}">{matchedText}</a>
 				{:else if match[6]}
-					{@const matchedText = match[5]}
+					{@const matchedText = match[6]}
 					<img src="{emojiUrls[matchedText]}" alt="{matchedText}" title="{matchedText}" class="emoji" />
 				{/if}
 				{plainTexts.shift()}
