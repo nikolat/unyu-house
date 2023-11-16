@@ -393,11 +393,19 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 			mentionPubkeys.add(d.data);
 		}
 	}
+	const matchesIteratorHashTag = content.matchAll(/(^|\s|\b)#(\S+)($|\s|\b)/g);
+	const hashtags: Set<string> = new Set();
+	for (const match of matchesIteratorHashTag) {
+		hashtags.add(match[2]);
+	}
 	for (const id of mentionIds) {
 		tags.push(['e', id, '', 'mention']);
 	}
 	for (const p of mentionPubkeys) {
 		tags.push(['p', p, '']);
+	}
+	for (const t of hashtags) {
+		tags.push(['t', t]);
 	}
 	const baseEvent: EventTemplate<42> = {
 		kind: 42,
