@@ -533,13 +533,15 @@ const sendPinOrMute = async(pool: SimplePool, relaysToUse: object, loginPubkey: 
 		if (newestEvent) {
 			tags = newestEvent.tags;
 			const publicList = newestEvent.tags.filter(tag => tag.length >= 2 && tag[0] === tagName).map(tag => tag[1]);
-			let list: string[][];
-			try {
-				const content = await window.nostr.nip04.decrypt(loginPubkey, newestEvent.content);
-				list = JSON.parse(content);
-			} catch (error) {
-				console.warn(error);
-				return;
+			let list: string[][] = [];
+			if (newestEvent.content !== '') {
+				try {
+					const content = await window.nostr.nip04.decrypt(loginPubkey, newestEvent.content);
+					list = JSON.parse(content);
+				} catch (error) {
+					console.warn(error);
+					return;
+				}
 			}
 			const privateList = list.filter(tag => tag.length >= 2 && tag[0] === tagName).map(tag => tag[1]);
 			const includes: boolean = [...publicList, ...privateList].includes(eventId);
