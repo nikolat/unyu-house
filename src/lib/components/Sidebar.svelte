@@ -201,7 +201,7 @@ onMount(() => {
 	transition: width 0.1s;
 	max-width: 100%;
 }
-@media screen and (min-width: 1080px) {
+@media screen and (min-width: 1078px) {
     #sidebar {
         min-width: 380px;
     }
