@@ -98,7 +98,7 @@ export class RelayConnector {
 					{kinds: [7], '#p': [this.#loginPubkey], '#e': notes.map(v => v.id)}
 				);
 				filterPhase3.push(
-					{kinds: [7, 10000, 10001], authors: [this.#loginPubkey], limit: 1},
+					{kinds: [7, 10000, 10001, 10005], authors: [this.#loginPubkey], limit: 1},
 					{kinds: [7], '#p': [this.#loginPubkey], limit: 1},
 					{kinds: [40, 41], limit: 1}
 				);
