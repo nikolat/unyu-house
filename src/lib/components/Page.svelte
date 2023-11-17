@@ -20,7 +20,7 @@ interface Window {
 }
 
 let pool: SimplePool = new SimplePool();
-let subNotes: Sub<7|40|41|42|10000|10001>;
+let subNotes: Sub<7|40|41|42|10000|10001|10005>;
 let relaysToUse: {[key: string]: GetRelays};
 let theme: string;
 let currentChannelId: string | null;
@@ -128,7 +128,7 @@ const callbackPhase2 = (profsNew: {[key: string]: Profile}, favListNew: NostrEve
 	}
 };
 
-const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42|10000|10001>, ev: NostrEvent<7|40|41|42|10000|10001>) => {
+const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42|10000|10001|10005>, ev: NostrEvent<7|40|41|42|10000|10001|10005>) => {
 	subNotes = subNotesPhase3;
 	if (ev.kind === 42 && !notes.map(v => v.id).includes(ev.id)) {
 		if (currentChannelId) {
@@ -148,7 +148,7 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42|10000|10001>, ev: NostrEv
 			return;
 		muteChannels = ev.tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]);
 	}
-	else if (ev.kind === 10001) {
+	else if (ev.kind === 10001 || ev.kind === 10005) {
 		if (ev.pubkey !== loginPubkey)
 			return;
 		pinList = ev.tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]);

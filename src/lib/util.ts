@@ -62,13 +62,13 @@ export class RelayConnector {
 
 	getEventsPhase1 = () => {
 		const limit = 500;
-		const filterPhase1: Filter<40|41|42|10000|10001>[] = [{kinds: [40, 41], limit: limit}, this.#filterKind42];
+		const filterPhase1: Filter<40|41|42|10000|10001|10005>[] = [{kinds: [40, 41], limit: limit}, this.#filterKind42];
 		if (this.#loginPubkey) {
-			filterPhase1.push({kinds: [10000, 10001], authors: [this.#loginPubkey]});
+			filterPhase1.push({kinds: [10000, 10001, 10005], authors: [this.#loginPubkey]});
 		}
-		const sub: Sub<40|41|42|10000|10001> = this.#pool.sub(this.#relays, filterPhase1);
-		const events: {[key: number]: NostrEvent<40|41|42|10000|10001>[]} = {40: [], 41: [], 42: [], 10000: [], 10001: []};
-		sub.on('event', (ev: NostrEvent<40|41|42|10000|10001>) => {
+		const sub: Sub<40|41|42|10000|10001|10005> = this.#pool.sub(this.#relays, filterPhase1);
+		const events: {[key: number]: NostrEvent<40|41|42|10000|10001|10005>[]} = {40: [], 41: [], 42: [], 10000: [], 10001: [], 10005: []};
+		sub.on('event', (ev: NostrEvent<40|41|42|10000|10001|10005>) => {
 			events[ev.kind].push(ev);
 		});
 		sub.on('eose', () => {
@@ -77,7 +77,7 @@ export class RelayConnector {
 			const channels = this.#getChannels(events[40], events[41]);
 			const notes = this.#getNotes(events[42]);
 			const event10000 = events[10000].length === 0 ? null : events[10000].reduce((a, b) => a.created_at > b.created_at ? a : b);
-			const pinList = this.#getPinList(events[10001]);
+			const pinList = this.#getPinList(events[10005].length > 0 ? events[10005] : events[10001]);
 			this.#callbackPhase1(this.#loginPubkey, channels, notes, event10000, pinList);
 			const pubkeysToGet: string[] = this.#getPubkeysForFilter(Object.values(events).flat());
 			const idsToGet: string[] = this.#getIdsForFilter(events[42]);
@@ -91,7 +91,7 @@ export class RelayConnector {
 			const filterPhase3Base: Filter<42> = this.#filterKind42;
 			filterPhase3Base.since = events[42].map(ev => ev.created_at).reduce((a, b) => Math.max(a, b), 0) + 1;
 			filterPhase3Base.limit = 1;
-			const filterPhase3: Filter<7|40|41|42|10000|10001>[] = [filterPhase3Base];
+			const filterPhase3: Filter<7|40|41|42|10000|10001|10005>[] = [filterPhase3Base];
 			if (this.#loginPubkey) {
 				filterPhase2.push(
 					{kinds: [7], authors: [this.#loginPubkey], '#e': notes.map(v => v.id)},
@@ -107,7 +107,7 @@ export class RelayConnector {
 		});
 	};
 
-	#getEventsPhase2 = (filterPhase2: Filter[], filterPhase3: Filter<7|40|41|42|10000|10001>[], goPhase3: Boolean) => {
+	#getEventsPhase2 = (filterPhase2: Filter[], filterPhase3: Filter<7|40|41|42|10000|10001|10005>[], goPhase3: Boolean) => {
 		const sub: Sub = this.#pool.sub(this.#relays, filterPhase2);
 		const events: {[key: number]: NostrEvent[]} = {0: [], 7: []};
 		const eventsQuoted: NostrEvent[] = [];
@@ -145,9 +145,9 @@ export class RelayConnector {
 		});
 	};
 
-	#getEventsPhase3 = (filterPhase3: Filter<7|40|41|42|10000|10001>[], pubkeysObtained: string[], idsObtained: string[]) => {
-		const sub: Sub<7|40|41|42|10000|10001> = this.#pool.sub(this.#relays, filterPhase3);
-		sub.on('event', (ev: NostrEvent<7|40|41|42|10000|10001>) => {
+	#getEventsPhase3 = (filterPhase3: Filter<7|40|41|42|10000|10001|10005>[], pubkeysObtained: string[], idsObtained: string[]) => {
+		const sub: Sub<7|40|41|42|10000|10001|10005> = this.#pool.sub(this.#relays, filterPhase3);
+		sub.on('event', (ev: NostrEvent<7|40|41|42|10000|10001|10005>) => {
 			this.#callbackPhase3(sub, ev);
 			const pubkeysToGet: string[] = this.#getPubkeysForFilter([ev]).filter(v => !pubkeysObtained.includes(v));
 			const idsToGet: string[] = this.#getIdsForFilter([ev]).filter(v => !idsObtained.includes(v));
