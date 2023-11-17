@@ -20,7 +20,7 @@ interface Window {
 }
 
 let pool: SimplePool = new SimplePool();
-let subNotes: Sub<7|40|41|42|10000|10001|10005>;
+let subNotes: Sub<0|7|40|41|42|10000|10001|10005>;
 let relaysToUse: {[key: string]: GetRelays};
 let theme: string;
 let currentChannelId: string | null;
@@ -128,7 +128,7 @@ const callbackPhase2 = (profsNew: {[key: string]: Profile}, favListNew: NostrEve
 	}
 };
 
-const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42|10000|10001|10005>, ev: NostrEvent<7|40|41|42|10000|10001|10005>) => {
+const callbackPhase3 = (subNotesPhase3: Sub<0|7|40|41|42|10000|10001|10005>, ev: NostrEvent<0|7|40|41|42|10000|10001|10005>) => {
 	subNotes = subNotesPhase3;
 	if (ev.kind === 42 && !notes.map(v => v.id).includes(ev.id)) {
 		if (currentChannelId) {
@@ -139,6 +139,15 @@ const callbackPhase3 = (subNotesPhase3: Sub<7|40|41|42|10000|10001|10005>, ev: N
 		else {
 			notes = utils.insertEventIntoAscendingList(notes, ev);
 		}
+	}
+	else if (ev.kind === 0) {
+		try {
+			profs[ev.pubkey] = JSON.parse(ev.content);
+		} catch (error) {
+			console.warn(error);
+			return;
+		}
+		profs[ev.pubkey].created_at = ev.created_at;
 	}
 	else if (ev.kind === 7 && !favList.map(v => v.id).includes(ev.id)) {
 		favList = utils.insertEventIntoAscendingList(favList, ev);

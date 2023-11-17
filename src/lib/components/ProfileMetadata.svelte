@@ -1,6 +1,6 @@
 
 <script lang='ts'>
-import { getExpandTagsList, sendMuteUser, type GetRelays, type Profile } from "$lib/util";
+import { getExpandTagsList, sendMuteUser, type GetRelays, type Profile, sendEditProfile } from "$lib/util";
 import { nip19, SimplePool } from "nostr-tools";
 
 export let pool: SimplePool;
@@ -10,6 +10,33 @@ export let isLoggedin: boolean;
 export let loginPubkey: string;
 export let relaysToUse: {[key: string]: GetRelays};
 export let muteList: string[];
+
+let editProfileName: string;
+let editProfileDisplayName: string | undefined;
+let editProfileAbout: string;
+let editProfilePicture: string;
+let editProfileWebsite: string | undefined;
+
+const setProfileMetadata = (currentProfile: Profile) => {
+	editProfileName = currentProfile.name;
+	editProfileDisplayName = currentProfile.display_name;
+	editProfileAbout = currentProfile.about;
+	editProfilePicture = currentProfile.picture;
+	editProfileWebsite = currentProfile.website;
+	return '';
+};
+
+const callSendEditProfile = () => {
+	const prof: Profile = {
+		name: editProfileName,
+		display_name: editProfileDisplayName !== '' ? editProfileDisplayName : undefined,
+		about: editProfileAbout,
+		picture: editProfilePicture,
+		website: editProfileWebsite !== '' ? editProfileWebsite : undefined,
+		created_at: 0,
+	};
+	sendEditProfile(pool, relaysToUse, loginPubkey, prof);
+};
 
 const callSendMuteUser = (toSet: boolean) => {
 	sendMuteUser(pool, relaysToUse, loginPubkey, currentPubkey, toSet);
@@ -46,6 +73,28 @@ const callSendMuteUser = (toSet: boolean) => {
 </p>
 {/if}
 {#if profs[currentPubkey].website}<p id="profile-website"><a href="{profs[currentPubkey].website}" target="_blank" rel="noopener noreferrer">{profs[currentPubkey].website}</a></p>{/if}
+{#if isLoggedin && loginPubkey === currentPubkey}
+<details>
+	<summary>Edit Profile</summary>
+	{setProfileMetadata(profs[currentPubkey])}
+	<form>
+		<dl>
+			<dt><label for="edit-channel-name">name</label></dt>
+			<dd><input id="edit-channel-name" type="text" placeholder="name" bind:value={editProfileName} /></dd>
+			<dt><label for="edit-channel-display_name">display_name</label></dt>
+			<dd><input id="edit-channel-name" type="text" placeholder="display_name" bind:value={editProfileDisplayName} /></dd>
+			<dt><label for="edit-channel-about">about</label></dt>
+			<dd><textarea id="edit-channel-about" placeholder="about" bind:value={editProfileAbout}></textarea></dd>
+			<dt><label for="edit-channel-picture">picture</label></dt>
+			<dd><input id="edit-channel-picture" type="url" placeholder="https://..." bind:value={editProfilePicture} /></dd>
+			<dt><label for="edit-channel-website">website</label></dt>
+			<dd><input id="edit-channel-website" type="url" placeholder="https://..." bind:value={editProfileWebsite} /></dd>
+		</dl>
+		<button on:click={callSendEditProfile} disabled={!editProfileName}>Edit</button>
+	</form>
+</details>
+{/if}
+
 {#if profs[currentPubkey] && isLoggedin && loginPubkey}
 	{#if muteList.includes(currentPubkey)}
 	<button class="profile-metadata on" on:click={() => callSendMuteUser(false)}><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button>
@@ -57,6 +106,17 @@ const callSendMuteUser = (toSet: boolean) => {
 <style>
 #profile-about {
 	white-space: pre-wrap;
+}
+details {
+	display: inline-block;
+	margin: 0;
+}
+details input,
+details textarea {
+	min-width: 15em;
+}
+button.profile-metadata, details {
+	vertical-align: middle;
 }
 button.profile-metadata {
 	background-color: transparent;

@@ -24,10 +24,10 @@ export interface Channel {
 
 export interface Profile {
 	name: string
-	display_name: string
+	display_name?: string
 	about: string
 	picture: string
-	website: string
+	website?: string
 	created_at: number
 }
 
@@ -91,14 +91,14 @@ export class RelayConnector {
 			const filterPhase3Base: Filter<42> = this.#filterKind42;
 			filterPhase3Base.since = events[42].map(ev => ev.created_at).reduce((a, b) => Math.max(a, b), 0) + 1;
 			filterPhase3Base.limit = 1;
-			const filterPhase3: Filter<7|40|41|42|10000|10001|10005>[] = [filterPhase3Base];
+			const filterPhase3: Filter<0|7|40|41|42|10000|10001|10005>[] = [filterPhase3Base];
 			if (this.#loginPubkey) {
 				filterPhase2.push(
 					{kinds: [7], authors: [this.#loginPubkey], '#e': notes.map(v => v.id)},
 					{kinds: [7], '#p': [this.#loginPubkey], '#e': notes.map(v => v.id)}
 				);
 				filterPhase3.push(
-					{kinds: [7, 10000, 10001, 10005], authors: [this.#loginPubkey], limit: 1},
+					{kinds: [0, 7, 10000, 10001, 10005], authors: [this.#loginPubkey], limit: 1},
 					{kinds: [7], '#p': [this.#loginPubkey], limit: 1},
 					{kinds: [40, 41], limit: 1}
 				);
@@ -107,7 +107,7 @@ export class RelayConnector {
 		});
 	};
 
-	#getEventsPhase2 = (filterPhase2: Filter[], filterPhase3: Filter<7|40|41|42|10000|10001|10005>[], goPhase3: Boolean) => {
+	#getEventsPhase2 = (filterPhase2: Filter[], filterPhase3: Filter<0|7|40|41|42|10000|10001|10005>[], goPhase3: Boolean) => {
 		const sub: Sub = this.#pool.sub(this.#relays, filterPhase2);
 		const events: {[key: number]: NostrEvent[]} = {0: [], 7: []};
 		const eventsQuoted: NostrEvent[] = [];
@@ -145,9 +145,9 @@ export class RelayConnector {
 		});
 	};
 
-	#getEventsPhase3 = (filterPhase3: Filter<7|40|41|42|10000|10001|10005>[], pubkeysObtained: string[], idsObtained: string[]) => {
-		const sub: Sub<7|40|41|42|10000|10001|10005> = this.#pool.sub(this.#relays, filterPhase3);
-		sub.on('event', (ev: NostrEvent<7|40|41|42|10000|10001|10005>) => {
+	#getEventsPhase3 = (filterPhase3: Filter<0|7|40|41|42|10000|10001|10005>[], pubkeysObtained: string[], idsObtained: string[]) => {
+		const sub: Sub<0|7|40|41|42|10000|10001|10005> = this.#pool.sub(this.#relays, filterPhase3);
+		sub.on('event', (ev: NostrEvent<0|7|40|41|42|10000|10001|10005>) => {
 			this.#callbackPhase3(sub, ev);
 			const pubkeysToGet: string[] = this.#getPubkeysForFilter([ev]).filter(v => !pubkeysObtained.includes(v));
 			const idsToGet: string[] = this.#getIdsForFilter([ev]).filter(v => !idsObtained.includes(v));
@@ -488,6 +488,46 @@ export const sendEditChannel = async(pool: SimplePool, relaysToUse: object, logi
 	});
 };
 
+export const sendEditProfile = async(pool: SimplePool, relaysToUse: object, loginPubkey: string, prof: Profile) => {
+	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
+	const sub: Sub<0> = pool.sub(relaysToRead, [{kinds: [0], authors: [loginPubkey]}]);
+	let newestEvent: NostrEvent<0>;
+	sub.on('event', (ev: NostrEvent<0>) => {
+		if (ev.pubkey === loginPubkey && (!newestEvent || newestEvent.created_at < ev.created_at)) {
+			newestEvent = ev;
+		}
+	});
+	sub.on('eose', async () => {
+		console.log('sendEditProfilePhase1 * EOSE *');
+		sub.unsub();
+		const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
+		let objContent: object;
+		if (newestEvent !== undefined) {
+			objContent = JSON.parse(newestEvent.content);
+		}
+		else {
+			objContent = {};
+		}
+		(objContent as any).name = prof.name;
+		(objContent as any).about = prof.about;
+		(objContent as any).picture = prof.picture;
+		(objContent as any).display_name = prof.display_name;
+		(objContent as any).website = prof.website;
+		const baseEvent: EventTemplate<0> = {
+			kind: 0,
+			created_at: Math.floor(Date.now() / 1000),
+			tags: newestEvent?.tags ?? [],
+			content: JSON.stringify(objContent),
+		};
+		if (window.nostr === undefined)
+			return;
+		const newEvent = await window.nostr.signEvent(baseEvent);
+		const pubs = pool.publish(relaysToWrite, newEvent);
+		await Promise.all(pubs);
+		console.log('sendEditProfilePhase2 * Complete *');
+	});
+};
+
 export const sendDeletion = async(pool: SimplePool, relaysToWrite: string[], eventId: string) => {
 	const baseEvent: EventTemplate<5> = {
 		kind: 5,
@@ -582,21 +622,6 @@ const sendPinOrMute = async(pool: SimplePool, relaysToUse: object, loginPubkey: 
 		await Promise.all(pubs);
 		console.log('sendPinOrMutePhase2 * Complete *');
 	});
-};
-
-//for debug
-export const sendProfile = async(pool: SimplePool, relaysToWrite: string[], objProfile: object) => {
-	const baseEvent: EventTemplate<0> = {
-		kind: 0,
-		created_at: Math.floor(Date.now() / 1000),
-		tags: [],
-		content: JSON.stringify(objProfile)
-	};
-	if (window.nostr === undefined)
-		return;
-	const newEvent = await window.nostr.signEvent(baseEvent);
-	const pubs = pool.publish(relaysToWrite, newEvent);
-	await Promise.all(pubs);
 };
 
 export const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator<RegExpMatchArray>, string[], {[key: string]: string}] => {
