@@ -324,7 +324,7 @@ export class RelayConnector {
 			return [];
 		const pinList = events10005.reduce((a, b) => a.created_at > b.created_at ? a : b).tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]);
 		console.info(`Pinned Channels: kind ${events10005[0].kind} received`);
-		if (events10005[0].kind === 10005 && channels.some(ch => pinList.includes(ch.event.id)) ) {
+		if (events10005[0].kind === 10001 && channels.some(ch => pinList.includes(ch.event.id)) ) {
 			if (confirm('チャンネルのピン留めの移行が必要です！\nnostterにログインしてください。')) {
 				goto('https://nostter.app/');
 			}
