@@ -401,7 +401,7 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 			mentionPubkeys.add(d.data);
 		}
 	}
-	const matchesIteratorHashTag = content.matchAll(/(^|\s|\b)#(\S+)($|\s|\b)/g);
+	const matchesIteratorHashTag = content.matchAll(/(^|\s|\b)#(\S+)/g);
 	const hashtags: Set<string> = new Set();
 	for (const match of matchesIteratorHashTag) {
 		hashtags.add(match[2]);
