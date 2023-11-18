@@ -78,7 +78,7 @@ export class RelayConnector {
 			const channels = this.#getChannels(events[40], events[41]);
 			const notes = this.#getNotes(events[42]);
 			const event10000 = events[10000].length === 0 ? null : events[10000].reduce((a, b) => a.created_at > b.created_at ? a : b);
-			const pinList = this.#getPinList(events[10005].length > 0 ? events[10005] : events[10001]);
+			const pinList = this.#getPinList(events[10005].length > 0 ? events[10005] : events[10001], channels);
 			this.#callbackPhase1(this.#loginPubkey, channels, notes, event10000, pinList);
 			const pubkeysToGet: string[] = this.#getPubkeysForFilter(Object.values(events).flat());
 			const idsToGet: string[] = this.#getIdsForFilter(events[42]);
@@ -319,16 +319,17 @@ export class RelayConnector {
 		return events42;
 	};
 
-	#getPinList = (events10005: NostrEvent[]): string[] => {
+	#getPinList = (events10005: NostrEvent[], channels: Channel[]): string[] => {
 		if (events10005.length === 0)
 			return [];
+		const pinList = events10005.reduce((a, b) => a.created_at > b.created_at ? a : b).tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]);
 		console.info(`Pinned Channels: kind ${events10005[0].kind} received`);
-		if (events10005[0].kind === 10001) {
+		if (events10005[0].kind === 10001 && channels.some(ch => pinList.includes(ch.event.id)) ) {
 			if (confirm('チャンネルのピン留めの移行が必要です！\nnostterにログインしてください。')) {
 				goto('https://nostter.app/');
 			}
 		}
-		return events10005.reduce((a, b) => a.created_at > b.created_at ? a : b).tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]);
+		return pinList;
 	};
 
 	#getFrofiles = (events: NostrEvent[]): {[key: string]: Profile} => {
