@@ -189,7 +189,7 @@ const loginAsThisAccount = (pubkey: string) => {
 				{:else if /nostr:nevent\w+/.test(match[4])}
 					{@const matchedText = match[4]}
 					<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} {muteList} {muteChannels} {wordList} />
-				{:else if /#.\S+/.test(match[5])}
+				{:else if /#\S+/.test(match[5])}
 					{@const matchedText = match[5]}
 					<a href="/hashtag/{encodeURI(matchedText.replace('#', ''))}">{matchedText}</a>
 				{:else if match[6]}
