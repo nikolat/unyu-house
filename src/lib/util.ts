@@ -8,6 +8,7 @@ import {
 } from 'nostr-tools';
 import { defaultRelays, relaysToGetRelays } from './config';
 import type { NostrAPI } from './@types/nostr';
+import { goto } from '$app/navigation';
 
 interface Window {
 	nostr?: NostrAPI;
@@ -318,10 +319,16 @@ export class RelayConnector {
 		return events42;
 	};
 
-	#getPinList = (events10001: NostrEvent[]): string[] => {
-		if (events10001.length === 0)
+	#getPinList = (events10005: NostrEvent[]): string[] => {
+		if (events10005.length === 0)
 			return [];
-		return events10001.reduce((a, b) => a.created_at > b.created_at ? a : b).tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]);
+		console.info(`Pinned Channels: kind ${events10005[0].kind} received`);
+		if (events10005[0].kind === 10001) {
+			if (confirm('チャンネルのピン留めの移行が必要です！\nnostterにログインしてください。')) {
+				goto('https://nostter.app/');
+			}
+		}
+		return events10005.reduce((a, b) => a.created_at > b.created_at ? a : b).tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]);
 	};
 
 	#getFrofiles = (events: NostrEvent[]): {[key: string]: Profile} => {
@@ -551,7 +558,7 @@ export const sendMute = async(pool: SimplePool, relaysToUse: object, loginPubkey
 };
 
 export const sendPin = async(pool: SimplePool, relaysToUse: object, loginPubkey: string, eventId: string, toSet: boolean) => {
-	await sendPinOrMute(pool, relaysToUse, loginPubkey, eventId, toSet, 10001, 'e');
+	await sendPinOrMute(pool, relaysToUse, loginPubkey, eventId, toSet, 10005, 'e');
 };
 
 const sendPinOrMute = async(pool: SimplePool, relaysToUse: object, loginPubkey: string, eventId: string, toSet: boolean, kind: number, tagName: string) => {
