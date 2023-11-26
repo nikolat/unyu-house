@@ -34,6 +34,7 @@ const callSendEditProfile = () => {
 		picture: editProfilePicture,
 		website: editProfileWebsite !== '' ? editProfileWebsite : undefined,
 		created_at: 0,
+		tags: [],
 	};
 	sendEditProfile(pool, relaysToUse, loginPubkey, prof);
 };
@@ -46,7 +47,7 @@ const callSendMuteUser = (toSet: boolean) => {
 
 <h2><img src="{profs[currentPubkey].picture || './default.png'}" alt="@{profs[currentPubkey].name ?? ''}" width="32" height="32"> {profs[currentPubkey].display_name ?? ''} @{profs[currentPubkey].name ?? ''}</h2>
 {#if profs[currentPubkey].about}
-{@const r = getExpandTagsList(profs[currentPubkey].about, [])}
+{@const r = getExpandTagsList(profs[currentPubkey].about, profs[currentPubkey].tags)}
 {@const matchesIterator = r[0]}
 {@const plainTexts = r[1]}
 {@const emojiUrls = r[2]}
@@ -64,8 +65,8 @@ const callSendMuteUser = (toSet: boolean) => {
 			{:else}
 				{matchedText}
 			{/if}
-		{:else if match[5]}
-			{@const matchedText = match[5]}
+		{:else if match[6]}
+			{@const matchedText = match[6]}
 			<img src="{emojiUrls[matchedText]}" alt="{matchedText}" title="{matchedText}" class="emoji" />
 		{/if}
 		{plainTexts.shift()}
@@ -129,6 +130,9 @@ button.profile-metadata {
 button.profile-metadata > svg {
 	width: 24px;
 	height: 24px;
+}
+.emoji {
+	height: 32px;
 }
 :global(#container.dark button.profile-metadata) {
 	fill: white;

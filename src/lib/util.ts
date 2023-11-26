@@ -30,6 +30,7 @@ export interface Profile {
 	picture: string
 	website?: string
 	created_at: number
+	tags: string[][]
 }
 
 export interface GetRelays {
@@ -343,6 +344,7 @@ export class RelayConnector {
 					continue;
 				}
 				profs[ev.pubkey].created_at = ev.created_at;
+				profs[ev.pubkey].tags = ev.tags;
 			}
 		}
 		return profs;
