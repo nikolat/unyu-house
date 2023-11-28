@@ -170,7 +170,7 @@ onMount(() => {
 		<h3>Pinned Channels</h3>
 		<div>
 				{#each channels.filter(ch => pinList.includes(ch.event.id)) as channel}
-			<SidebarChannel picture={profs[channel.event.pubkey]?.picture} url={nip19.neventEncode(channel.event)} channelName={channel.name}></SidebarChannel>
+			<SidebarChannel picture={profs[channel.event.pubkey]?.picture} url={nip19.neventEncode(channel.event)} channelName={channel.name} post_count={channel.post_count} fav_count={channel.fav_count}></SidebarChannel>
 				{/each}
 		</div>
 			{/if}
@@ -179,7 +179,7 @@ onMount(() => {
 		<div>
 			{#each channels as channel}
 				{#if !muteList.includes(channel.event.pubkey) && !muteChannels.includes(channel.event.id) && !wordList.some(word => channel.name.includes(word))}
-			<SidebarChannel picture={profs[channel.event.pubkey]?.picture} url={nip19.neventEncode(channel.event)} channelName={channel.name}></SidebarChannel>
+			<SidebarChannel picture={profs[channel.event.pubkey]?.picture} url={nip19.neventEncode(channel.event)} channelName={channel.name} post_count={channel.post_count} fav_count={channel.fav_count}></SidebarChannel>
 				{/if}
 			{/each}
 		</div>

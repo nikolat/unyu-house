@@ -2,11 +2,15 @@
   export let picture: string;
   export let url: string;
   export let channelName: string;
+  export let post_count: number;
+  export let fav_count: number;
 </script>
 
 <li class="outline">
   <img src={picture || "/default.png"} alt="" class="channel_icon" />
   <a href={`/channels/${url}`}>{channelName}</a>
+  {#if post_count > 0}📜{post_count}{/if}
+  {#if fav_count > 0}❤{fav_count}{/if}
 </li>
 
 <style>

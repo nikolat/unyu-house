@@ -21,6 +21,8 @@ export interface Channel {
 	picture: string
 	updated_at: number
 	event: NostrEvent
+	post_count: number
+	fav_count: number
 }
 
 export interface Profile {
@@ -64,19 +66,19 @@ export class RelayConnector {
 
 	getEventsPhase1 = () => {
 		const limit = 500;
-		const filterPhase1: Filter<40|41|42|10000|10001|10005>[] = [{kinds: [40, 41], limit: limit}, this.#filterKind42];
+		const filterPhase1: Filter<7|40|41|42|10000|10001|10005>[] = [{kinds: [7], '#k': ['42'], limit: limit}, {kinds: [40, 41], limit: limit}, this.#filterKind42];
 		if (this.#loginPubkey) {
 			filterPhase1.push({kinds: [10000, 10001, 10005], authors: [this.#loginPubkey]});
 		}
-		const sub: Sub<40|41|42|10000|10001|10005> = this.#pool.sub(this.#relays, filterPhase1);
-		const events: {[key: number]: NostrEvent<40|41|42|10000|10001|10005>[]} = {40: [], 41: [], 42: [], 10000: [], 10001: [], 10005: []};
-		sub.on('event', (ev: NostrEvent<40|41|42|10000|10001|10005>) => {
+		const sub: Sub<7|40|41|42|10000|10001|10005> = this.#pool.sub(this.#relays, filterPhase1);
+		const events: {[key: number]: NostrEvent<7|40|41|42|10000|10001|10005>[]} = {7: [], 40: [], 41: [], 42: [], 10000: [], 10001: [], 10005: []};
+		sub.on('event', (ev: NostrEvent<7|40|41|42|10000|10001|10005>) => {
 			events[ev.kind].push(ev);
 		});
 		sub.on('eose', () => {
 			console.log('getEventsPhase1 * EOSE *');
 			sub.unsub();
-			const channels = this.#getChannels(events[40], events[41]);
+			const channels = this.#getChannels(events[7], events[40], events[41], events[42]);
 			const notes = this.#getNotes(events[42]);
 			const event10000 = events[10000].length === 0 ? null : events[10000].reduce((a, b) => a.created_at > b.created_at ? a : b);
 			const pinList = this.#getPinList(events[10005].length > 0 ? events[10005] : events[10001], channels);
@@ -250,7 +252,7 @@ export class RelayConnector {
 		return Array.from(ids);
 	};
 
-	#getChannels = (events40: NostrEvent[], events41: NostrEvent[]): Channel[] => {
+	#getChannels = (events7: NostrEvent[], events40: NostrEvent[], events41: NostrEvent[], events42: NostrEvent[]): Channel[] => {
 		const channelObjects: {[key: string]: Channel} = {};
 		for (const ev of events40) {
 			let json: any;
@@ -266,6 +268,8 @@ export class RelayConnector {
 			channelObjects[ev.id] = json;
 			channelObjects[ev.id].updated_at = ev.created_at;
 			channelObjects[ev.id].event = ev;
+			channelObjects[ev.id].post_count = 0;
+			channelObjects[ev.id].fav_count = 0;
 		}
 		for (const ev of events41) {
 			for (const tag of ev.tags) {
@@ -285,7 +289,27 @@ export class RelayConnector {
 					channelObjects[id] = json;
 					channelObjects[id].updated_at = ev.created_at;
 					channelObjects[id].event = savedEvent;
+					channelObjects[id].post_count = 0;
+					channelObjects[id].fav_count = 0;
 				}
+			}
+		}
+		for (const ev of events42) {
+			const rootid = ev.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1);
+			if (rootid === undefined) {
+				continue;
+			}
+			if (rootid in channelObjects) {
+				channelObjects[rootid].post_count++;
+			}
+		}
+		for (const ev of events7) {
+			const rootid = ev.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1);
+			if (rootid === undefined) {
+				continue;
+			}
+			if (rootid in channelObjects) {
+				channelObjects[rootid].fav_count++;
 			}
 		}
 		const channels: Channel[] = this.#getSortedChannels(channelObjects);
