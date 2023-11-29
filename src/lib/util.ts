@@ -65,7 +65,7 @@ export class RelayConnector {
 	}
 
 	getEventsPhase1 = () => {
-		const limit = 500;
+		const limit = 300;
 		const filterPhase1: Filter<7|40|41|42|10000|10001|10005>[] = [{kinds: [7], '#k': ['42'], limit: limit}, {kinds: [40, 41], limit: limit}, this.#filterKind42];
 		if (this.#loginPubkey) {
 			filterPhase1.push({kinds: [10000, 10001, 10005], authors: [this.#loginPubkey]});
