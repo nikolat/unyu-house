@@ -4,6 +4,7 @@ import { writable, type Writable } from 'svelte/store';
 export const storedIsLoggedin = writable(false);
 export const storedLoginpubkey = writable('');
 export const storedRelaysSelected = writable('default');
+export const storedFilterSelected = writable('default');
 export const storedRelaysToUse = writable({});
 export const storedTheme = writable('');
 export const storedNeedApplyRelays = writable(false);

@@ -5,7 +5,7 @@ import {
 } from 'nostr-tools';
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
-import { storedIsLoggedin, storedLoginpubkey, storedTheme, storedRelaysSelected } from '$lib/store';
+import { storedIsLoggedin, storedLoginpubkey, storedTheme, storedRelaysSelected, storedFilterSelected } from '$lib/store';
 import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile, type GetRelays } from '$lib/util';
 import { urlNIP07guide } from '$lib/config';
 import type { NostrAPI } from '$lib/@types/nostr';
@@ -32,6 +32,10 @@ export let wordList: string[];
 let relaysSelected: string;
 storedRelaysSelected.subscribe((value) => {
 	relaysSelected = value;
+});
+let filterSelected: string;
+storedFilterSelected.subscribe((value) => {
+	filterSelected = value;
 });
 
 storedTheme.subscribe((value) => {
@@ -89,6 +93,10 @@ const changeTheme = () => {
 const changeRelays = () => {
 	storedRelaysSelected.set(relaysSelected);
 	importRelays(relaysSelected);
+};
+
+const changeFilter = () => {
+	storedFilterSelected.set(filterSelected);
 };
 
 onMount(() => {
@@ -176,8 +184,15 @@ onMount(() => {
 			{/if}
 		{/if}
 		<h3>All Channels</h3>
+		<section class="config">
+			<div>Filter</div>
+			<select bind:value={filterSelected} on:change={changeFilter}>
+				<option value="fav">? &gt; 0</option>
+				<option value="default">Default</option>
+			</select>
+		</section>
 		<div>
-			{#each channels as channel}
+			{#each channels.filter(ch => filterSelected === 'default' || filterSelected === 'fav' && ch.fav_count > 0) as channel}
 				{#if !muteList.includes(channel.event.pubkey) && !muteChannels.includes(channel.event.id) && !wordList.some(word => channel.name.includes(word))}
 			<SidebarChannel picture={profs[channel.event.pubkey]?.picture} url={nip19.neventEncode(channel.event)} channelName={channel.name} post_count={channel.post_count} fav_count={channel.fav_count}></SidebarChannel>
 				{/if}
