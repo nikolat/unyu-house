@@ -35,7 +35,7 @@ let visible: {[key: string]: boolean} = {};
 let inputText: {[key: string]: string} = {};
 
 const getImageUrls = (content: string) => {
-	const matchesIterator = content.matchAll(/https?:\/\/\S+\.(jpe?g|png|gif|webp)/g);
+	const matchesIterator = content.matchAll(/https?:\/\/\S+\.(jpe?g|png|gif|webp)/gi);
 	const urls = [];
 	for (const match of matchesIterator) {
 		urls.push(match[0]);
@@ -43,7 +43,7 @@ const getImageUrls = (content: string) => {
 	return urls;
 };
 const getVideoUrls = (content: string) => {
-	const matchesIterator = content.matchAll(/https?:\/\/\S+\.(mp4|mov)/g);
+	const matchesIterator = content.matchAll(/https?:\/\/\S+\.(mp4|mov)/gi);
 	const urls = [];
 	for (const match of matchesIterator) {
 		urls.push(match[0]);
@@ -51,7 +51,7 @@ const getVideoUrls = (content: string) => {
 	return urls;
 };
 const getAudioUrls = (content: string) => {
-	const matchesIterator = content.matchAll(/https?:\/\/\S+\.(mp3|m4a|wav|ogg|aac)/g);
+	const matchesIterator = content.matchAll(/https?:\/\/\S+\.(mp3|m4a|wav|ogg|aac)/gi);
 	const urls = [];
 	for (const match of matchesIterator) {
 		urls.push(match[0]);
