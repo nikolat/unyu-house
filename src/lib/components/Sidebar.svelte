@@ -187,7 +187,7 @@ onMount(() => {
 		<section class="config">
 			<div>Filter</div>
 			<select bind:value={filterSelected} on:change={changeFilter}>
-				<option value="fav">? &gt; 0</option>
+				<option value="fav">❤ &gt; 0</option>
 				<option value="default">Default</option>
 			</select>
 		</section>
