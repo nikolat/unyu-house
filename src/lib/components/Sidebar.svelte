@@ -147,15 +147,20 @@ onMount(() => {
 		</select>
 	</section>
 	{/if}
-	{#each Object.entries(relaysToUse) as relay}
-	<section class="config">
-		<div>{relay[0]}</div>
-		<div>
-			<input type="checkbox" name="relay_read" checked={relay[1].read} disabled />
-			<input type="checkbox" name="relay_write" checked={relay[1].write} disabled />
-		</div>
-	</section>
-	{/each}
+	<table>
+		<tr>
+			<th>relay</th>
+			<th>r</th>
+			<th>w</th>
+		</tr>
+		{#each Object.entries(relaysToUse) as relay}
+		<tr>
+			<td>{relay[0]}</td>
+			<td><input type="checkbox" checked={relay[1].read} disabled /></td>
+			<td><input type="checkbox" checked={relay[1].write} disabled /></td>
+		</tr>
+		{/each}
+	</table>
 	<section id="channels">
 		{#if loginPubkey}
 			{#if isLoggedin}
@@ -217,33 +222,35 @@ onMount(() => {
 	max-width: 100%;
 }
 @media screen and (min-width: 1078px) {
-    #sidebar {
-        min-width: 380px;
-    }
+	#sidebar {
+		min-width: 380px;
+	}
+	#sidebar * {
+		max-width: 380px;
+	}
 }
 
 @media screen and (min-width: 1400px) {
-    #sidebar {
-        min-width: 500px;
-    }
+	#sidebar {
+		min-width: 500px;
+	}
+	#sidebar * {
+		max-width: 500px;
+	}
 }
 
+#sidebar table {
+	table-layout: auto;
+	width: auto;
+}
+#sidebar th {
+	text-align: center;
+}
 .config {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	padding: 10px 20px;
 }
-
-/* details {
-	display: inline-block;
-}
-details input,
-details textarea {
-	min-width: 15em;
-}
-ul {
-	list-style: none;
-} */
 
 </style>
