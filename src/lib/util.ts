@@ -1,5 +1,6 @@
 import {
 	SimplePool,
+	nip05,
 	nip19,
 	type Event as NostrEvent,
 	type EventTemplate,
@@ -668,9 +669,14 @@ export const getExpandTagsList = (content: string, tags: string[][]): [IterableI
 	const regMatchArray = ['https?://[\\w!?/=+\\-_~:;.,*&@#$%()[\\]]+', 'nostr:npub\\w{59}', 'nostr:note\\w{59}', 'nostr:nevent\\w+', '#\\S+'];
 	const emojiUrls: {[key: string]: string} = {};
 	const emojiRegs = [];
-	for (const tag of tags) {
-		emojiRegs.push(':' + tag[1] + ':');
-		emojiUrls[':' + tag[1] + ':'] = tag[2];
+	if (tags === undefined) {
+		// why??
+	}
+	else {
+		for (const tag of tags) {
+			emojiRegs.push(':' + tag[1] + ':');
+			emojiUrls[':' + tag[1] + ':'] = tag[2];
+		}
 	}
 	if (emojiRegs.length > 0) {
 		regMatchArray.push(emojiRegs.join('|'));
@@ -710,6 +716,32 @@ export const getRelaysToUse = (relaysSelected: string, pool: SimplePool, loginPu
 						}
 						resolve(newRelays);
 					}
+				});
+			});
+		case 'nip05':
+			return new Promise((resolve) => {
+				getGeneralEvents(pool, relaysToGetRelays, [{kinds: [0], authors: [loginPubkey]}]).then(async (events: NostrEvent[]) => {
+					if (events.length === 0) {
+						resolve({});
+						return;
+					}
+					const ev: NostrEvent = events.reduce((a: NostrEvent, b: NostrEvent) => a.created_at > b.created_at ? a : b)
+					const nip05field = JSON.parse(ev.content).nip05;
+					if (nip05field === undefined) {
+						resolve({});
+						return;
+					}
+					nip05.useFetchImplementation(fetch);
+					const p = await nip05.queryProfile(nip05field)
+					if (p === null || p === undefined || p.relays === undefined) {
+						resolve({});
+						return;
+					}
+					const newRelays: {[key: string]: GetRelays} = {};
+					for (const relay of p.relays) {
+						newRelays[relay] = {'read': true, 'write': true};
+					}
+					resolve(newRelays);
 				});
 			});
 		case 'nip07':

@@ -6,7 +6,7 @@ import {
 	type Event as NostrEvent,
 } from 'nostr-tools';
 import { sendFav, sendDeletion, sendMessage, getExpandTagsList , type Profile, type Channel } from '$lib/util';
-import { storedLoginpubkey, storedNeedApplyRelays, storedRelaysSelected, storedRelaysToUse } from '$lib/store';
+import { storedLoginpubkey, storedRelaysSelected, storedRelaysToUse } from '$lib/store';
 import { defaultRelays } from '$lib/config';
 import Quote from './Quote.svelte';
 import data from '@emoji-mart/data';

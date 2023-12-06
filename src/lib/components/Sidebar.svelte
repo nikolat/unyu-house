@@ -142,6 +142,7 @@ onMount(() => {
 		<select bind:value={relaysSelected} on:change={changeRelays}>
 			<option value="kind3">Kind 3</option>
 			<option value="kind10002">Kind 10002</option>
+			<option value="nip05">NIP-05</option>
 			{#if isLoggedin}<option value="nip07">NIP-07</option>{/if}
 			<option value="default">Default</option>
 		</select>
@@ -225,8 +226,11 @@ onMount(() => {
 	#sidebar {
 		min-width: 380px;
 	}
-	#sidebar * {
+	#sidebar .config {
 		max-width: 380px;
+	}
+	#sidebar table td {
+		max-width: 280px;
 	}
 }
 
@@ -234,8 +238,11 @@ onMount(() => {
 	#sidebar {
 		min-width: 500px;
 	}
-	#sidebar * {
+	#sidebar .config {
 		max-width: 500px;
+	}
+	#sidebar table td {
+		max-width: 400px;
 	}
 }
 
@@ -245,6 +252,9 @@ onMount(() => {
 }
 #sidebar th {
 	text-align: center;
+}
+#sidebar td {
+	white-space: pre-wrap;
 }
 .config {
 	display: flex;
