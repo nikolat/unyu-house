@@ -359,10 +359,7 @@ dd details {
 	margin: 0;
 }
 dd details[open] {
-	max-width: calc(100% - 170px);
-}
-dd details:only-child[open] {
-	max-width: calc(100% - 30px);
+	max-width: 100%;
 }
 dd .action-bar details,
 dd .action-bar details summary {
