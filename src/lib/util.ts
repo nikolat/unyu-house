@@ -22,6 +22,7 @@ export interface Channel {
 	picture: string
 	updated_at: number
 	event: NostrEvent
+	event41?: NostrEvent
 	post_count: number
 	fav_count: number
 }
@@ -296,6 +297,7 @@ export class RelayConnector {
 					channelObjects[id] = json;
 					channelObjects[id].updated_at = ev.created_at;
 					channelObjects[id].event = savedEvent;
+					channelObjects[id].event41 = ev;
 					channelObjects[id].post_count = 0;
 					channelObjects[id].fav_count = 0;
 				}
@@ -663,6 +665,15 @@ const sendPinOrMute = async(pool: SimplePool, relaysToUse: object, loginPubkey: 
 		await Promise.all(pubs);
 		console.log('sendPinOrMutePhase2 * Complete *');
 	});
+};
+
+export const broadcast = async(pool: SimplePool, relaysToWrite: string[], event40: NostrEvent, event41: NostrEvent | undefined) => {
+	let pubs = pool.publish(relaysToWrite, event40);
+	if (event41 !== undefined) {
+		pubs = pubs.concat(pool.publish(relaysToWrite, event41));
+	}
+	await Promise.all(pubs);
+	console.log('broadcast * Complete *');
 };
 
 export const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator<RegExpMatchArray>, string[], {[key: string]: string}] => {
