@@ -1,5 +1,5 @@
 <script lang='ts'>
-import { type Channel, type Profile, sendPin, type GetRelays, sendMute, sendEditChannel } from '$lib/util';
+import { type Channel, type Profile, sendPin, type GetRelays, sendMute, sendEditChannel, broadcast } from '$lib/util';
 import { SimplePool, nip19 } from 'nostr-tools';
 
 export let channel: Channel;
@@ -27,6 +27,15 @@ const callSendEditChannel = () => {
 	if (channel?.event.id) {
 		sendEditChannel(pool, relaysToUse, loginPubkey, channel.event.id, editChannelName, editChannelAbout, editChannelPicture);
 	}
+};
+
+const callBroadcast = async () => {
+	const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
+	if (!confirm(`Are you sure you want to broadcast this channel event? (kind 40 and 41)\n${relaysToWrite.join('\n')}`)) {
+		return;
+	}
+	await broadcast(pool, relaysToWrite, channel.event, channel.event41);
+	alert('Completed.');
 };
 
 const callSendPin = (toSet: boolean) => {
@@ -77,6 +86,9 @@ const callSendMute = (toSet: boolean) => {
 		<button on:click={callSendEditChannel} disabled={!editChannelName}>Edit</button>
 	</form>
 </details>
+	{/if}
+	{#if !isQuote}
+<button class="channel-metadata" on:click={() => callBroadcast()}><svg><use xlink:href="/copy.svg#broadcast"></use></svg></button>
 	{/if}
 	{#if isLoggedin && loginPubkey && !isQuote}
 		{#if pinList.includes(channel.event.id)}
