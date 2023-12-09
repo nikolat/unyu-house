@@ -98,9 +98,9 @@ const callSendMuteUser = (toSet: boolean) => {
 
 {#if profs[currentPubkey] && isLoggedin && loginPubkey}
 	{#if muteList.includes(currentPubkey)}
-	<button class="profile-metadata on" on:click={() => callSendMuteUser(false)}><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button>
+	<button class="profile-metadata on" on:click={() => callSendMuteUser(false)} title="Unmute"><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button>
 	{:else}
-	<button class="profile-metadata off" on:click={() => callSendMuteUser(true)}><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button>
+	<button class="profile-metadata off" on:click={() => callSendMuteUser(true)} title="Mute"><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button>
 	{/if}
 {/if}
 

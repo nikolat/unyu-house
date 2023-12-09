@@ -252,14 +252,14 @@ const loginAsThisAccount = (pubkey: string) => {
 						<textarea id="input-text" bind:value={inputText[note.id]} on:keydown={(e) => {submitFromKeyboard(e, note)}}></textarea>
 						<button on:click={() => {callSendMessage(note)}} disabled={!inputText[note.id]}>Reply</button>
 					</details>
-					<button class="fav" on:click={() => sendFav(pool, relaysToWrite, note, '+')}><svg><use xlink:href="/heart.svg#fav"></use></svg></button>
-					<button class="emoji" on:click={() => callSendEmoji(pool, relaysToWrite, note)}><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button>
+					<button class="fav" on:click={() => sendFav(pool, relaysToWrite, note, '+')} title="Fav"><svg><use xlink:href="/heart.svg#fav"></use></svg></button>
+					<button class="emoji" on:click={() => callSendEmoji(pool, relaysToWrite, note)} title="Emoji fav"><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button>
 					<div bind:this={emojiPicker[note.id]} class={visible[note.id] ? '' : 'hidden'}></div>
 						{#if note.pubkey === loginPubkey}
-					<button class="delete" on:click={() => callSendDeletion(pool, relaysToWrite, note.id)}><svg><use xlink:href="/trash.svg#delete"></use></svg></button>
+					<button class="delete" on:click={() => callSendDeletion(pool, relaysToWrite, note.id)} title="Delete"><svg><use xlink:href="/trash.svg#delete"></use></svg></button>
 						{/if}
 					{:else}
-					<button class="login-as-this-account" on:click={() => loginAsThisAccount(note.pubkey)}><svg><use xlink:href="/eye.svg#login-as-this-account"></use></svg></button>
+					<button class="login-as-this-account" on:click={() => loginAsThisAccount(note.pubkey)} title="Login with this pubkey"><svg><use xlink:href="/eye.svg#login-as-this-account"></use></svg></button>
 					{/if}
 					<details>
 						<summary><svg><use xlink:href="/more-horizontal.svg#more"></use></svg></summary>

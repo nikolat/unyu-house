@@ -88,18 +88,18 @@ const callSendMute = (toSet: boolean) => {
 </details>
 	{/if}
 	{#if !isQuote}
-<button class="channel-metadata" on:click={() => callBroadcast()}><svg><use xlink:href="/copy.svg#broadcast"></use></svg></button>
+<button class="channel-metadata" on:click={() => callBroadcast()} title="Broadcast"><svg><use xlink:href="/copy.svg#broadcast"></use></svg></button>
 	{/if}
 	{#if isLoggedin && loginPubkey && !isQuote}
 		{#if pinList.includes(channel.event.id)}
-<button class="channel-metadata on" on:click={() => callSendPin(false)}><svg><use xlink:href="/bookmark.svg#pin"></use></svg></button>
+<button class="channel-metadata on" on:click={() => callSendPin(false)} title="Remove Pin"><svg><use xlink:href="/bookmark.svg#pin"></use></svg></button>
 		{:else}
-<button class="channel-metadata off" on:click={() => callSendPin(true)}><svg><use xlink:href="/bookmark.svg#pin"></use></svg></button>
+<button class="channel-metadata off" on:click={() => callSendPin(true)} title="Add Pin"><svg><use xlink:href="/bookmark.svg#pin"></use></svg></button>
 		{/if}
 		{#if muteChannels.includes(channel.event.id)}
-<button class="channel-metadata on" on:click={() => callSendMute(false)}><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button>
+<button class="channel-metadata on" on:click={() => callSendMute(false)} title="Unmute"><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button>
 		{:else}
-<button class="channel-metadata off" on:click={() => callSendMute(true)}><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button>
+<button class="channel-metadata off" on:click={() => callSendMute(true)} title="Mute"><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button>
 		{/if}
 	{/if}
 {/if}
