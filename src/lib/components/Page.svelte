@@ -222,7 +222,7 @@ const applyRelays = () => {
 	subNotes?.unsub();
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
 	let filter: Filter<42>;
-	const limit = 100;
+	const limit = 50;
 	if (currentChannelId) {
 		filter = {kinds: [42], limit: limit, '#e': [currentChannelId]};
 	}
