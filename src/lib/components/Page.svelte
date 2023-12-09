@@ -69,7 +69,7 @@ const resetScroll = () => {
 	scrolled = false;
 };
 
-const callbackPhase1 = async (loginPubkey: string, channelsNew: Channel[], notesNew: NostrEvent[], event10000: NostrEvent<10000> | null, pinListNew: string[]) => {
+const callbackPhase1 = async (loginPubkey: string, channelsNew: Channel[], notesNew: NostrEvent[], favListNew: NostrEvent[], event10000: NostrEvent<10000> | null, pinListNew: string[]) => {
 	channels = channelsNew;
 	if (currentChannelId) {
 		notes = notesNew.filter(ev => ev.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root'));
@@ -77,6 +77,7 @@ const callbackPhase1 = async (loginPubkey: string, channelsNew: Channel[], notes
 	else {
 		notes = notesNew;
 	}
+	favList = favListNew;
 	muteList = event10000?.tags.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1]) ?? [];
 	muteChannels = event10000?.tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]) ?? [];
 	wordList = event10000?.tags.filter(tag => tag.length >= 2 && tag[0] === 'word').map(tag => tag[1]) ?? [];
@@ -95,7 +96,7 @@ const callbackPhase1 = async (loginPubkey: string, channelsNew: Channel[], notes
 	pinList = pinListNew;
 };
 
-const callbackPhase2 = (profsNew: {[key: string]: Profile}, favListNew: NostrEvent[], eventsQuotedNew: NostrEvent[]) => {
+const callbackPhase2 = (profsNew: {[key: string]: Profile}, eventsQuotedNew: NostrEvent[]) => {
 	let profAdded = false;
 	for (const k of Object.keys(profsNew)) {
 		if (!(k in profs)) {
@@ -105,16 +106,6 @@ const callbackPhase2 = (profsNew: {[key: string]: Profile}, favListNew: NostrEve
 	}
 	if (profAdded) {
 		profs = profs;
-	}
-	let favAdded = false;
-	for (const ev of favListNew) {
-		if (!favList.map(v => v.id).includes(ev.id)) {
-			favList.push(ev);
-			favAdded = true;
-		}
-	}
-	if (favAdded) {
-		favList = favList;
 	}
 	let notesQuotedAdded = false;
 	for (const ev of eventsQuotedNew) {
