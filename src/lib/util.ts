@@ -140,7 +140,7 @@ export class RelayConnector {
 				console.log('getEventsPhase2-2 * EOSE *');
 			}
 			sub.unsub();
-			const profs = this.#getFrofiles(events[0]);
+			const profs = this.#getProfiles(events[0]);
 			this.#callbackPhase2(profs, events[7], eventsQuoted);
 			if (goPhase3) {
 				const pubkeysObtained = Object.keys(profs);
@@ -364,7 +364,7 @@ export class RelayConnector {
 		return pinList;
 	};
 
-	#getFrofiles = (events: NostrEvent[]): {[key: string]: Profile} => {
+	#getProfiles = (events: NostrEvent[]): {[key: string]: Profile} => {
 		const profs: {[key: string]: Profile} = {};
 		for (const ev of events.filter(ev => ev.kind === 0)) {
 			if ((profs[ev.pubkey] && profs[ev.pubkey].created_at < ev.created_at) || !profs[ev.pubkey]) {
