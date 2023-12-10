@@ -103,12 +103,14 @@ export class RelayConnector {
 			const filterPhase3Base: Filter<42> = this.#filterKind42;
 			filterPhase3Base.since = events[42].map(ev => ev.created_at).reduce((a, b) => Math.max(a, b), 0) + 1;
 			filterPhase3Base.limit = 1;
-			const filterPhase3: Filter<0|7|40|41|42|10000|10001|10005>[] = [filterPhase3Base];
+			const filterPhase3: Filter<0|7|40|41|42|10000|10001|10005>[] = [
+				filterPhase3Base,
+				{kinds: [7], '#k': ['42'], limit: 1},
+				{kinds: [0, 40, 41], limit: 1}
+			];
 			if (this.#loginPubkey) {
 				filterPhase3.push(
-					{kinds: [0, 7, 10000, 10001, 10005], authors: [this.#loginPubkey], limit: 1},
-					{kinds: [7], '#p': [this.#loginPubkey], '#k': ['42'], limit: 1},
-					{kinds: [40, 41], limit: 1}
+					{kinds: [10000, 10001, 10005], authors: [this.#loginPubkey], limit: 1},
 				);
 			}
 			this.#getEventsPhase2(filterPhase2, filterPhase3, true);

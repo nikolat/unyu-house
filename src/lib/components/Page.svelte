@@ -132,6 +132,9 @@ const callbackPhase3 = (subNotesPhase3: Sub<0|7|40|41|42|10000|10001|10005>, ev:
 		}
 	}
 	else if (ev.kind === 0) {
+		if (profs[ev.pubkey] && profs[ev.pubkey].created_at >= ev.created_at) {
+			return;
+		}
 		try {
 			profs[ev.pubkey] = JSON.parse(ev.content);
 		} catch (error) {
