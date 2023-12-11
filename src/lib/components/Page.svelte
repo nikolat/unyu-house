@@ -301,6 +301,11 @@ $: titleString = currentChannelId ? `${channels.find(v => v.event.id === current
 	: currentPubkey ? `${profs[currentPubkey]?.name ?? '(unknown profile)'} | ${title}`
 	: title;
 
+$: repostListToShow = currentChannelId ? repostList.filter(ev16 => {
+		const repostedEvent = [...notes, ...notesQuoted].find(ev => ev.id === ev16.tags.find(tag => tag.length >= 2 && tag[0] === 'e')?.at(1));
+		return repostedEvent?.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root');
+	}) : repostList;
+
 </script>
 
 <svelte:head>
@@ -341,7 +346,7 @@ $: titleString = currentChannelId ? `${channels.find(v => v.event.id === current
 	{:else}
 		<h2>Error</h2>
 	{/if}
-		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {isLoggedin} {loginPubkey} {muteList} {muteChannels} {wordList} {repostList} {favList} {resetScroll} {importRelays} />
+		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {isLoggedin} {loginPubkey} {muteList} {muteChannels} {wordList} repostList={repostListToShow} {favList} {resetScroll} {importRelays} />
 	{#if currentChannelId && isLoggedin && channels.some(channel => channel.event.id === currentChannelId)}
 		<Post {pool} {currentChannelId} {relaysToUse} {channels} {hidePostBar} {resetScroll} />
 	{/if}
