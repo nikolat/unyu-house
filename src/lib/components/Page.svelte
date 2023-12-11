@@ -115,6 +115,24 @@ const callbackPhase2 = (profsNew: {[key: string]: Profile}, eventsQuotedNew: Nos
 			notesQuoted.push(ev);
 			notesQuotedAdded = true;
 		}
+		if (ev.kind === 40) {
+			let json: any;
+			try {
+				json = JSON.parse(ev.content);
+			} catch (error) {
+				console.warn(error);
+				continue;
+			}
+			if (['name'].some(metadata => !Object.hasOwn(json, metadata))) {
+				continue;
+			}
+			const channel: Channel = json;
+			channel.updated_at = ev.created_at;
+			channel.event = ev;
+			channel.post_count = 0;
+			channel.fav_count = 0;
+			channels.push(channel);
+		}
 	}
 	if (notesQuotedAdded) {
 		notesQuoted = notesQuoted;
