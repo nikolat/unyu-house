@@ -155,7 +155,7 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 				{#if profs[note.pubkey]}
 				<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {npub}" width="16" height="16"> {profs[note.pubkey].display_name ?? ''} <a href="/{npub}">@{profs[note.pubkey]?.name ?? ''}</a>
 				{:else}
-				<img src="/default.png" alt="" width="32" height="32"><a href="/{npub}">@{npub.slice(0, 10)}...</a>
+				<img src="/default.png" alt="" width="16" height="16"><a href="/{npub}">@{npub.slice(0, 10)}...</a>
 				{/if}
 				<br />
 				<time>{(new Date(1000 * note.created_at)).toLocaleString()}</time>
