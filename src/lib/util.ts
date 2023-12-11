@@ -92,7 +92,7 @@ export class RelayConnector {
 			const notes = this.#getNotes(events[42]);
 			const event10000 = events[10000].length === 0 ? null : events[10000].reduce((a, b) => a.created_at > b.created_at ? a : b);
 			const pinList = this.#getPinList(events[10005].length > 0 ? events[10005] : events[10001], channels);
-			this.#callbackPhase1(this.#loginPubkey, channels, notes, events[7], event10000, pinList);
+			this.#callbackPhase1(this.#loginPubkey, channels, notes, events[16], events[7], event10000, pinList);
 			const pubkeysToGet: string[] = this.#getPubkeysForFilter(Object.values(events).flat());
 			const idsToGet: string[] = this.#getIdsForFilter([...events[16], ...events[42]]).filter(v => !events[42].map(ev => ev.id).includes(v));
 			const filterPhase2: Filter[] = [];

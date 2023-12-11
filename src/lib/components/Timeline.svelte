@@ -249,7 +249,7 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 					</div>
 			{/if}
 				</div>
-			{#if favList.some(ev => ev.tags.findLast(tag => tag[0] === 'e')?.at(1) === noteOrg.id && profs[ev.pubkey])}
+			{#if favList.find(ev => ev.tags.findLast(tag => tag.length >= 2 && tag[0] === 'e')?.at(1) === noteOrg.id && profs[ev.pubkey])}
 				<ul class="fav-holder" role="list">
 				{#each favList as ev}
 					{#if ev.tags.findLast(tag => tag[0] === 'e')?.at(1) === noteOrg.id && profs[ev.pubkey] && !muteList.includes(ev.pubkey)}
