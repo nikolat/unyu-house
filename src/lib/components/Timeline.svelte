@@ -131,7 +131,7 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 
 </script>
 
-<p>Total: {notes.length} posts</p>
+<p>Total: {notesToShow.length} posts</p>
 <dl>
 {#each notesToShow as note}
 	{@const noteOrg = note.kind === 42 ? note : [...notes, ...notesQuoted].find(ev => ev.id === note.tags.find(tag => tag.length >= 2 && tag[0] === 'e')?.at(1))}
