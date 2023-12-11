@@ -20,7 +20,7 @@ interface Window {
 }
 
 let pool: SimplePool = new SimplePool();
-let subNotes: Sub<0|7|40|41|42|10000|10001|10005>;
+let subNotes: Sub<0|7|16|40|41|42|10000|10001|10005>;
 let relaysToUse: {[key: string]: GetRelays};
 let theme: string;
 let currentChannelId: string | null;
@@ -33,6 +33,7 @@ let muteList: string[] = [];
 let muteChannels: string[] = [];
 let wordList: string[] = [];
 let pinList: string[] = [];
+let repostList: NostrEvent[] = [];
 let favList: NostrEvent[] = [];
 let channels: Channel[] = [];
 let notes: NostrEvent[] = [];
@@ -69,18 +70,19 @@ const resetScroll = () => {
 	scrolled = false;
 };
 
-const callbackPhase1 = async (loginPubkey: string, channelsNew: Channel[], notesNew: NostrEvent[], favListNew: NostrEvent[], event10000: NostrEvent<10000> | null, pinListNew: string[]) => {
+const callbackPhase1 = async (loginPubkey: string, channelsNew: Channel[], notesNew: NostrEvent[], repostListNew: NostrEvent[], favListNew: NostrEvent[], event10000: NostrEvent<10000> | null, pinListNew: string[]) => {
 	channels = channelsNew;
 	if (currentChannelId) {
-		notes = notesNew.filter(ev => ev.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root'));
+		notes = notesNew.filter(ev => ev.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root')) ?? [];
 	}
 	else {
-		notes = notesNew;
+		notes = notesNew ?? [];
 	}
-	favList = favListNew;
-	muteList = event10000?.tags.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1]) ?? [];
-	muteChannels = event10000?.tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]) ?? [];
-	wordList = event10000?.tags.filter(tag => tag.length >= 2 && tag[0] === 'word').map(tag => tag[1]) ?? [];
+	repostList = repostListNew ?? [];
+	favList = favListNew ?? [];
+	muteList = event10000?.tags?.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1]) ?? [];
+	muteChannels = event10000?.tags?.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]) ?? [];
+	wordList = event10000?.tags?.filter(tag => tag.length >= 2 && tag[0] === 'word').map(tag => tag[1]) ?? [];
 	const nostr = (window as Window).nostr;
 	if (isLoggedin && loginPubkey && event10000?.content && browser && nostr?.nip04?.decrypt) {
 		try {
@@ -93,7 +95,7 @@ const callbackPhase1 = async (loginPubkey: string, channelsNew: Channel[], notes
 			console.warn(error);
 		}
 	}
-	pinList = pinListNew;
+	pinList = pinListNew ?? [];
 };
 
 const callbackPhase2 = (profsNew: {[key: string]: Profile}, eventsQuotedNew: NostrEvent[]) => {
@@ -119,7 +121,7 @@ const callbackPhase2 = (profsNew: {[key: string]: Profile}, eventsQuotedNew: Nos
 	}
 };
 
-const callbackPhase3 = (subNotesPhase3: Sub<0|7|40|41|42|10000|10001|10005>, ev: NostrEvent<0|7|40|41|42|10000|10001|10005>) => {
+const callbackPhase3 = (subNotesPhase3: Sub<0|7|16|40|41|42|10000|10001|10005>, ev: NostrEvent<0|7|16|40|41|42|10000|10001|10005>) => {
 	subNotes = subNotesPhase3;
 	if (ev.kind === 42 && !notes.map(v => v.id).includes(ev.id)) {
 		if (currentChannelId) {
@@ -145,6 +147,9 @@ const callbackPhase3 = (subNotesPhase3: Sub<0|7|40|41|42|10000|10001|10005>, ev:
 	}
 	else if (ev.kind === 7 && !favList.map(v => v.id).includes(ev.id)) {
 		favList = utils.insertEventIntoAscendingList(favList, ev);
+	}
+	else if (ev.kind === 16 && !repostList.map(v => v.id).includes(ev.id)) {
+		repostList = utils.insertEventIntoAscendingList(repostList, ev);
 	}
 	else if (ev.kind === 10000) {
 		if (ev.pubkey !== loginPubkey)
@@ -336,7 +341,7 @@ $: titleString = currentChannelId ? `${channels.find(v => v.event.id === current
 	{:else}
 		<h2>Error</h2>
 	{/if}
-		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {isLoggedin} {loginPubkey} {muteList} {muteChannels} {wordList} {favList} {resetScroll} {importRelays} />
+		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {isLoggedin} {loginPubkey} {muteList} {muteChannels} {wordList} {repostList} {favList} {resetScroll} {importRelays} />
 	{#if currentChannelId && isLoggedin && channels.some(channel => channel.event.id === currentChannelId)}
 		<Post {pool} {currentChannelId} {relaysToUse} {channels} {hidePostBar} {resetScroll} />
 	{/if}

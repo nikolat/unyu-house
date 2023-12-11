@@ -69,8 +69,10 @@ export class RelayConnector {
 	getEventsPhase1 = () => {
 		const limit_channel = 300;
 		const limit_fav = 300;
-		const filterPhase1: Filter<7|40|41|42|10000|10001|10005>[] = [
+		const limit_repost = 300;
+		const filterPhase1: Filter<7|16|40|41|42|10000|10001|10005>[] = [
 			{kinds: [7], '#k': ['42'], limit: limit_fav},
+			{kinds: [16], '#k': ['42'], limit: limit_repost},
 			{kinds: [40], limit: limit_channel},
 			{kinds: [41], limit: limit_channel},
 			this.#filterKind42
@@ -78,9 +80,9 @@ export class RelayConnector {
 		if (this.#loginPubkey) {
 			filterPhase1.push({kinds: [10000, 10001, 10005], authors: [this.#loginPubkey]});
 		}
-		const sub: Sub<7|40|41|42|10000|10001|10005> = this.#pool.sub(this.#relays, filterPhase1);
-		const events: {[key: number]: NostrEvent<7|40|41|42|10000|10001|10005>[]} = {7: [], 40: [], 41: [], 42: [], 10000: [], 10001: [], 10005: []};
-		sub.on('event', (ev: NostrEvent<7|40|41|42|10000|10001|10005>) => {
+		const sub: Sub<7|16|40|41|42|10000|10001|10005> = this.#pool.sub(this.#relays, filterPhase1);
+		const events: {[key: number]: NostrEvent<7|16|40|41|42|10000|10001|10005>[]} = {7: [], 16: [], 40: [], 41: [], 42: [], 10000: [], 10001: [], 10005: []};
+		sub.on('event', (ev: NostrEvent<7|16|40|41|42|10000|10001|10005>) => {
 			events[ev.kind].push(ev);
 		});
 		sub.on('eose', () => {
@@ -92,7 +94,7 @@ export class RelayConnector {
 			const pinList = this.#getPinList(events[10005].length > 0 ? events[10005] : events[10001], channels);
 			this.#callbackPhase1(this.#loginPubkey, channels, notes, events[7], event10000, pinList);
 			const pubkeysToGet: string[] = this.#getPubkeysForFilter(Object.values(events).flat());
-			const idsToGet: string[] = this.#getIdsForFilter(events[42]);
+			const idsToGet: string[] = this.#getIdsForFilter([...events[16], ...events[42]]).filter(v => !events[42].map(ev => ev.id).includes(v));
 			const filterPhase2: Filter[] = [];
 			if (pubkeysToGet.length > 0) {
 				filterPhase2.push({kinds: [0], authors: pubkeysToGet});
@@ -103,9 +105,9 @@ export class RelayConnector {
 			const filterPhase3Base: Filter<42> = this.#filterKind42;
 			filterPhase3Base.since = events[42].map(ev => ev.created_at).reduce((a, b) => Math.max(a, b), 0) + 1;
 			filterPhase3Base.limit = 1;
-			const filterPhase3: Filter<0|7|40|41|42|10000|10001|10005>[] = [
+			const filterPhase3: Filter<0|7|16|40|41|42|10000|10001|10005>[] = [
 				filterPhase3Base,
-				{kinds: [7], '#k': ['42'], limit: 1},
+				{kinds: [7, 16], '#k': ['42'], limit: 1},
 				{kinds: [0, 40, 41], limit: 1}
 			];
 			if (this.#loginPubkey) {
@@ -117,7 +119,7 @@ export class RelayConnector {
 		});
 	};
 
-	#getEventsPhase2 = (filterPhase2: Filter[], filterPhase3: Filter<0|7|40|41|42|10000|10001|10005>[], goPhase3: Boolean) => {
+	#getEventsPhase2 = (filterPhase2: Filter[], filterPhase3: Filter<0|7|16|40|41|42|10000|10001|10005>[], goPhase3: Boolean) => {
 		const sub: Sub = this.#pool.sub(this.#relays, filterPhase2);
 		const events: {[key: number]: NostrEvent[]} = {0: [], 7: []};
 		const eventsQuoted: NostrEvent[] = [];
@@ -155,9 +157,9 @@ export class RelayConnector {
 		});
 	};
 
-	#getEventsPhase3 = (filterPhase3: Filter<0|7|40|41|42|10000|10001|10005>[], pubkeysObtained: string[], idsObtained: string[]) => {
-		const sub: Sub<0|7|40|41|42|10000|10001|10005> = this.#pool.sub(this.#relays, filterPhase3);
-		sub.on('event', (ev: NostrEvent<0|7|40|41|42|10000|10001|10005>) => {
+	#getEventsPhase3 = (filterPhase3: Filter<0|7|16|40|41|42|10000|10001|10005>[], pubkeysObtained: string[], idsObtained: string[]) => {
+		const sub: Sub<0|7|16|40|41|42|10000|10001|10005> = this.#pool.sub(this.#relays, filterPhase3);
+		sub.on('event', (ev: NostrEvent<0|7|16|40|41|42|10000|10001|10005>) => {
 			this.#callbackPhase3(sub, ev);
 			const pubkeysToGet: string[] = this.#getPubkeysForFilter([ev]).filter(v => !pubkeysObtained.includes(v));
 			const idsToGet: string[] = this.#getIdsForFilter([ev]).filter(v => !idsObtained.includes(v));
@@ -182,7 +184,7 @@ export class RelayConnector {
 
 	#getPubkeysForFilter = (events: NostrEvent[]): string[] => {
 		const pubkeys: Set<string> = new Set();
-		for(const ev of events.filter(ev => [7, 40].includes(ev.kind))) {
+		for(const ev of events.filter(ev => [7, 16, 40].includes(ev.kind))) {
 			pubkeys.add(ev.pubkey);
 		}
 		for(const ev of events.filter(ev => ev.kind === 0)) {
@@ -239,20 +241,28 @@ export class RelayConnector {
 	#getIdsForFilter = (events: NostrEvent[]): string[] => {
 		const ids: Set<string> = new Set();
 		for (const ev of events) {
-			const matchesIterator = ev.content.matchAll(/nostr:(note\w{59}|nevent\w+)/g);
-			for (const match of matchesIterator) {
-				let d;
-				try {
-					d = nip19.decode(match[1]);
-				} catch (error) {
-					console.warn(error);
-					console.info(ev);
-					continue;
+			if (ev.kind === 42) {
+				const matchesIterator = ev.content.matchAll(/nostr:(note\w{59}|nevent\w+)/g);
+				for (const match of matchesIterator) {
+					let d;
+					try {
+						d = nip19.decode(match[1]);
+					} catch (error) {
+						console.warn(error);
+						console.info(ev);
+						continue;
+					}
+					if (d.type === 'note')
+						ids.add(d.data);
+					else if (d.type === 'nevent')
+						ids.add(d.data.id);
 				}
-				if (d.type === 'note')
-					ids.add(d.data);
-				else if (d.type === 'nevent')
-					ids.add(d.data.id);
+			}
+			else if (ev.kind === 16) {
+				const id = ev.tags.find(tag => tag.length >= 2 && tag[0] === 'e')?.at(1);
+				if (id !== undefined) {
+					ids.add(id);
+				}
 			}
 		}
 		return Array.from(ids);
@@ -453,6 +463,25 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 		created_at: Math.floor(Date.now() / 1000),
 		tags: tags,
 		content: content
+	};
+	if (window.nostr === undefined)
+		return;
+	const newEvent = await window.nostr.signEvent(baseEvent);
+	const pubs = pool.publish(relaysToWrite, newEvent);
+	await Promise.all(pubs);
+};
+
+export const sendRepost = async(pool: SimplePool, relaysToWrite: string[], targetEvent: NostrEvent) => {
+	const tags: string[][] = [
+		['e', targetEvent.id, pool.seenOn(targetEvent.id).at(0) ?? '', ''],
+		['p', targetEvent.pubkey, ''],
+		['k', String(targetEvent.kind)]
+	];
+	const baseEvent: EventTemplate<16> = {
+		kind: 16,
+		created_at: Math.floor(Date.now() / 1000),
+		tags: tags,
+		content: ''
 	};
 	if (window.nostr === undefined)
 		return;

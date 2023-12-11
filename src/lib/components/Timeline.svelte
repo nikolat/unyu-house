@@ -5,7 +5,7 @@ import {
 	SimplePool,
 	type Event as NostrEvent,
 } from 'nostr-tools';
-import { sendFav, sendDeletion, sendMessage, getExpandTagsList , type Profile, type Channel } from '$lib/util';
+import { sendRepost, sendFav, sendDeletion, sendMessage, getExpandTagsList , type Profile, type Channel } from '$lib/util';
 import { storedLoginpubkey, storedRelaysSelected, storedRelaysToUse } from '$lib/store';
 import { defaultRelays } from '$lib/config';
 import Quote from './Quote.svelte';
@@ -25,6 +25,7 @@ export let loginPubkey: string;
 export let muteList: string[];
 export let muteChannels: string[];
 export let wordList: string[];
+export let repostList: NostrEvent[];
 export let favList: NostrEvent[];
 export let resetScroll: Function;
 export let importRelays: Function;
@@ -118,43 +119,67 @@ const loginAsThisAccount = (pubkey: string) => {
 	importRelays(relaysSelected);
 }
 
+$: notesToShow = [...notes, ...repostList].sort((a, b) => {
+	if (a.created_at < b.created_at) {
+		return -1;
+	}
+	if (a.created_at > b.created_at) {
+		return 1;
+	}
+	return 0;
+});
+
 </script>
 
 <p>Total: {notes.length} posts</p>
 <dl>
-{#each notes as note}
-	{@const rootId = note.tags.find(v => v[0] === 'e' && v[3] === 'root')?.at(1)}
+{#each notesToShow as note}
+	{@const noteOrg = note.kind === 42 ? note : notes.find(ev => ev.id === note.tags.find(tag => tag.length >= 2 && tag[0] === 'e')?.at(1))}
+	{@const rootId = noteOrg?.tags.find(v => v[0] === 'e' && v[3] === 'root')?.at(1)}
 	{@const channel = channels.find(v => v.event.id === rootId)}
-	{#if rootId !== undefined && channel !== undefined}
-		{@const isMutedNotePubkey = muteList.includes(note.pubkey)}
+	{#if noteOrg !== undefined && rootId !== undefined && channel !== undefined}
+		{@const isMutedNotePubkey = muteList.includes(noteOrg.pubkey) || muteList.includes(note.pubkey)}
 		{@const isMutedNoteChannel = muteChannels.includes(rootId)}
-		{@const isMutedNoteWord = wordList.some(word => note.content.includes(word))}
+		{@const isMutedNoteWord = wordList.some(word => noteOrg.content.includes(word))}
 		{@const isMutedChannelPubkey = muteList.includes(channel.event.pubkey)}
 		{@const isMutedChannelWord = wordList.some(word => channel.name.includes(word))}
 		{@const isMuted = isMutedNotePubkey || isMutedNoteChannel || isMutedNoteWord || isMutedChannelPubkey || isMutedChannelWord}
 		{#if !isMuted}
 			{@const npub = nip19.npubEncode(note.pubkey)}
+			{@const npubOrg = nip19.npubEncode(noteOrg.pubkey)}
 			{@const nevent = nip19.neventEncode(note)}
+			{@const neventOrg = nip19.neventEncode(noteOrg)}
 			<dt id="note-{note.id}">
-			{#if profs[note.pubkey]}
-				<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {npub}" width="32" height="32"> {profs[note.pubkey].display_name ?? ''} <a href="/{npub}">@{profs[note.pubkey]?.name ?? ''}</a>
-			{:else}
+			{#if note.kind === 16}
+				reposted by
+				{#if profs[note.pubkey]}
+				<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {npub}" width="16" height="16"> {profs[note.pubkey].display_name ?? ''} <a href="/{npub}">@{profs[note.pubkey]?.name ?? ''}</a>
+				{:else}
 				<img src="/default.png" alt="" width="32" height="32"><a href="/{npub}">@{npub.slice(0, 10)}...</a>
+				{/if}
+				<br />
+				<time>{(new Date(1000 * note.created_at)).toLocaleString()}</time>
+				<br />
+			{/if}
+			{#if profs[noteOrg.pubkey]}
+				<img src="{profs[noteOrg.pubkey].picture || '/default.png'}" alt="avatar of {npubOrg}" width="32" height="32"> {profs[noteOrg.pubkey].display_name ?? ''} <a href="/{npubOrg}">@{profs[noteOrg.pubkey]?.name ?? ''}</a>
+			{:else}
+				<img src="/default.png" alt="" width="32" height="32"><a href="/{npubOrg}">@{npubOrg.slice(0, 10)}...</a>
 			{/if}
 				<br />
-				<a href="/{nevent}"><time>{(new Date(1000 * note.created_at)).toLocaleString()}</time></a>
+				<a href="/{neventOrg}"><time>{(new Date(1000 * noteOrg.created_at)).toLocaleString()}</time></a>
 				<a href="/channels/{nip19.neventEncode(channel.event)}">{channel.name}</a>
 			</dt>
-			{@const replyTags = note.tags.filter(v => v[0] === 'e' && v[3] === 'reply')}
-			{@const replyPubkeys = note.tags.filter(v => v[0] === 'p').map(v => v[1])}
-			{@const r = getExpandTagsList(note.content, note.tags.filter(v => v[0] === 'emoji'))}
+			{@const replyTags = noteOrg.tags.filter(v => v[0] === 'e' && v[3] === 'reply')}
+			{@const replyPubkeys = noteOrg.tags.filter(v => v[0] === 'p').map(v => v[1])}
+			{@const r = getExpandTagsList(noteOrg.content, noteOrg.tags.filter(v => v[0] === 'emoji'))}
 			{@const matchesIterator = r[0]}
 			{@const plainTexts = r[1]}
 			{@const emojiUrls = r[2]}
-			{@const imageUrls = getImageUrls(note.content)}
-			{@const videoUrls = getVideoUrls(note.content)}
-			{@const audioUrls = getAudioUrls(note.content)}
-			{@const contentWarningTag = note.tags.filter(tag => tag[0] === 'content-warning')}
+			{@const imageUrls = getImageUrls(noteOrg.content)}
+			{@const videoUrls = getVideoUrls(noteOrg.content)}
+			{@const audioUrls = getAudioUrls(noteOrg.content)}
+			{@const contentWarningTag = noteOrg.tags.filter(tag => tag[0] === 'content-warning')}
 			<dd>
 			{#if replyTags.length > 0 || replyPubkeys.length > 0}
 				<div class="info-header">
@@ -162,12 +187,12 @@ const loginAsThisAccount = (pubkey: string) => {
 					<a href="#note-{replyTags[0][1]}">&gt;&gt;</a>
 				{/if}
 				{#each replyPubkeys as pubkey}
-					&nbsp;@{profs[pubkey]?.name ?? (npub.slice(0, 10) + '...')}
+					&nbsp;@{profs[pubkey]?.name ?? (npubOrg.slice(0, 10) + '...')}
 				{/each}
 				</div>
 			{/if}
 				<div class="content-warning-reason {contentWarningTag.length > 0 ? '' : 'hide'}">Content Warning{#if contentWarningTag.length > 0 && contentWarningTag[0][1]}<br />Reason: {contentWarningTag[0][1]}{/if}</div>
-				<button class="content-warning-show {contentWarningTag.length > 0 ? '' : 'hide'}" on:click={() => showContentWarning(note.id)}>Show Content</button>
+				<button class="content-warning-show {contentWarningTag.length > 0 ? '' : 'hide'}" on:click={() => showContentWarning(noteOrg.id)}>Show Content</button>
 				<div class="content-warning-target {contentWarningTag.length > 0 ? 'hide' : ''}">
 					<div class="content">
 					{plainTexts.shift()}
@@ -224,10 +249,10 @@ const loginAsThisAccount = (pubkey: string) => {
 					</div>
 			{/if}
 				</div>
-			{#if favList.some(ev => ev.tags.findLast(tag => tag[0] === 'e')?.at(1) === note.id && profs[ev.pubkey])}
+			{#if favList.some(ev => ev.tags.findLast(tag => tag[0] === 'e')?.at(1) === noteOrg.id && profs[ev.pubkey])}
 				<ul class="fav-holder" role="list">
 				{#each favList as ev}
-					{#if ev.tags.findLast(tag => tag[0] === 'e')?.at(1) === note.id && profs[ev.pubkey] && !muteList.includes(ev.pubkey)}
+					{#if ev.tags.findLast(tag => tag[0] === 'e')?.at(1) === noteOrg.id && profs[ev.pubkey] && !muteList.includes(ev.pubkey)}
 						{@const emojiTag = ev.tags.find(tag => tag.length >= 3 && tag[0] === 'emoji')}
 						{@const prof = profs[ev.pubkey]}
 						{@const npubFaved = nip19.npubEncode(ev.pubkey)}
@@ -247,19 +272,20 @@ const loginAsThisAccount = (pubkey: string) => {
 					{#if isLoggedin}
 					<details>
 						<summary>
-							<svg><use xlink:href="/arrow-bold-reply.svg#reply"></use></svg><span>reply to @{#if profs[note.pubkey]}{profs[note.pubkey]?.name ?? ''}{:else}{npub.slice(0, 10)}...{/if}</span>
+							<svg><use xlink:href="/arrow-bold-reply.svg#reply"></use></svg><span>reply to @{#if profs[noteOrg.pubkey]}{profs[noteOrg.pubkey]?.name ?? ''}{:else}{npubOrg.slice(0, 10)}...{/if}</span>
 						</summary>
-						<textarea id="input-text" bind:value={inputText[note.id]} on:keydown={(e) => {submitFromKeyboard(e, note)}}></textarea>
-						<button on:click={() => {callSendMessage(note)}} disabled={!inputText[note.id]}>Reply</button>
+						<textarea id="input-text" bind:value={inputText[noteOrg.id]} on:keydown={(e) => {submitFromKeyboard(e, noteOrg)}}></textarea>
+						<button on:click={() => {callSendMessage(noteOrg)}} disabled={!inputText[noteOrg.id]}>Reply</button>
 					</details>
-					<button class="fav" on:click={() => sendFav(pool, relaysToWrite, note, '+')} title="Fav"><svg><use xlink:href="/heart.svg#fav"></use></svg></button>
-					<button class="emoji" on:click={() => callSendEmoji(pool, relaysToWrite, note)} title="Emoji fav"><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button>
-					<div bind:this={emojiPicker[note.id]} class={visible[note.id] ? '' : 'hidden'}></div>
-						{#if note.pubkey === loginPubkey}
-					<button class="delete" on:click={() => callSendDeletion(pool, relaysToWrite, note.id)} title="Delete"><svg><use xlink:href="/trash.svg#delete"></use></svg></button>
+					<button class="repost" on:click={() => sendRepost(pool, relaysToWrite, noteOrg)} title="Repost"><svg><use xlink:href="/refresh-cw.svg#repost"></use></svg></button>
+					<button class="fav" on:click={() => sendFav(pool, relaysToWrite, noteOrg, '+')} title="Fav"><svg><use xlink:href="/heart.svg#fav"></use></svg></button>
+					<button class="emoji" on:click={() => callSendEmoji(pool, relaysToWrite, noteOrg)} title="Emoji fav"><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button>
+					<div bind:this={emojiPicker[noteOrg.id]} class={visible[noteOrg.id] ? '' : 'hidden'}></div>
+						{#if noteOrg.pubkey === loginPubkey}
+					<button class="delete" on:click={() => callSendDeletion(pool, relaysToWrite, noteOrg.id)} title="Delete"><svg><use xlink:href="/trash.svg#delete"></use></svg></button>
 						{/if}
 					{:else}
-					<button class="login-as-this-account" on:click={() => loginAsThisAccount(note.pubkey)} title="Login with this pubkey"><svg><use xlink:href="/eye.svg#login-as-this-account"></use></svg></button>
+					<button class="login-as-this-account" on:click={() => loginAsThisAccount(noteOrg.pubkey)} title="Login with this pubkey"><svg><use xlink:href="/eye.svg#login-as-this-account"></use></svg></button>
 					{/if}
 					<details>
 						<summary><svg><use xlink:href="/more-horizontal.svg#more"></use></svg></summary>
@@ -288,6 +314,9 @@ const loginAsThisAccount = (pubkey: string) => {
 </dl>
 
 <style>
+dt {
+	border-top: #999 solid 1px;
+}
 dt time {
 	margin-left: 32px;
 }
@@ -336,6 +365,7 @@ dd dl * {
 dd dl .json-view > code {
 	font-size: x-small;
 }
+dd button.repost,
 dd button.fav,
 dd button.emoji,
 dd button.delete,
@@ -347,6 +377,7 @@ dd button.login-as-this-account {
 	width: 24px;
 	height: 24px;
 }
+dd button.repost > svg,
 dd button.fav > svg,
 dd button.emoji > svg,
 dd button.delete > svg,
@@ -395,14 +426,16 @@ dd .action-bar details svg {
 div.hidden {
 	display: none;
 }
-:global(#container.dark button.fav,
+:global(#container.dark button.repost,
+	#container.dark button.fav,
 	#container.dark button.emoji,
 	#container.dark button.delete,
 	#container.dark button.login-as-this-account,
 	#container.dark details) {
 	fill: white;
 }
-:global(#container.light button.fav,
+:global(#container.light button.repost,
+	#container.light button.fav,
 	#container.light button.emoji,
 	#container.light button.delete,
 	#container.light button.login-as-this-account,
