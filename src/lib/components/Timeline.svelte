@@ -134,7 +134,7 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 <p>Total: {notes.length} posts</p>
 <dl>
 {#each notesToShow as note}
-	{@const noteOrg = note.kind === 42 ? note : notes.find(ev => ev.id === note.tags.find(tag => tag.length >= 2 && tag[0] === 'e')?.at(1))}
+	{@const noteOrg = note.kind === 42 ? note : [...notes, ...notesQuoted].find(ev => ev.id === note.tags.find(tag => tag.length >= 2 && tag[0] === 'e')?.at(1))}
 	{@const rootId = noteOrg?.tags.find(v => v[0] === 'e' && v[3] === 'root')?.at(1)}
 	{@const channel = channels.find(v => v.event.id === rootId)}
 	{#if noteOrg !== undefined && rootId !== undefined && channel !== undefined}

@@ -220,24 +220,24 @@ const applyRelays = () => {
 	favList = [];
 	subNotes?.unsub();
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
-	let filter: Filter<42>;
+	let filters: Filter<16|42>[];
 	const limit = 50;
 	if (currentChannelId) {
-		filter = {kinds: [42], limit: limit, '#e': [currentChannelId]};
+		filters = [{kinds: [42], limit: limit, '#e': [currentChannelId]}, {kinds: [16], '#k': ['42'], limit: limit}];
 	}
 	else if (currentPubkey) {
-		filter = {kinds: [42], limit: limit, authors: [currentPubkey]};
+		filters = [{kinds: [42], limit: limit, authors: [currentPubkey]}, {kinds: [16], '#k': ['42'], limit: limit, authors: [currentPubkey]}];
 	}
 	else if (currentHashtag) {
-		filter = {kinds: [42], limit: limit, '#t': [currentHashtag]};
+		filters = [{kinds: [42], limit: limit, '#t': [currentHashtag]}];
 	}
 	else if (currentEvent) {
-		filter = {ids: [currentEvent.id]};
+		filters = [{ids: [currentEvent.id]}];
 	}
 	else {
-		filter = {kinds: [42], limit: limit};
+		filters = [{kinds: [42], limit: limit}, {kinds: [16], '#k': ['42'], limit: limit}];
 	}
-	const rc = new RelayConnector(pool, relaysToRead, loginPubkey, filter, callbackPhase1, callbackPhase2, callbackPhase3);
+	const rc = new RelayConnector(pool, relaysToRead, loginPubkey, filters, callbackPhase1, callbackPhase2, callbackPhase3);
 	rc.getEventsPhase1();
 };
 

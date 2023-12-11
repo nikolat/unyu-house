@@ -51,16 +51,16 @@ export class RelayConnector {
 	#pool: SimplePool;
 	#relays: string[];
 	#loginPubkey: string;
-	#filterKind42: Filter<42>;
+	#filterBase: Filter<16|42>[];
 	#callbackPhase1: Function;
 	#callbackPhase2: Function;
 	#callbackPhase3: Function;
 
-	constructor(pool: SimplePool, relays: string[], loginPubkey: string, filterKind42: Filter<42>, callbackPhase1: Function, callbackPhase2: Function, callbackPhase3: Function) {
+	constructor(pool: SimplePool, relays: string[], loginPubkey: string, filterBase: Filter<16|42>[], callbackPhase1: Function, callbackPhase2: Function, callbackPhase3: Function) {
 		this.#pool = pool;
 		this.#relays = relays;
 		this.#loginPubkey = loginPubkey;
-		this.#filterKind42 = filterKind42;
+		this.#filterBase = filterBase;
 		this.#callbackPhase1 = callbackPhase1;
 		this.#callbackPhase2 = callbackPhase2;
 		this.#callbackPhase3 = callbackPhase3;
@@ -69,13 +69,11 @@ export class RelayConnector {
 	getEventsPhase1 = () => {
 		const limit_channel = 300;
 		const limit_fav = 300;
-		const limit_repost = 300;
 		const filterPhase1: Filter<7|16|40|41|42|10000|10001|10005>[] = [
 			{kinds: [7], '#k': ['42'], limit: limit_fav},
-			{kinds: [16], '#k': ['42'], limit: limit_repost},
 			{kinds: [40], limit: limit_channel},
 			{kinds: [41], limit: limit_channel},
-			this.#filterKind42
+			...this.#filterBase
 		];
 		if (this.#loginPubkey) {
 			filterPhase1.push({kinds: [10000, 10001, 10005], authors: [this.#loginPubkey]});
@@ -102,12 +100,14 @@ export class RelayConnector {
 			if (idsToGet.length > 0) {
 				filterPhase2.push({ids: idsToGet});
 			}
-			const filterPhase3Base: Filter<42> = this.#filterKind42;
-			filterPhase3Base.since = events[42].map(ev => ev.created_at).reduce((a, b) => Math.max(a, b), 0) + 1;
-			filterPhase3Base.limit = 1;
+			const filterPhase3Base: Filter<16|42>[] = this.#filterBase;
+			for (const f of filterPhase3Base) {
+				f.since = events[42].map(ev => ev.created_at).reduce((a, b) => Math.max(a, b), 0) + 1;
+				f.limit = 1;
+			}
 			const filterPhase3: Filter<0|7|16|40|41|42|10000|10001|10005>[] = [
-				filterPhase3Base,
-				{kinds: [7, 16], '#k': ['42'], limit: 1},
+				...filterPhase3Base,
+				{kinds: [7], '#k': ['42'], limit: 1},
 				{kinds: [0, 40, 41], limit: 1}
 			];
 			if (this.#loginPubkey) {
