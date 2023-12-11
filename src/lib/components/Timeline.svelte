@@ -291,15 +291,15 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 						<summary><svg><use xlink:href="/more-horizontal.svg#more"></use></svg></summary>
 						<dl class="details">
 							<dt>User ID</dt>
-							<dd><code>{npub}</code></dd>
+							<dd><code>{npubOrg}</code></dd>
 							<dt>Event ID</dt>
-							<dd><code>{nevent}</code></dd>
+							<dd><code>{neventOrg}</code></dd>
 							<dt>Event JSON</dt>
-							<dd><pre class="json-view"><code>{JSON.stringify(note, undefined, 2)}</code></pre></dd>
+							<dd><pre class="json-view"><code>{JSON.stringify(noteOrg, undefined, 2)}</code></pre></dd>
 							<dt>Relays seen on</dt>
 							<dd>
 								<ul>
-								{#each pool.seenOn(note.id) as relay}
+								{#each pool.seenOn(noteOrg.id) as relay}
 									<li>{relay}</li>
 								{/each}
 								</ul>
