@@ -132,6 +132,7 @@ const callbackPhase2 = (profsNew: {[key: string]: Profile}, eventsQuotedNew: Nos
 			channel.post_count = 0;
 			channel.fav_count = 0;
 			channels.push(channel);
+			channels = channels;
 		}
 	}
 	if (notesQuotedAdded) {
