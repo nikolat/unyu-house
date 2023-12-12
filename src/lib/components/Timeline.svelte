@@ -294,7 +294,7 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 						id="zap-{note.id}"
 						aria-label="Zap Button"
 						data-npub={npubOrg}
-						data-note-id={neventOrg}
+						data-note-id={nip19.noteEncode(noteOrg.id)}
 						data-relays={relaysToWrite}
 						class="zap-dummy"
 					>dummy</button>
