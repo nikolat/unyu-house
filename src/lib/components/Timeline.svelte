@@ -119,6 +119,15 @@ const loginAsThisAccount = (pubkey: string) => {
 	importRelays(relaysSelected);
 }
 
+const zap = (id: string) => {
+	const elm = document.getElementById(`zap-${id}`) as HTMLButtonElement;
+	if (!elm.disabled) {
+		(window as any).nostrZap.initTarget(elm);
+		elm.dispatchEvent(new Event('click'));
+		elm.disabled = true;
+	}
+};
+
 $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 	if (a.created_at < b.created_at) {
 		return -1;
@@ -281,6 +290,15 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 					<button class="fav" on:click={() => sendFav(pool, relaysToWrite, noteOrg, '+')} title="Fav"><svg><use xlink:href="/heart.svg#fav"></use></svg></button>
 					<button class="emoji" on:click={() => callSendEmoji(pool, relaysToWrite, noteOrg)} title="Emoji fav"><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button>
 					<div bind:this={emojiPicker[noteOrg.id]} class={visible[noteOrg.id] ? '' : 'hidden'}></div>
+					<button
+						id="zap-{note.id}"
+						aria-label="Zap Button"
+						data-npub={npubOrg}
+						data-note-id={neventOrg}
+						data-relays={relaysToWrite}
+						class="zap-dummy"
+					>dummy</button>
+					<button class="zap" title="Zap!" on:click={() => zap(note.id)}><svg><use xlink:href="/lightning.svg#zap"></use></svg></button>
 						{#if noteOrg.pubkey === loginPubkey}
 					<button class="delete" on:click={() => callSendDeletion(pool, relaysToWrite, noteOrg.id)} title="Delete"><svg><use xlink:href="/trash.svg#delete"></use></svg></button>
 						{/if}
@@ -368,6 +386,7 @@ dd dl .json-view > code {
 dd button.repost,
 dd button.fav,
 dd button.emoji,
+dd button.zap,
 dd button.delete,
 dd button.login-as-this-account {
 	background-color: transparent;
@@ -377,9 +396,13 @@ dd button.login-as-this-account {
 	width: 24px;
 	height: 24px;
 }
+.zap-dummy {
+	display: none;
+}
 dd button.repost > svg,
 dd button.fav > svg,
 dd button.emoji > svg,
+dd button.zap > svg,
 dd button.delete > svg,
 dd button.login-as-this-account > svg {
 	width: 24px;
@@ -429,6 +452,7 @@ div.hidden {
 :global(#container.dark button.repost,
 	#container.dark button.fav,
 	#container.dark button.emoji,
+	#container.dark button.zap,
 	#container.dark button.delete,
 	#container.dark button.login-as-this-account,
 	#container.dark details) {
@@ -437,6 +461,7 @@ div.hidden {
 :global(#container.light button.repost,
 	#container.light button.fav,
 	#container.light button.emoji,
+	#container.light button.zap,
 	#container.light button.delete,
 	#container.light button.login-as-this-account,
 	#container.light details) {
