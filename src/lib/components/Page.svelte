@@ -1,7 +1,7 @@
 <script lang='ts'>
 import { type Channel, type Profile, type GetRelays, getRelaysToUse, RelayConnector, urlDefaultTheme } from '$lib/util';
 import type { NostrAPI } from '$lib/@types/nostr';
-import { storedIsLoggedin, storedLoginpubkey, storedCurrentChannelId, storedCurrentPubkey, storedCurrentHashtag, storedCurrentEvent, storedNeedApplyRelays, storedRelaysToUse, storedTheme } from '$lib/store';
+import { storedIsLoggedin, storedLoginpubkey, storedCurrentChannelId, storedCurrentPubkey, storedCurrentHashtag, storedCurrentEvent, storedNeedApplyRelays, storedRelaysToUse, preferences } from '$lib/store';
 import { defaultRelays, title } from '$lib/config';
 import { browser } from '$app/environment';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
@@ -44,8 +44,8 @@ let scrolled: boolean = false;
 storedRelaysToUse.subscribe((value) => {
 	relaysToUse = value;
 });
-storedTheme.subscribe((value) => {
-	theme = value;
+preferences.subscribe((value) => {
+	theme = value.theme ?? theme;
 });
 storedCurrentChannelId.subscribe((value) => {
 	currentChannelId = value;
@@ -329,7 +329,10 @@ $: repostListToShow = currentChannelId ? repostList.filter(ev16 => {
 
 <svelte:head>
 	<title>{titleString}</title>
-	<link rel="stylesheet" href="{theme || urlDefaultTheme}">
+	<link rel="stylesheet" href="{theme}">
+	<script>
+        document.querySelector("link[rel=stylesheet]").href = JSON.parse(localStorage.getItem('preferences') ?? '').theme ?? urlDefaulttheme;;
+	</script>
 </svelte:head>
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
