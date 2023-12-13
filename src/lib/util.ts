@@ -66,7 +66,7 @@ export class RelayConnector {
 		this.#callbackPhase3 = callbackPhase3;
 	}
 
-	getEventsPhase1 = () => {
+	getEventsPhase1 = async () => {
 		const limit_channel = 300;
 		const limit_fav = 300;
 		const filterPhase1: Filter<7|16|40|41|42|10000|10001|10005>[] = [
@@ -78,48 +78,47 @@ export class RelayConnector {
 		if (this.#loginPubkey) {
 			filterPhase1.push({kinds: [10000, 10001, 10005], authors: [this.#loginPubkey]});
 		}
-		const sub: Sub<7|16|40|41|42|10000|10001|10005> = this.#pool.sub(this.#relays, filterPhase1);
 		const events: {[key: number]: NostrEvent<7|16|40|41|42|10000|10001|10005>[]} = {7: [], 16: [], 40: [], 41: [], 42: [], 10000: [], 10001: [], 10005: []};
-		sub.on('event', (ev: NostrEvent<7|16|40|41|42|10000|10001|10005>) => {
-			events[ev.kind].push(ev);
-		});
-		sub.on('eose', () => {
-			console.log('getEventsPhase1 * EOSE *');
-			sub.unsub();
-			const channels = this.#getChannels(events[7], events[40], events[41], events[42]);
-			const notes = this.#getNotes(events[42]);
-			const event10000 = events[10000].length === 0 ? null : events[10000].reduce((a, b) => a.created_at > b.created_at ? a : b);
-			const pinList = this.#getPinList(events[10005].length > 0 ? events[10005] : events[10001], channels);
-			this.#callbackPhase1(this.#loginPubkey, channels, notes, events[16], events[7], event10000, pinList);
-			const pubkeysToGet: string[] = this.#getPubkeysForFilter(Object.values(events).flat());
-			const idsToGet: string[] = [
-				...this.#getIdsForFilter([...events[16], ...events[42]]).filter(v => !events[42].map(ev => ev.id).includes(v)),
-				...pinList.filter(id => !events[40].map(ev => ev.id).includes(id))
-			];
-			const filterPhase2: Filter[] = [];
-			if (pubkeysToGet.length > 0) {
-				filterPhase2.push({kinds: [0], authors: pubkeysToGet});
+		for (const filter of filterPhase1) {
+			const evs = await getGeneralEvents(this.#pool, this.#relays, [filter]) as NostrEvent<7|16|40|41|42|10000|10001|10005>[];
+			for (const ev of evs) {
+				events[ev.kind].push(ev);
 			}
-			if (idsToGet.length > 0) {
-				filterPhase2.push({ids: idsToGet});
-			}
-			const filterPhase3Base: Filter<16|42>[] = this.#filterBase;
-			for (const f of filterPhase3Base) {
-				f.since = events[42].map(ev => ev.created_at).reduce((a, b) => Math.max(a, b), 0) + 1;
-				f.limit = 1;
-			}
-			const filterPhase3: Filter<0|7|16|40|41|42|10000|10001|10005>[] = [
-				...filterPhase3Base,
-				{kinds: [7], '#k': ['42'], limit: 1},
-				{kinds: [0, 40, 41], limit: 1}
-			];
-			if (this.#loginPubkey) {
-				filterPhase3.push(
-					{kinds: [10000, 10001, 10005], authors: [this.#loginPubkey], limit: 1},
-				);
-			}
-			this.#getEventsPhase2(filterPhase2, filterPhase3, true);
-		});
+		}
+		console.log('getEventsPhase1 * EOSE *');
+		const channels = this.#getChannels(events[7], events[40], events[41], events[42]);
+		const notes = this.#getNotes(events[42]);
+		const event10000 = events[10000].length === 0 ? null : events[10000].reduce((a, b) => a.created_at > b.created_at ? a : b);
+		const pinList = this.#getPinList(events[10005].length > 0 ? events[10005] : events[10001], channels);
+		this.#callbackPhase1(this.#loginPubkey, channels, notes, events[16], events[7], event10000, pinList);
+		const pubkeysToGet: string[] = this.#getPubkeysForFilter(Object.values(events).flat());
+		const idsToGet: string[] = [
+			...this.#getIdsForFilter([...events[16], ...events[42]]).filter(v => !events[42].map(ev => ev.id).includes(v)),
+			...pinList.filter(id => !events[40].map(ev => ev.id).includes(id))
+		];
+		const filterPhase2: Filter[] = [];
+		if (pubkeysToGet.length > 0) {
+			filterPhase2.push({kinds: [0], authors: pubkeysToGet});
+		}
+		if (idsToGet.length > 0) {
+			filterPhase2.push({ids: idsToGet});
+		}
+		const filterPhase3Base: Filter<16|42>[] = this.#filterBase;
+		for (const f of filterPhase3Base) {
+			f.since = events[42].map(ev => ev.created_at).reduce((a, b) => Math.max(a, b), 0) + 1;
+			f.limit = 1;
+		}
+		const filterPhase3: Filter<0|7|16|40|41|42|10000|10001|10005>[] = [
+			...filterPhase3Base,
+			{kinds: [7], '#k': ['42'], limit: 1},
+			{kinds: [0, 40, 41], limit: 1}
+		];
+		if (this.#loginPubkey) {
+			filterPhase3.push(
+				{kinds: [10000, 10001, 10005], authors: [this.#loginPubkey], limit: 1},
+			);
+		}
+		this.#getEventsPhase2(filterPhase2, filterPhase3, true);
 	};
 
 	#getEventsPhase2 = (filterPhase2: Filter[], filterPhase3: Filter<0|7|16|40|41|42|10000|10001|10005>[], goPhase3: Boolean) => {
