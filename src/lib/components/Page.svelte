@@ -44,7 +44,7 @@ let scrolled: boolean = false;
 storedRelaysToUse.subscribe((value) => {
 	relaysToUse = value;
 });
-preferences.subscribe((value) => {
+preferences.subscribe((value: { theme: string; }) => {
 	theme = value.theme ?? theme;
 	if (browser) {
 		(document.querySelector('link[rel=stylesheet]') as HTMLLinkElement).href = theme ?? $preferences.theme;
@@ -72,70 +72,144 @@ storedLoginpubkey.subscribe((value) => {
 const resetScroll = () => {
 	scrolled = false;
 };
-
-const callbackPhase1 = async (loginPubkey: string, channelsNew: Channel[], notesNew: NostrEvent[], repostListNew: NostrEvent[], favListNew: NostrEvent[], event10000: NostrEvent<10000> | null, pinListNew: string[]) => {
-	channels = channelsNew;
-	if (currentChannelId) {
-		notes = notesNew.filter(ev => ev.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root')) ?? [];
+const execScroll = () => {
+	if (document.querySelectorAll('main dl dt').length === 0) {
+		return;
 	}
-	else {
-		notes = notesNew ?? [];
-	}
-	repostList = repostListNew ?? [];
-	favList = favListNew ?? [];
-	muteList = event10000?.tags?.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1]) ?? [];
-	muteChannels = event10000?.tags?.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]) ?? [];
-	wordList = event10000?.tags?.filter(tag => tag.length >= 2 && tag[0] === 'word').map(tag => tag[1]) ?? [];
-	const nostr = (window as Window).nostr;
-	if (isLoggedin && loginPubkey && event10000?.content && browser && nostr?.nip04?.decrypt) {
-		try {
-			const content = await nostr.nip04.decrypt(loginPubkey, event10000.content);
-			const list: string[][] = JSON.parse(content);
-			muteList = muteList.concat(list.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1]));
-			muteChannels = muteChannels.concat(list.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]));
-			wordList = wordList.concat(list.filter(tag => tag.length >= 2 && tag[0] === 'word').map(tag => tag[1]));
-		} catch (error) {
-			console.warn(error);
-		}
-	}
-	pinList = pinListNew ?? [];
+	const main = document.getElementsByTagName('main')[0];
+	main.scroll(0, main.scrollHeight);
+	scrolled = true;
 };
 
-const callbackPhase2 = (profsNew: {[key: string]: Profile}, eventsQuotedNew: NostrEvent[]) => {
-	let profAdded = false;
-	for (const k of Object.keys(profsNew)) {
-		if (!(k in profs)) {
-			profs[k] = profsNew[k];
-			profAdded = true;
+let eventsAll: NostrEvent[] = [];
+
+const callbackEvent = async (event: NostrEvent) => {
+	if (eventsAll.some(ev => ev.id === event.id)) {
+		return;
+	}
+	if (eventsAll.some(ev => [0, 41, 10000, 10005].includes(ev.kind) && ev.kind === event.kind && ev.pubkey === event.pubkey && ev.created_at >= event.created_at)) {
+		return;
+	}
+	eventsAll = utils.insertEventIntoAscendingList(eventsAll, event);
+	console.info(`kind:${event.kind}`);
+	switch (event.kind) {
+		case 0:
+			try {
+				profs[event.pubkey] = JSON.parse(event.content);
+			} catch (error) {
+				console.warn(error);
+				return;
+			}
+			profs[event.pubkey].created_at = event.created_at;
+			profs[event.pubkey].tags = event.tags;
+			break;
+		case 7:
+			favList = utils.insertEventIntoAscendingList(favList, event);
+			const targetChannel7 = channels.find(channel => channel.event.id === event.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1));
+			if (targetChannel7 !== undefined) {
+				targetChannel7.fav_count++;
+				channels = channels;
+			}
+			break;
+		case 16:
+			repostList = utils.insertEventIntoAscendingList(repostList, event);
+			break;
+		case 40:
+			let channel: Channel;
+			try {
+				channel = JSON.parse(event.content);
+			} catch (error) {
+				console.warn(error);
+				return;
+			}
+			channel.updated_at = event.created_at;
+			channel.event = event;
+			channel.post_count = notes.filter(note => note.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === event.id && tag[3] === 'root')).length;
+			channel.fav_count = favList.filter(note => note.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === event.id && tag[3] === 'root')).length;
+			channels = getSortedChannels([channel, ...channels]);
+			break;
+		case 41:
+			const id = event.tags.find(tag => tag.length >= 2 && tag[0] === 'e')?.at(1);
+			const targetChannel41 = channels.find(channel => channel.event.id === id);
+			if (targetChannel41 === undefined) {
+				return;
+			}
+			if (event.pubkey !== targetChannel41.event.pubkey || event.created_at <= targetChannel41.updated_at) {
+				return;
+			}
+			let newChannel: Channel;
+			try {
+				newChannel = JSON.parse(event.content);
+			} catch (error) {
+				console.warn(error);
+				return;
+			}
+			newChannel.updated_at = event.created_at;
+			newChannel.event = targetChannel41.event;
+			newChannel.post_count = notes.filter(note => note.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === id && tag[3] === 'root')).length;
+			newChannel.fav_count = favList.filter(note => note.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === id && tag[3] === 'root')).length;
+			channels = getSortedChannels([newChannel, ...channels.filter(channel => channel.event.id !== id)]);
+			break;
+		case 42:
+			if (currentChannelId) {
+				if (event.tags.some(tag => tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root')) {
+					notes = utils.insertEventIntoAscendingList(notes, event);
+				}
+			}
+			else {
+				notes = utils.insertEventIntoAscendingList(notes, event);
+			}
+			const targetChannel42 = channels.find(channel => channel.event.id === event.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1));
+			if (targetChannel42 !== undefined) {
+				targetChannel42.post_count++;
+				channels = channels;
+			}
+			execScroll();
+			break;
+		case 10000:
+			muteList = event.tags.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1]) ?? [];
+			muteChannels = event.tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]) ?? [];
+			wordList = event.tags.filter(tag => tag.length >= 2 && tag[0] === 'word').map(tag => tag[1]) ?? [];
+			const nostr = (window as Window).nostr;
+			if (isLoggedin && loginPubkey && event.content && browser && nostr?.nip04?.decrypt) {
+				try {
+					const content = await nostr.nip04.decrypt(loginPubkey, event.content);
+					const list: string[][] = JSON.parse(content);
+					muteList = muteList.concat(list.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1]));
+					muteChannels = muteChannels.concat(list.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]));
+					wordList = wordList.concat(list.filter(tag => tag.length >= 2 && tag[0] === 'word').map(tag => tag[1]));
+				} catch (error) {
+					console.warn(error);
+				}
+			}
+			break;
+		case 10005:
+			pinList = event.tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]);
+			break;
+		default:
+			break;
+	}
+};
+
+const getSortedChannels = (channelArray: Channel[]) => {
+	channelArray.sort((a, b) => {
+		if (a.updated_at < b.updated_at) {
+			return 1;
 		}
-	}
-	if (profAdded) {
-		profs = profs;
-	}
+		if (a.updated_at > b.updated_at) {
+			return -1;
+		}
+		return 0;
+	});
+	return channelArray;
+};
+
+const callbackPhase2 = (eventsQuotedNew: NostrEvent[]) => {
 	let notesQuotedAdded = false;
 	for (const ev of eventsQuotedNew) {
 		if (!notesQuoted.map(ev => ev.id).includes(ev.id)) {
 			notesQuoted.push(ev);
 			notesQuotedAdded = true;
-		}
-		if (ev.kind === 40) {
-			let json: any;
-			try {
-				json = JSON.parse(ev.content);
-			} catch (error) {
-				console.warn(error);
-				continue;
-			}
-			if (['name'].some(metadata => !Object.hasOwn(json, metadata))) {
-				continue;
-			}
-			const channel: Channel = json;
-			channel.updated_at = ev.created_at;
-			channel.event = ev;
-			channel.post_count = 0;
-			channel.fav_count = 0;
-			channels.push(channel);
-			channels = channels;
 		}
 	}
 	if (notesQuotedAdded) {
@@ -145,76 +219,7 @@ const callbackPhase2 = (profsNew: {[key: string]: Profile}, eventsQuotedNew: Nos
 
 const callbackPhase3 = (subNotesPhase3: Sub<0|7|16|40|41|42|10000|10001|10005>, ev: NostrEvent<0|7|16|40|41|42|10000|10001|10005>) => {
 	subNotes = subNotesPhase3;
-	if (ev.kind === 42 && !notes.map(v => v.id).includes(ev.id)) {
-		if (currentChannelId) {
-			if (ev.tags.some(tag => tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root')) {
-				notes = utils.insertEventIntoAscendingList(notes, ev);
-			}
-		}
-		else {
-			notes = utils.insertEventIntoAscendingList(notes, ev);
-		}
-	}
-	else if (ev.kind === 0) {
-		if (profs[ev.pubkey] && profs[ev.pubkey].created_at >= ev.created_at) {
-			return;
-		}
-		try {
-			profs[ev.pubkey] = JSON.parse(ev.content);
-		} catch (error) {
-			console.warn(error);
-			return;
-		}
-		profs[ev.pubkey].created_at = ev.created_at;
-	}
-	else if (ev.kind === 7 && !favList.map(v => v.id).includes(ev.id)) {
-		favList = utils.insertEventIntoAscendingList(favList, ev);
-	}
-	else if (ev.kind === 16 && !repostList.map(v => v.id).includes(ev.id)) {
-		repostList = utils.insertEventIntoAscendingList(repostList, ev);
-	}
-	else if (ev.kind === 10000) {
-		if (ev.pubkey !== loginPubkey)
-			return;
-		muteChannels = ev.tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]);
-	}
-	else if (ev.kind === 10001 || ev.kind === 10005) {
-		if (ev.pubkey !== loginPubkey)
-			return;
-		pinList = ev.tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]);
-	}
-	else if (ev.kind === 40 && !channels.map(v => v.event.id).includes(ev.id)) {
-		let channel: Channel;
-		try {
-			channel = JSON.parse(ev.content);
-		} catch (error) {
-			console.warn(error);
-			return;
-		}
-		channel.updated_at = ev.created_at;
-		channel.event = ev;
-		channels = [channel, ...channels];
-	}
-	else if (ev.kind === 41) {
-		const id = ev.tags.find(tag => tag.length >= 2 && tag[0] === 'e')?.at(1);
-		const currentChannel = channels.find(channel => channel.event.id === id);
-		if (currentChannel === undefined) {
-			return
-		}
-		if (ev.pubkey !== currentChannel.event.pubkey || ev.created_at <= currentChannel.updated_at) {
-			return;
-		}
-		let newChannel: Channel;
-		try {
-			newChannel = JSON.parse(ev.content);
-		} catch (error) {
-			console.warn(error);
-			return;
-		}
-		newChannel.updated_at = ev.created_at;
-		newChannel.event = currentChannel.event;
-		channels = [newChannel, ...channels.filter(channel => channel.event.id !== id)];
-	}
+	callbackEvent(ev);
 };
 
 const importRelays = (relaysSelected: string) => {
@@ -232,6 +237,7 @@ const importRelays = (relaysSelected: string) => {
 const applyRelays = () => {
 	storedNeedApplyRelays.set(false);
 	resetScroll();
+	eventsAll = [];
 	channels = [];
 	notes = [];
 	notesQuoted = [];
@@ -242,13 +248,13 @@ const applyRelays = () => {
 	favList = [];
 	subNotes?.unsub();
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
-	let filters: Filter<16|42>[];
+	let filters: Filter<0|16|40|41|42>[];
 	const limit = 50;
 	if (currentChannelId) {
-		filters = [{kinds: [42], limit: limit, '#e': [currentChannelId]}, {kinds: [16], '#k': ['42'], limit: limit}];
+		filters = [{kinds: [40], ids: [currentChannelId]}, {kinds: [41], '#e': [currentChannelId]}, {kinds: [42], limit: limit, '#e': [currentChannelId]}, {kinds: [16], '#k': ['42'], limit: limit}];
 	}
 	else if (currentPubkey) {
-		filters = [{kinds: [42], limit: limit, authors: [currentPubkey]}, {kinds: [16], '#k': ['42'], limit: limit, authors: [currentPubkey]}];
+		filters = [{kinds: [0], authors: [currentPubkey]}, {kinds: [42], limit: limit, authors: [currentPubkey]}, {kinds: [16], '#k': ['42'], limit: limit, authors: [currentPubkey]}];
 	}
 	else if (currentHashtag) {
 		filters = [{kinds: [42], limit: limit, '#t': [currentHashtag]}];
@@ -259,7 +265,10 @@ const applyRelays = () => {
 	else {
 		filters = [{kinds: [42], limit: limit}, {kinds: [16], '#k': ['42'], limit: limit}];
 	}
-	const rc = new RelayConnector(pool, relaysToRead, loginPubkey, filters, callbackPhase1, callbackPhase2, callbackPhase3);
+	if (loginPubkey) {
+		filters = [{kinds: [0], authors: [loginPubkey]}, ...filters];
+	}
+	const rc = new RelayConnector(pool, relaysToRead, loginPubkey, filters, callbackPhase2, callbackPhase3, callbackEvent);
 	rc.getEventsPhase1();
 };
 
@@ -286,12 +295,7 @@ onDestroy(() => {
 });
 afterUpdate(() => {
 	if (!scrolled) {
-		if (document.querySelectorAll('main dl dt').length === 0) {
-			return;
-		}
-		const main = document.getElementsByTagName('main')[0];
-		main.scroll(0, main.scrollHeight);
-		scrolled = true;
+		execScroll();
 	}
 });
 beforeNavigate(() => {

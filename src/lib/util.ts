@@ -51,46 +51,43 @@ export class RelayConnector {
 	#pool: SimplePool;
 	#relays: string[];
 	#loginPubkey: string;
-	#filterBase: Filter<16|42>[];
-	#callbackPhase1: Function;
+	#filterBase: Filter<0|16|40|41|42>[];
 	#callbackPhase2: Function;
 	#callbackPhase3: Function;
+	#callbackEvent: Function;
 
-	constructor(pool: SimplePool, relays: string[], loginPubkey: string, filterBase: Filter<16|42>[], callbackPhase1: Function, callbackPhase2: Function, callbackPhase3: Function) {
+	constructor(pool: SimplePool, relays: string[], loginPubkey: string, filterBase: Filter<0|16|40|41|42>[], callbackPhase2: Function, callbackPhase3: Function, callbackEvent: Function) {
 		this.#pool = pool;
 		this.#relays = relays;
 		this.#loginPubkey = loginPubkey;
 		this.#filterBase = filterBase;
-		this.#callbackPhase1 = callbackPhase1;
 		this.#callbackPhase2 = callbackPhase2;
 		this.#callbackPhase3 = callbackPhase3;
+		this.#callbackEvent = callbackEvent;
 	}
 
 	getEventsPhase1 = async () => {
 		const limit_channel = 300;
-		const limit_fav = 300;
-		const filterPhase1: Filter<7|16|40|41|42|10000|10001|10005>[] = [
-			{kinds: [7], '#k': ['42'], limit: limit_fav},
+		const limit_fav = 100;
+		const filterPhase1: Filter<0|7|16|40|41|42|10000|10005>[] = [
+			...this.#filterBase,
 			{kinds: [40], limit: limit_channel},
 			{kinds: [41], limit: limit_channel},
-			...this.#filterBase
 		];
 		if (this.#loginPubkey) {
-			filterPhase1.push({kinds: [10000, 10001, 10005], authors: [this.#loginPubkey]});
+			filterPhase1.push({kinds: [10000, 10005], authors: [this.#loginPubkey]});
 		}
-		const events: {[key: number]: NostrEvent<7|16|40|41|42|10000|10001|10005>[]} = {7: [], 16: [], 40: [], 41: [], 42: [], 10000: [], 10001: [], 10005: []};
+		filterPhase1.push({kinds: [7], '#k': ['42'], limit: limit_fav});
+		const events: {[key: number]: NostrEvent<0|7|16|40|41|42|10000|10005>[]} = {0: [], 7: [], 16: [], 40: [], 41: [], 42: [], 10000: [], 10005: []};
 		for (const filter of filterPhase1) {
-			const evs = await getGeneralEvents(this.#pool, this.#relays, [filter]) as NostrEvent<7|16|40|41|42|10000|10001|10005>[];
+			const evs = await getGeneralEvents(this.#pool, this.#relays, [filter], this.#callbackEvent) as NostrEvent<7|16|40|41|42|10000|10005>[];
 			for (const ev of evs) {
 				events[ev.kind].push(ev);
 			}
 		}
 		console.log('getEventsPhase1 * EOSE *');
 		const channels = this.#getChannels(events[7], events[40], events[41], events[42]);
-		const notes = this.#getNotes(events[42]);
-		const event10000 = events[10000].length === 0 ? null : events[10000].reduce((a, b) => a.created_at > b.created_at ? a : b);
-		const pinList = this.#getPinList(events[10005].length > 0 ? events[10005] : events[10001], channels);
-		this.#callbackPhase1(this.#loginPubkey, channels, notes, events[16], events[7], event10000, pinList);
+		const pinList = this.#getPinList(events[10005], channels);
 		const pubkeysToGet: string[] = this.#getPubkeysForFilter(Object.values(events).flat());
 		const idsToGet: string[] = [
 			...this.#getIdsForFilter([...events[16], ...events[42]]).filter(v => !events[42].map(ev => ev.id).includes(v)),
@@ -103,7 +100,7 @@ export class RelayConnector {
 		if (idsToGet.length > 0) {
 			filterPhase2.push({ids: idsToGet});
 		}
-		const filterPhase3Base: Filter<16|42>[] = this.#filterBase;
+		const filterPhase3Base: Filter<0|16|40|41|42>[] = this.#filterBase;
 		for (const f of filterPhase3Base) {
 			f.since = events[42].map(ev => ev.created_at).reduce((a, b) => Math.max(a, b), 0) + 1;
 			f.limit = 1;
@@ -121,42 +118,43 @@ export class RelayConnector {
 		this.#getEventsPhase2(filterPhase2, filterPhase3, true);
 	};
 
-	#getEventsPhase2 = (filterPhase2: Filter[], filterPhase3: Filter<0|7|16|40|41|42|10000|10001|10005>[], goPhase3: Boolean) => {
+	#getEventsPhase2 = async (filterPhase2: Filter[], filterPhase3: Filter<0|7|16|40|41|42|10000|10001|10005>[], goPhase3: Boolean) => {
 		const sub: Sub = this.#pool.sub(this.#relays, filterPhase2);
 		const events: {[key: number]: NostrEvent[]} = {0: [], 7: []};
 		const eventsQuoted: NostrEvent[] = [];
 		const eventsAll: NostrEvent[] = [];
-		sub.on('event', (ev: NostrEvent) => {
-			if ([0].includes(ev.kind)) {
-				events[ev.kind].push(ev);
-			}
-			else {
-				eventsQuoted.push(ev);
-			}
-			eventsAll.push(ev);
-		});
-		sub.on('eose', () => {
-			if (goPhase3) {
-				console.log('getEventsPhase2 * EOSE *');
-			}
-			else {
-				console.log('getEventsPhase2-2 * EOSE *');
-			}
-			sub.unsub();
-			const profs = this.#getProfiles(events[0]);
-			this.#callbackPhase2(profs, eventsQuoted);
-			if (goPhase3) {
-				const pubkeysObtained = Object.keys(profs);
-				if (eventsAll.length > 0) {
-					const pubkeysToGet: string[] = this.#getPubkeysForFilter(eventsAll).filter(v => !pubkeysObtained.includes(v));
-					if (pubkeysToGet.length > 0) {
-						const filterPhase2: Filter<0>[] = [{kinds: [0], authors: pubkeysToGet}];
-						this.#getEventsPhase2(filterPhase2, [], false);
-					}
+		for (const filter of filterPhase2) {
+			const evs = await getGeneralEvents(this.#pool, this.#relays, [filter], this.#callbackEvent);
+			for (const ev of evs) {
+				if ([0].includes(ev.kind)) {
+					events[ev.kind].push(ev);
 				}
-				this.#getEventsPhase3(filterPhase3, pubkeysObtained, eventsQuoted.map(v => v.id));
+				else {
+					eventsQuoted.push(ev);
+				}
+				eventsAll.push(ev);
 			}
-		});
+		}
+		if (goPhase3) {
+			console.log('getEventsPhase2 * EOSE *');
+		}
+		else {
+			console.log('getEventsPhase2-2 * EOSE *');
+		}
+		sub.unsub();
+		const profs = this.#getProfiles(events[0]);
+		this.#callbackPhase2(eventsQuoted);
+		if (goPhase3) {
+			const pubkeysObtained = Object.keys(profs);
+			if (eventsAll.length > 0) {
+				const pubkeysToGet: string[] = this.#getPubkeysForFilter(eventsAll).filter(v => !pubkeysObtained.includes(v));
+				if (pubkeysToGet.length > 0) {
+					const filterPhase2: Filter<0>[] = [{kinds: [0], authors: pubkeysToGet}];
+					this.#getEventsPhase2(filterPhase2, [], false);
+				}
+			}
+			this.#getEventsPhase3(filterPhase3, pubkeysObtained, eventsQuoted.map(v => v.id));
+		}
 	};
 
 	#getEventsPhase3 = (filterPhase3: Filter<0|7|16|40|41|42|10000|10001|10005>[], pubkeysObtained: string[], idsObtained: string[]) => {
@@ -363,17 +361,10 @@ export class RelayConnector {
 		return events42;
 	};
 
-	#getPinList = (events10005: NostrEvent[], channels: Channel[]): string[] => {
-		if (events10005.length === 0)
+	#getPinList = (events: NostrEvent[], channels: Channel[]): string[] => {
+		if (events.length === 0)
 			return [];
-		const pinList = events10005.reduce((a, b) => a.created_at > b.created_at ? a : b).tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]);
-		console.info(`Pinned Channels: kind ${events10005[0].kind} received`);
-		if (events10005[0].kind === 10001 && channels.some(ch => pinList.includes(ch.event.id)) ) {
-			if (confirm('チャンネルのピン留めの移行が必要です！\nnostterにログインしてください。')) {
-				goto('https://nostter.app/');
-			}
-		}
-		return pinList;
+		return events.reduce((a, b) => a.created_at > b.created_at ? a : b).tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]);
 	};
 
 	#getProfiles = (events: NostrEvent[]): {[key: string]: Profile} => {
@@ -794,12 +785,13 @@ export const getRelaysToUse = (relaysSelected: string, pool: SimplePool, loginPu
 	}
 };
 
-const getGeneralEvents = (pool: SimplePool, relays: string[], filters: Filter[]): Promise<NostrEvent[]> => {
+const getGeneralEvents = (pool: SimplePool, relays: string[], filters: Filter[], callbackEvent: Function = () => {}): Promise<NostrEvent[]> => {
 	return new Promise((resolve) => {
 		const sub: Sub = pool.sub(relays, filters);
 		const events: NostrEvent[] = [];
 		sub.on('event', (ev: NostrEvent) => {
 			events.push(ev);
+			callbackEvent(ev);
 		});
 		sub.on('eose', () => {
 			console.log('getGeneralEvents * EOSE *');
