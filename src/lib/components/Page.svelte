@@ -46,6 +46,9 @@ storedRelaysToUse.subscribe((value) => {
 });
 preferences.subscribe((value) => {
 	theme = value.theme ?? theme;
+	if (browser) {
+		(document.querySelector('link[rel=stylesheet]') as HTMLLinkElement).href = theme ?? $preferences.theme;
+	}
 });
 storedCurrentChannelId.subscribe((value) => {
 	currentChannelId = value;
@@ -329,10 +332,6 @@ $: repostListToShow = currentChannelId ? repostList.filter(ev16 => {
 
 <svelte:head>
 	<title>{titleString}</title>
-	<link rel="stylesheet" href="{theme}">
-	<script>
-        document.querySelector("link[rel=stylesheet]").href = JSON.parse(localStorage.getItem('preferences') ?? '').theme ?? urlDefaulttheme;;
-	</script>
 </svelte:head>
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
