@@ -5,7 +5,7 @@ import {
 } from 'nostr-tools';
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
-import { storedIsLoggedin, storedLoginpubkey, storedTheme, storedRelaysSelected, storedFilterSelected } from '$lib/store';
+import { storedIsLoggedin, storedLoginpubkey, storedRelaysSelected, storedFilterSelected, preferences } from '$lib/store';
 import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile, type GetRelays } from '$lib/util';
 import { urlNIP07guide } from '$lib/config';
 import type { NostrAPI } from '$lib/@types/nostr';
@@ -28,7 +28,6 @@ export let pinList: string[];
 export let muteList: string[];
 export let muteChannels: string[];
 export let wordList: string[];
-
 let relaysSelected: string;
 storedRelaysSelected.subscribe((value) => {
 	relaysSelected = value;
@@ -38,8 +37,8 @@ storedFilterSelected.subscribe((value) => {
 	filterSelected = value;
 });
 
-storedTheme.subscribe((value) => {
-	theme = value;
+preferences.subscribe((value) => {
+	theme = value.theme ?? theme;
 });
 
 let newChannelName: string;
@@ -80,11 +79,11 @@ const callSendCreateChannel = () => {
 const changeTheme = () => {
 	const container = document.getElementById('container');
 	if(theme === urlDarkTheme) {
-		storedTheme.set(urlDarkTheme);
+		preferences.set({theme: urlDarkTheme});
 		container?.classList.remove('light');
 		container?.classList.add('dark');
 	} else {
-		storedTheme.set(urlLightTheme);
+		preferences.set({theme: urlLightTheme});
 		container?.classList.remove('dark');
 		container?.classList.add('light');
 	}

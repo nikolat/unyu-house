@@ -4,6 +4,15 @@
 		<meta charset="utf-8" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
 		<meta name="viewport" content="width=device-width" />
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css">
+		<script>
+			const onLoaded = () => {
+				const loadedTheme = JSON.parse(localStorage.getItem('preferences') ?? '').theme ?? "https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css";
+				const stylesheetLink = document.querySelector('link[rel=stylesheet]');
+				stylesheetLink.href = loadedTheme;
+			}
+			onLoaded();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
