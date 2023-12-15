@@ -307,7 +307,7 @@ const applyRelays = async () => {
 	for (const ev of eventCopy) {
 		await callbackEvent(ev, false);
 	}
-	channels = channels;
+	channels = getSortedChannels(channels);
 	notes = notes;
 	profs = profs;
 	muteList = muteList;
