@@ -109,7 +109,10 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 				profs = profs;
 			break;
 		case 7:
-			favList = utils.insertEventIntoAscendingList(favList, event);
+			if (redraw)
+				favList = utils.insertEventIntoAscendingList(favList, event);
+			else
+				favList.unshift(event);
 			const targetChannel7 = channels.find(channel => channel.event.id === event.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1));
 			if (targetChannel7 !== undefined) {
 				targetChannel7.fav_count++;
@@ -118,7 +121,10 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 			}
 			break;
 		case 16:
-			repostList = utils.insertEventIntoAscendingList(repostList, event);
+			if (redraw)
+				repostList = utils.insertEventIntoAscendingList(repostList, event);
+			else
+				repostList.unshift(event);
 			break;
 		case 40:
 			let channel: Channel;
@@ -132,7 +138,10 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 			channel.event = event;
 			channel.post_count = notes.filter(note => note.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === event.id && tag[3] === 'root')).length;
 			channel.fav_count = favList.filter(note => note.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === event.id && tag[3] === 'root')).length;
-			channels = getSortedChannels([channel, ...channels]);
+			if (redraw)
+				channels = getSortedChannels([channel, ...channels]);
+			else
+				channels.unshift(channel);
 			break;
 		case 41:
 			const id = event.tags.find(tag => tag.length >= 2 && tag[0] === 'e')?.at(1);
@@ -154,22 +163,33 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 			newChannel.event = targetChannel41.event;
 			newChannel.post_count = notes.filter(note => note.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === id && tag[3] === 'root')).length;
 			newChannel.fav_count = favList.filter(note => note.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === id && tag[3] === 'root')).length;
-			channels = getSortedChannels([newChannel, ...channels.filter(channel => channel.event.id !== id)]);
+			if (redraw)
+				channels = getSortedChannels([newChannel, ...channels.filter(channel => channel.event.id !== id)]);
+			else {
+				channels.splice(channels.findIndex(channel => channel.event.id === id), 1, newChannel);
+			}
 			break;
 		case 42:
 			if (currentChannelId) {
 				if (event.tags.some(tag => tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root')) {
-					notes = utils.insertEventIntoAscendingList(notes, event);
+					if (redraw)
+						notes = utils.insertEventIntoAscendingList(notes, event);
+					else
+						notes.unshift(event);
 				}
 			}
 			else {
-				notes = utils.insertEventIntoAscendingList(notes, event);
+				if (redraw)
+					notes = utils.insertEventIntoAscendingList(notes, event);
+				else
+					notes.unshift(event);
 			}
 			const targetChannel42 = channels.find(channel => channel.event.id === event.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1));
 			if (targetChannel42 !== undefined) {
 				targetChannel42.post_count++;
 			}
-			execScroll();
+			if (redraw)
+				execScroll();
 			break;
 		case 10000:
 			muteList = event.tags.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1]) ?? [];
@@ -228,6 +248,7 @@ const callbackPhase3 = (subNotesPhase3: Sub<0|7|16|40|41|42|10000|10001|10005>, 
 };
 
 const importRelays = (relaysSelected: string) => {
+	eventsAll = [];
 	getRelaysToUse(relaysSelected, pool, loginPubkey)
 		.then((relaysToUseBack: {[key: string]: GetRelays}) => {
 			relaysToUse = relaysToUseBack;
@@ -250,7 +271,10 @@ const applyRelays = async () => {
 	muteChannels = [];
 	pinList = [];
 	favList = [];
-	let eventCopy: NostrEvent[] = [...eventsAll.filter(ev => [0, 7].includes(ev.kind))];
+	let eventCopy: NostrEvent[] = [...eventsAll.filter(ev => [0, 1, 7, 40, 41].includes(ev.kind))];
+	if (isLoggedin) {
+		eventCopy = [...eventCopy, ...eventsAll.filter(ev => [10000, 10005].includes(ev.kind))]
+	}
 	subNotes?.unsub();
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
 	let filters: Filter<0|16|40|41|42>[];
@@ -283,7 +307,13 @@ const applyRelays = async () => {
 	for (const ev of eventCopy) {
 		await callbackEvent(ev, false);
 	}
+	channels = channels;
+	notes = notes;
 	profs = profs;
+	muteList = muteList;
+	muteChannels = muteChannels;
+	pinList = pinList;
+	favList = favList;
 	const rc = new RelayConnector(pool, relaysToRead, loginPubkey, filters, callbackPhase2, callbackPhase3, callbackEvent);
 	rc.getEventsPhase1();
 };
