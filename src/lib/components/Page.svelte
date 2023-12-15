@@ -177,6 +177,12 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 					else
 						notes.unshift(event);
 				}
+				else {
+					if (redraw)
+						notesQuoted = utils.insertEventIntoAscendingList(notesQuoted, event);
+					else
+						notesQuoted.unshift(event);
+				}
 			}
 			else {
 				if (redraw)
@@ -212,6 +218,10 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 			pinList = event.tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]);
 			break;
 		default:
+			if (redraw)
+				notesQuoted = utils.insertEventIntoAscendingList(notesQuoted, event);
+			else
+				notesQuoted.unshift(event);
 			break;
 	}
 };
@@ -309,6 +319,7 @@ const applyRelays = async () => {
 	}
 	channels = getSortedChannels(channels);
 	notes = notes;
+	notesQuoted = notesQuoted;
 	profs = profs;
 	muteList = muteList;
 	muteChannels = muteChannels;
