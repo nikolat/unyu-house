@@ -1,7 +1,7 @@
 <script lang='ts'>
 import { type Channel, type Profile, type GetRelays, getRelaysToUse, RelayConnector, urlDefaultTheme } from '$lib/util';
 import type { NostrAPI } from '$lib/@types/nostr';
-import { storedIsLoggedin, storedLoginpubkey, storedCurrentChannelId, storedCurrentPubkey, storedCurrentHashtag, storedCurrentEvent, storedNeedApplyRelays, storedRelaysToUse, preferences } from '$lib/store';
+import { storedIsLoggedin, storedLoginpubkey, storedCurrentChannelId, storedCurrentPubkey, storedCurrentHashtag, storedCurrentEvent, storedNeedApplyRelays, storedRelaysToUse, preferences, storedEvents } from '$lib/store';
 import { defaultRelays, title } from '$lib/config';
 import { browser } from '$app/environment';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
@@ -41,6 +41,7 @@ let notesQuoted: NostrEvent[] = [];
 let profs: {[key: string]: Profile} = {};
 let unsubscribeApplyRelays: Unsubscriber | null;
 let scrolled: boolean = false;
+let eventsAll: NostrEvent[] = [];
 storedRelaysToUse.subscribe((value) => {
 	relaysToUse = value;
 });
@@ -68,6 +69,9 @@ storedIsLoggedin.subscribe((value) => {
 storedLoginpubkey.subscribe((value) => {
 	loginPubkey = value;
 });
+storedEvents.subscribe((value) => {
+	eventsAll = value;
+});
 
 const resetScroll = () => {
 	scrolled = false;
@@ -81,8 +85,6 @@ const execScroll = () => {
 	scrolled = true;
 };
 
-let eventsAll: NostrEvent[] = [];
-
 const callbackEvent = async (event: NostrEvent) => {
 	if (eventsAll.some(ev => ev.id === event.id)) {
 		return;
@@ -91,6 +93,7 @@ const callbackEvent = async (event: NostrEvent) => {
 		return;
 	}
 	eventsAll = utils.insertEventIntoAscendingList(eventsAll, event);
+	storedEvents.set(eventsAll);
 	console.info(`kind:${event.kind}`);
 	switch (event.kind) {
 		case 0:
@@ -102,6 +105,7 @@ const callbackEvent = async (event: NostrEvent) => {
 			}
 			profs[event.pubkey].created_at = event.created_at;
 			profs[event.pubkey].tags = event.tags;
+			profs = profs;
 			break;
 		case 7:
 			favList = utils.insertEventIntoAscendingList(favList, event);
@@ -234,10 +238,9 @@ const importRelays = (relaysSelected: string) => {
 		});
 };
 
-const applyRelays = () => {
+const applyRelays = async () => {
 	storedNeedApplyRelays.set(false);
 	resetScroll();
-	eventsAll = [];
 	channels = [];
 	notes = [];
 	notesQuoted = [];
@@ -246,27 +249,38 @@ const applyRelays = () => {
 	muteChannels = [];
 	pinList = [];
 	favList = [];
+	let eventCopy: NostrEvent[] = [...eventsAll.filter(ev => ![16, 42, 10000, 10005].includes(ev.kind))];
 	subNotes?.unsub();
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
 	let filters: Filter<0|16|40|41|42>[];
 	const limit = 50;
 	if (currentChannelId) {
 		filters = [{kinds: [40], ids: [currentChannelId]}, {kinds: [41], '#e': [currentChannelId]}, {kinds: [42], limit: limit, '#e': [currentChannelId]}, {kinds: [16], '#k': ['42'], limit: limit}];
+		eventCopy = eventCopy.concat(eventsAll.filter(ev => ev.kind == 42 && ev.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root')));
 	}
 	else if (currentPubkey) {
 		filters = [{kinds: [0], authors: [currentPubkey]}, {kinds: [42], limit: limit, authors: [currentPubkey]}, {kinds: [16], '#k': ['42'], limit: limit, authors: [currentPubkey]}];
+		eventCopy = eventCopy.concat(eventsAll.filter(ev => ev.kind == 42 && ev.pubkey === currentPubkey));
 	}
 	else if (currentHashtag) {
 		filters = [{kinds: [42], limit: limit, '#t': [currentHashtag]}];
+		eventCopy = eventCopy.concat(eventsAll.filter(ev => ev.kind == 42 && ev.tags.some(tag => tag.length >= 2 && tag[0] === 't' && tag[1] === currentHashtag)));
 	}
 	else if (currentEvent) {
 		filters = [{ids: [currentEvent.id]}];
+		eventCopy = eventCopy.concat(eventsAll.filter(ev => ev.id == currentEvent?.id));
 	}
 	else {
 		filters = [{kinds: [42], limit: limit}, {kinds: [16], '#k': ['42'], limit: limit}];
+		eventCopy = eventCopy.concat(eventsAll.filter(ev => ev.kind == 42));
 	}
 	if (loginPubkey) {
 		filters = [{kinds: [0], authors: [loginPubkey]}, ...filters];
+	}
+	eventsAll = [];
+	storedEvents.set(eventsAll);
+	for (const ev of eventCopy) {
+		await callbackEvent(ev);
 	}
 	const rc = new RelayConnector(pool, relaysToRead, loginPubkey, filters, callbackPhase2, callbackPhase3, callbackEvent);
 	rc.getEventsPhase1();

@@ -9,7 +9,6 @@ import {
 } from 'nostr-tools';
 import { defaultRelays, relaysToGetRelays } from './config';
 import type { NostrAPI } from './@types/nostr';
-import { goto } from '$app/navigation';
 
 interface Window {
 	nostr?: NostrAPI;
