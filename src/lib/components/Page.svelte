@@ -85,7 +85,7 @@ const execScroll = () => {
 	scrolled = true;
 };
 
-const callbackEvent = async (event: NostrEvent) => {
+const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 	if (eventsAll.some(ev => ev.id === event.id)) {
 		return;
 	}
@@ -105,14 +105,16 @@ const callbackEvent = async (event: NostrEvent) => {
 			}
 			profs[event.pubkey].created_at = event.created_at;
 			profs[event.pubkey].tags = event.tags;
-			profs = profs;
+			if (redraw)
+				profs = profs;
 			break;
 		case 7:
 			favList = utils.insertEventIntoAscendingList(favList, event);
 			const targetChannel7 = channels.find(channel => channel.event.id === event.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1));
 			if (targetChannel7 !== undefined) {
 				targetChannel7.fav_count++;
-				channels = channels;
+				if (redraw)
+					channels = channels;
 			}
 			break;
 		case 16:
@@ -166,7 +168,6 @@ const callbackEvent = async (event: NostrEvent) => {
 			const targetChannel42 = channels.find(channel => channel.event.id === event.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1));
 			if (targetChannel42 !== undefined) {
 				targetChannel42.post_count++;
-				channels = channels;
 			}
 			execScroll();
 			break;
@@ -249,7 +250,7 @@ const applyRelays = async () => {
 	muteChannels = [];
 	pinList = [];
 	favList = [];
-	let eventCopy: NostrEvent[] = [...eventsAll.filter(ev => ![16, 42, 10000, 10005].includes(ev.kind))];
+	let eventCopy: NostrEvent[] = [...eventsAll.filter(ev => [0, 7].includes(ev.kind))];
 	subNotes?.unsub();
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
 	let filters: Filter<0|16|40|41|42>[];
@@ -280,8 +281,9 @@ const applyRelays = async () => {
 	eventsAll = [];
 	storedEvents.set(eventsAll);
 	for (const ev of eventCopy) {
-		await callbackEvent(ev);
+		await callbackEvent(ev, false);
 	}
+	profs = profs;
 	const rc = new RelayConnector(pool, relaysToRead, loginPubkey, filters, callbackPhase2, callbackPhase3, callbackEvent);
 	rc.getEventsPhase1();
 };
