@@ -120,13 +120,13 @@ export class RelayConnector {
 
 	#getEventsPhase2 = async (filterPhase2: Filter[], filterPhase3: Filter<0|7|16|40|41|42|10000|10001|10005>[], goPhase3: Boolean) => {
 		const sub: Sub = this.#pool.sub(this.#relays, filterPhase2);
-		const events: {[key: number]: NostrEvent[]} = {0: [], 7: []};
+		const events: {[key: number]: NostrEvent[]} = {0: [], 42: []};
 		const eventsQuoted: NostrEvent[] = [];
 		const eventsAll: NostrEvent[] = [];
 		for (const filter of filterPhase2) {
 			const evs = await getGeneralEvents(this.#pool, this.#relays, [filter], this.#callbackEvent);
 			for (const ev of evs) {
-				if ([0].includes(ev.kind)) {
+				if ([0, 42].includes(ev.kind)) {
 					events[ev.kind].push(ev);
 				}
 				else {
@@ -146,10 +146,11 @@ export class RelayConnector {
 		this.#callbackPhase2(eventsQuoted);
 		if (goPhase3) {
 			const pubkeysObtained = Object.keys(profs);
+			const idsToGet: string[] = this.#getIdsForFilter(events[42]).filter(v => !events[42].map(ev => ev.id).includes(v));
 			if (eventsAll.length > 0) {
 				const pubkeysToGet: string[] = this.#getPubkeysForFilter(eventsAll).filter(v => !pubkeysObtained.includes(v));
 				if (pubkeysToGet.length > 0) {
-					const filterPhase2: Filter<0>[] = [{kinds: [0], authors: pubkeysToGet}];
+					const filterPhase2: Filter[] = [{kinds: [0], authors: pubkeysToGet}, {ids: idsToGet}];
 					this.#getEventsPhase2(filterPhase2, [], false);
 				}
 			}
