@@ -13,7 +13,6 @@ import data from '@emoji-mart/data';
 import { Picker } from 'emoji-mart';
 // @ts-ignore
 import type { BaseEmoji } from '@types/emoji-mart';
-    import { slide } from 'svelte/transition';
 
 export let pool: SimplePool;
 export let relaysToWrite: string[];
