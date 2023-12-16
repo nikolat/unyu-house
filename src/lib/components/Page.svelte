@@ -295,6 +295,7 @@ const applyRelays = async () => {
 	muteList = [];
 	muteChannels = [];
 	pinList = [];
+	repostList = [];
 	favList = [];
 	let eventCopy: NostrEvent[] = [...eventsAll.filter(ev => [0, 1, 7, 16, 40, 41, 42].includes(ev.kind))];
 	if (isLoggedin) {
@@ -334,6 +335,7 @@ const applyRelays = async () => {
 	muteList = muteList;
 	muteChannels = muteChannels;
 	pinList = pinList;
+	repostList = repostList;
 	favList = favList;
 	const rc = new RelayConnector(pool, relaysToRead, loginPubkey, filters, callbackPhase3, callbackEvent);
 	rc.getEventsPhase1();
