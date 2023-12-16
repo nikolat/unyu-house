@@ -122,6 +122,22 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 			}
 			break;
 		case 16:
+			let isRepostToShow = false;
+			if (currentChannelId) {
+				const baseevent = notes.find(note => note.id === event.tags.find(tag => tag.length >= 2 && tag[0] === 'e')?.at(1));
+				isRepostToShow = baseevent?.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root') ?? false;
+			}
+			else if (currentPubkey) {
+				isRepostToShow = event.pubkey === currentPubkey;
+			}
+			else if (currentHashtag) {
+				isRepostToShow = false;
+			}
+			else if (currentEvent) {
+				isRepostToShow = false;
+			}
+			if (!isRepostToShow)
+				return;
 			if (redraw)
 				repostList = utils.insertEventIntoAscendingList(repostList, event);
 			else
