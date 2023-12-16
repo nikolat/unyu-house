@@ -94,7 +94,8 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 	}
 	eventsAll = utils.insertEventIntoAscendingList(eventsAll, event);
 	storedEvents.set(eventsAll);
-	console.info(`kind:${event.kind}`);
+	if (redraw)
+		console.info(`kind:${event.kind}`);
 	switch (event.kind) {
 		case 0:
 			try {
@@ -203,8 +204,10 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 			if (targetChannel42 !== undefined) {
 				targetChannel42.post_count++;
 			}
-			if (redraw)
+			if (redraw) {
+				channels = channels;
 				execScroll();
+			}
 			break;
 		case 10000:
 			muteList = event.tags.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1]) ?? [];
@@ -277,7 +280,7 @@ const applyRelays = async () => {
 	muteChannels = [];
 	pinList = [];
 	favList = [];
-	let eventCopy: NostrEvent[] = [...eventsAll.filter(ev => [0, 1, 7, 40, 41, 42].includes(ev.kind))];
+	let eventCopy: NostrEvent[] = [...eventsAll.filter(ev => [0, 1, 7, 16, 40, 41, 42].includes(ev.kind))];
 	if (isLoggedin) {
 		eventCopy = [...eventCopy, ...eventsAll.filter(ev => [10000, 10005].includes(ev.kind))]
 	}
