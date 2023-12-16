@@ -13,6 +13,7 @@ import data from '@emoji-mart/data';
 import { Picker } from 'emoji-mart';
 // @ts-ignore
 import type { BaseEmoji } from '@types/emoji-mart';
+    import { slide } from 'svelte/transition';
 
 export let pool: SimplePool;
 export let relaysToWrite: string[];
@@ -140,9 +141,9 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 
 </script>
 
-<p>Total: {notesToShow.length} posts</p>
+<p>Total: {notesToShow.slice(-50).length} posts</p>
 <dl>
-{#each notesToShow as note}
+{#each notesToShow.slice(-50) as note}
 	{@const noteOrg = note.kind === 42 ? note : [...notes, ...notesQuoted].find(ev => ev.id === note.tags.find(tag => tag.length >= 2 && tag[0] === 'e')?.at(1))}
 	{@const rootId = noteOrg?.tags.find(v => v[0] === 'e' && v[3] === 'root')?.at(1)}
 	{@const channel = channels.find(v => v.event.id === rootId)}

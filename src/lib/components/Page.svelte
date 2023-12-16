@@ -170,25 +170,34 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 			}
 			break;
 		case 42:
+			let isQuote = false;
 			if (currentChannelId) {
-				if (event.tags.some(tag => tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root')) {
-					if (redraw)
-						notes = utils.insertEventIntoAscendingList(notes, event);
-					else
-						notes.unshift(event);
+				isQuote = !event.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root');
+			}
+			else if (currentPubkey) {
+				isQuote = event.pubkey !== currentPubkey;
+			}
+			else if (currentHashtag) {
+				isQuote = !event.tags.some(tag => tag.length >= 2 && tag[0] === 't' && tag[1] === currentHashtag);
+			}
+			else if (currentEvent) {
+				isQuote = event.id !== currentEvent.id;
+			}
+			if (redraw) {
+				if (isQuote) {
+					notesQuoted = utils.insertEventIntoAscendingList(notesQuoted, event);
 				}
 				else {
-					if (redraw)
-						notesQuoted = utils.insertEventIntoAscendingList(notesQuoted, event);
-					else
-						notesQuoted.unshift(event);
+					notes = utils.insertEventIntoAscendingList(notes, event);
 				}
 			}
 			else {
-				if (redraw)
-					notes = utils.insertEventIntoAscendingList(notes, event);
-				else
+				if (isQuote) {
+					notesQuoted.unshift(event);
+				}
+				else {
 					notes.unshift(event);
+				}
 			}
 			const targetChannel42 = channels.find(channel => channel.event.id === event.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1));
 			if (targetChannel42 !== undefined) {
@@ -281,7 +290,7 @@ const applyRelays = async () => {
 	muteChannels = [];
 	pinList = [];
 	favList = [];
-	let eventCopy: NostrEvent[] = [...eventsAll.filter(ev => [0, 1, 7, 40, 41].includes(ev.kind))];
+	let eventCopy: NostrEvent[] = [...eventsAll.filter(ev => [0, 1, 7, 40, 41, 42].includes(ev.kind))];
 	if (isLoggedin) {
 		eventCopy = [...eventCopy, ...eventsAll.filter(ev => [10000, 10005].includes(ev.kind))]
 	}
@@ -291,23 +300,18 @@ const applyRelays = async () => {
 	const limit = 50;
 	if (currentChannelId) {
 		filters = [{kinds: [40], ids: [currentChannelId]}, {kinds: [41], '#e': [currentChannelId]}, {kinds: [42], limit: limit, '#e': [currentChannelId]}, {kinds: [16], '#k': ['42'], limit: limit}];
-		eventCopy = eventCopy.concat(eventsAll.filter(ev => ev.kind == 42 && ev.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root')));
 	}
 	else if (currentPubkey) {
 		filters = [{kinds: [0], authors: [currentPubkey]}, {kinds: [42], limit: limit, authors: [currentPubkey]}, {kinds: [16], '#k': ['42'], limit: limit, authors: [currentPubkey]}];
-		eventCopy = eventCopy.concat(eventsAll.filter(ev => ev.kind == 42 && ev.pubkey === currentPubkey));
 	}
 	else if (currentHashtag) {
 		filters = [{kinds: [42], limit: limit, '#t': [currentHashtag]}];
-		eventCopy = eventCopy.concat(eventsAll.filter(ev => ev.kind == 42 && ev.tags.some(tag => tag.length >= 2 && tag[0] === 't' && tag[1] === currentHashtag)));
 	}
 	else if (currentEvent) {
 		filters = [{ids: [currentEvent.id]}];
-		eventCopy = eventCopy.concat(eventsAll.filter(ev => ev.id == currentEvent?.id));
 	}
 	else {
 		filters = [{kinds: [42], limit: limit}, {kinds: [16], '#k': ['42'], limit: limit}];
-		eventCopy = eventCopy.concat(eventsAll.filter(ev => ev.kind == 42));
 	}
 	if (loginPubkey) {
 		filters = [{kinds: [0], authors: [loginPubkey]}, ...filters];
