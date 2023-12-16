@@ -51,16 +51,14 @@ export class RelayConnector {
 	#relays: string[];
 	#loginPubkey: string;
 	#filterBase: Filter<0|16|40|41|42>[];
-	#callbackPhase2: Function;
 	#callbackPhase3: Function;
 	#callbackEvent: Function;
 
-	constructor(pool: SimplePool, relays: string[], loginPubkey: string, filterBase: Filter<0|16|40|41|42>[], callbackPhase2: Function, callbackPhase3: Function, callbackEvent: Function) {
+	constructor(pool: SimplePool, relays: string[], loginPubkey: string, filterBase: Filter<0|16|40|41|42>[], callbackPhase3: Function, callbackEvent: Function) {
 		this.#pool = pool;
 		this.#relays = relays;
 		this.#loginPubkey = loginPubkey;
 		this.#filterBase = filterBase;
-		this.#callbackPhase2 = callbackPhase2;
 		this.#callbackPhase3 = callbackPhase3;
 		this.#callbackEvent = callbackEvent;
 	}
@@ -142,7 +140,6 @@ export class RelayConnector {
 		}
 		sub.unsub();
 		const profs = this.#getProfiles(events[0]);
-		this.#callbackPhase2(eventsQuoted);
 		if (goPhase3) {
 			const pubkeysObtained = Object.keys(profs);
 			const idsToGet: string[] = this.#getIdsForFilter(events[42]).filter(v => !events[42].map(ev => ev.id).includes(v));

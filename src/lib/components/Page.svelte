@@ -136,8 +136,8 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 			}
 			channel.updated_at = event.created_at;
 			channel.event = event;
-			channel.post_count = notes.filter(note => note.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === event.id && tag[3] === 'root')).length;
-			channel.fav_count = favList.filter(note => note.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === event.id && tag[3] === 'root')).length;
+			channel.post_count = notes.filter(ev => ev.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === event.id && tag[3] === 'root')).length;
+			channel.fav_count = favList.filter(ev => ev.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === event.id && tag[3] === 'root')).length;
 			if (redraw)
 				channels = getSortedChannels([channel, ...channels]);
 			else
@@ -161,8 +161,8 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 			}
 			newChannel.updated_at = event.created_at;
 			newChannel.event = targetChannel41.event;
-			newChannel.post_count = notes.filter(note => note.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === id && tag[3] === 'root')).length;
-			newChannel.fav_count = favList.filter(note => note.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === id && tag[3] === 'root')).length;
+			newChannel.post_count = notes.filter(ev => ev.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === id && tag[3] === 'root')).length;
+			newChannel.fav_count = favList.filter(ev => ev.tags.some(tag => tag.length >= 4 && tag[0] === 'e' && tag[1] === id && tag[3] === 'root')).length;
 			if (redraw)
 				channels = getSortedChannels([newChannel, ...channels.filter(channel => channel.event.id !== id)]);
 			else {
@@ -248,19 +248,6 @@ const getSortedChannels = (channelArray: Channel[]) => {
 	return channelArray;
 };
 
-const callbackPhase2 = (eventsQuotedNew: NostrEvent[]) => {
-	let notesQuotedAdded = false;
-	for (const ev of eventsQuotedNew) {
-		if (!notesQuoted.map(ev => ev.id).includes(ev.id)) {
-			notesQuoted.push(ev);
-			notesQuotedAdded = true;
-		}
-	}
-	if (notesQuotedAdded) {
-		notesQuoted = notesQuoted;
-	}
-};
-
 const callbackPhase3 = (subNotesPhase3: Sub<0|7|16|40|41|42|10000|10001|10005>, ev: NostrEvent<0|7|16|40|41|42|10000|10001|10005>) => {
 	subNotes = subNotesPhase3;
 	callbackEvent(ev);
@@ -329,7 +316,7 @@ const applyRelays = async () => {
 	muteChannels = muteChannels;
 	pinList = pinList;
 	favList = favList;
-	const rc = new RelayConnector(pool, relaysToRead, loginPubkey, filters, callbackPhase2, callbackPhase3, callbackEvent);
+	const rc = new RelayConnector(pool, relaysToRead, loginPubkey, filters, callbackPhase3, callbackEvent);
 	rc.getEventsPhase1();
 };
 
