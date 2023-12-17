@@ -137,6 +137,9 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 			else if (currentEvent) {
 				isRepostToShow = false;
 			}
+			else {
+				isRepostToShow = true;
+			}
 			if (!isRepostToShow)
 				return;
 			if (redraw)
