@@ -65,6 +65,13 @@ const callSendMuteUser = (toSet: boolean) => {
 			{:else}
 				{matchedText}
 			{/if}
+		{:else if /nostr:note\w{59}/.test(match[3])}
+			{match[3]}
+		{:else if /nostr:nevent\w+/.test(match[4])}
+			{match[4]}
+		{:else if /#\S+/.test(match[5])}
+			{@const matchedText = match[5]}
+			<a href="/hashtag/{encodeURI(matchedText.replace('#', ''))}">{matchedText}</a>
 		{:else if match[6]}
 			{@const matchedText = match[6]}
 			<img src="{emojiUrls[matchedText]}" alt="{matchedText}" title="{matchedText}" class="emoji" />
