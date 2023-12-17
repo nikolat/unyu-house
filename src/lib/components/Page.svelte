@@ -305,22 +305,39 @@ const applyRelays = async () => {
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
 	let filters: Filter<0|16|40|41|42>[];
 	const limit = 50;
+	const until = Math.floor(Date.now() / 1000);
 	if (currentChannelId) {
-		filters = [{kinds: [40], ids: [currentChannelId]}, {kinds: [41], '#e': [currentChannelId]}, {kinds: [42], limit: limit, '#e': [currentChannelId]}, {kinds: [16], '#k': ['42'], limit: limit}];
+		filters = [
+			{kinds: [40], ids: [currentChannelId]},
+			{kinds: [41], '#e': [currentChannelId]},
+			{kinds: [42], '#e': [currentChannelId], until: until, limit: limit},
+			{kinds: [16], '#k': ['42'], limit: limit, until: until}
+		];
 	}
 	else if (currentPubkey) {
-		filters = [{kinds: [0], authors: [currentPubkey]}, {kinds: [42], limit: limit, authors: [currentPubkey]}, {kinds: [16], '#k': ['42'], limit: limit, authors: [currentPubkey]}];
+		filters = [
+			{kinds: [0], authors: [currentPubkey]},
+			{kinds: [42], authors: [currentPubkey], until: until, limit: limit},
+			{kinds: [16], '#k': ['42'], authors: [currentPubkey], until: until, limit: limit}
+		];
 	}
 	else if (currentHashtag) {
-		filters = [{kinds: [42], limit: limit, '#t': [currentHashtag]}];
+		filters = [
+			{kinds: [42], '#t': [currentHashtag], until: until, limit: limit}
+		];
 	}
 	else if (currentEvent) {
-		filters = [{ids: [currentEvent.id]}];
+		filters = [
+			{ids: [currentEvent.id]}
+		];
 	}
 	else {
-		filters = [{kinds: [42], limit: limit}, {kinds: [16], '#k': ['42'], limit: limit}];
+		filters = [
+			{kinds: [42], until: until, limit: limit},
+			{kinds: [16], '#k': ['42'], until: until, limit: limit}
+		];
 	}
-	if (loginPubkey) {
+	if (loginPubkey && currentPubkey !== loginPubkey) {
 		filters = [{kinds: [0], authors: [loginPubkey]}, ...filters];
 	}
 	eventsAll = [];
@@ -337,7 +354,7 @@ const applyRelays = async () => {
 	pinList = pinList;
 	repostList = repostList;
 	favList = favList;
-	const rc = new RelayConnector(pool, relaysToRead, loginPubkey, filters, callbackPhase3, callbackEvent);
+	const rc = new RelayConnector(pool, relaysToRead, loginPubkey, filters, until, callbackPhase3, callbackEvent);
 	rc.getEventsPhase1();
 };
 
