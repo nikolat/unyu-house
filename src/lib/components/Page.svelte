@@ -522,4 +522,10 @@ main {
 :global(#container.light #show-post-bar) {
 	fill: black;
 }
+:global(.nostr-zap-dialog input) {
+	display: initial;
+}
+:global(dialog.nostr-zap-dialog) {
+	background-color: white;
+}
 </style>
