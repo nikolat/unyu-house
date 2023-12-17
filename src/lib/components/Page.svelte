@@ -7,7 +7,7 @@ import { browser } from '$app/environment';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
 import { afterUpdate, onDestroy, onMount } from 'svelte';
 import type { Unsubscriber } from 'svelte/store';
-import { SimplePool, nip19, type Event as NostrEvent, type Sub, type Filter, utils } from 'nostr-tools';
+import { SimplePool, nip19, type Event as NostrEvent, type Sub, type Filter, utils, verifySignature } from 'nostr-tools';
 import Sidebar from './Sidebar.svelte';
 import Header from './Header.svelte';
 import ChannelMetadata from './ChannelMetadata.svelte';
@@ -35,6 +35,7 @@ let wordList: string[] = [];
 let pinList: string[] = [];
 let repostList: NostrEvent[] = [];
 let favList: NostrEvent[] = [];
+let zapList: NostrEvent[] = [];
 let channels: Channel[] = [];
 let notes: NostrEvent[] = [];
 let notesQuoted: NostrEvent[] = [];
@@ -225,6 +226,22 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 				execScroll();
 			}
 			break;
+		case 9735:
+			let event9734;
+			try {
+				event9734 = JSON.parse(event.tags.find(tag => tag[0] === 'description')?.at(1) ?? '{}');
+			} catch (error) {
+				//console.warn(error);
+				return;
+			}
+			if (!verifySignature(event9734)) {
+				return;
+			}
+			if (redraw)
+				zapList = utils.insertEventIntoAscendingList(zapList, event);
+			else
+				zapList.unshift(event);
+			break;
 		case 10000:
 			muteList = event.tags.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1]) ?? [];
 			muteChannels = event.tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]) ?? [];
@@ -297,7 +314,8 @@ const applyRelays = async () => {
 	pinList = [];
 	repostList = [];
 	favList = [];
-	let eventCopy: NostrEvent[] = [...eventsAll.filter(ev => [0, 1, 7, 16, 40, 41, 42].includes(ev.kind))];
+	zapList = [];
+	let eventCopy: NostrEvent[] = [...eventsAll.filter(ev => [0, 1, 7, 16, 40, 41, 42, 9735].includes(ev.kind))];
 	if (isLoggedin) {
 		eventCopy = [...eventCopy, ...eventsAll.filter(ev => [10000, 10005].includes(ev.kind))]
 	}
@@ -354,6 +372,7 @@ const applyRelays = async () => {
 	pinList = pinList;
 	repostList = repostList;
 	favList = favList;
+	zapList = zapList;
 	const rc = new RelayConnector(pool, relaysToRead, loginPubkey, filters, until, callbackPhase3, callbackEvent);
 	rc.getEventsPhase1();
 };
@@ -457,7 +476,7 @@ $: repostListToShow = currentChannelId ? repostList.filter(ev16 => {
 	{:else}
 		<h2>Error</h2>
 	{/if}
-		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {isLoggedin} {loginPubkey} {muteList} {muteChannels} {wordList} repostList={repostListToShow} {favList} {resetScroll} {importRelays} />
+		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {isLoggedin} {loginPubkey} {muteList} {muteChannels} {wordList} repostList={repostListToShow} {favList} {zapList} {resetScroll} {importRelays} />
 	{#if currentChannelId && isLoggedin && channels.some(channel => channel.event.id === currentChannelId)}
 		<Post {pool} {currentChannelId} {relaysToUse} {channels} {hidePostBar} {resetScroll} />
 	{/if}

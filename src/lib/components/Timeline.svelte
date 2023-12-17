@@ -27,6 +27,7 @@ export let muteChannels: string[];
 export let wordList: string[];
 export let repostList: NostrEvent[];
 export let favList: NostrEvent[];
+export let zapList: NostrEvent[];
 export let resetScroll: Function;
 export let importRelays: Function;
 
@@ -126,6 +127,11 @@ const zap = (id: string) => {
 		elm.dispatchEvent(new Event('click'));
 		elm.disabled = true;
 	}
+};
+
+const getevent9734 = (event9735: NostrEvent): NostrEvent => {
+	const event9734 = JSON.parse(event9735.tags.find(tag => tag[0] === 'description')?.at(1) ?? '{}');
+	return event9734;
 };
 
 $: notesToShow = [...notes, ...repostList].sort((a, b) => {
@@ -258,7 +264,7 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 					</div>
 			{/if}
 				</div>
-			{#if favList.find(ev => ev.tags.findLast(tag => tag.length >= 2 && tag[0] === 'e')?.at(1) === noteOrg.id && profs[ev.pubkey])}
+			{#if favList.some(ev => ev.tags.findLast(tag => tag.length >= 2 && tag[0] === 'e')?.at(1) === noteOrg.id && profs[ev.pubkey])}
 				<ul class="fav-holder" role="list">
 				{#each favList as ev}
 					{#if ev.tags.findLast(tag => tag[0] === 'e')?.at(1) === noteOrg.id && profs[ev.pubkey] && !muteList.includes(ev.pubkey)}
@@ -273,6 +279,18 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 						{/if}
 						<img src="{prof.picture || '/default.png'}" alt="avatar of {npubFaved}"
 							width="16" height="16" /> {prof.display_name ?? ''} <a href="/{npubFaved}">@{prof.name ?? ''}</a> reacted</li>
+					{/if}
+				{/each}
+				</ul>
+			{/if}
+			{#if zapList.some(ev => ev.tags.find(tag => tag.length >= 2 && tag[0] === 'e')?.at(1) === noteOrg.id)}
+				<ul class="zap-holder" role="list">
+				{#each zapList as ev}
+					{@const event9734 = getevent9734(ev)}
+					{#if event9734.tags.find(tag => tag[0] === 'e')?.at(1) === noteOrg.id && profs[event9734.pubkey] && !muteList.includes(event9734.pubkey)}
+						{@const prof = profs[event9734.pubkey]}
+						{@const npubZapped = nip19.npubEncode(event9734.pubkey)}
+						<li><svg><use xlink:href="/lightning.svg#zap"></use></svg> <img src="{prof.picture || '/default.png'}" alt="avatar of {npubZapped}" width="16" height="16" /> {prof.display_name ?? ''} <a href="/{npubZapped}">@{prof.name ?? ''}</a> zapped{#if event9734.content}<blockquote>{event9734.content}</blockquote>{/if}</li>
 					{/if}
 				{/each}
 				</ul>
@@ -366,7 +384,8 @@ dd .video-holder video {
 dd .emoji {
 	height: 32px;
 }
-dd ul.fav-holder {
+dd ul.fav-holder,
+dd ul.zap-holder {
 	list-style: none;
 }
 dd .action-bar > * {
@@ -398,6 +417,11 @@ dd button.login-as-this-account {
 }
 .zap-dummy {
 	display: none;
+}
+.zap-holder svg {
+	width: 24px;
+	height: 24px;
+	fill: yellow;
 }
 dd button.repost > svg,
 dd button.fav > svg,
