@@ -162,8 +162,8 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 		{#if !isMuted}
 			{@const npub = nip19.npubEncode(note.pubkey)}
 			{@const npubOrg = nip19.npubEncode(noteOrg.pubkey)}
-			{@const nevent = nip19.neventEncode(note)}
-			{@const neventOrg = nip19.neventEncode(noteOrg)}
+			{@const nevent = nip19.neventEncode({...note, author: note.pubkey})}
+			{@const neventOrg = nip19.neventEncode({...noteOrg, author: noteOrg.pubkey})}
 			<dt id="note-{note.id}">
 			{#if note.kind === 16}
 				reposted by

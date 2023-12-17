@@ -351,6 +351,9 @@ const applyRelays = async () => {
 		filters = [
 			{ids: [currentEvent.id]}
 		];
+		if (currentEvent.author !== undefined) {
+			filters.push({kinds: [0], authors: [currentEvent.author]})
+		}
 	}
 	else {
 		filters = [
@@ -358,7 +361,7 @@ const applyRelays = async () => {
 			{kinds: [16], '#k': ['42'], until: until, limit: limit}
 		];
 	}
-	if (loginPubkey && currentPubkey !== loginPubkey) {
+	if (loginPubkey && currentPubkey !== loginPubkey || currentEvent && currentEvent.author === loginPubkey) {
 		filters = [{kinds: [0], authors: [loginPubkey]}, ...filters];
 	}
 	eventsAll = [];
