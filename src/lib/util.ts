@@ -444,7 +444,7 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 			mentionPubkeys.add(d.data);
 		}
 	}
-	const matchesIteratorHashTag = content.matchAll(/(^|\s|\b)#(\S+)/g);
+	const matchesIteratorHashTag = content.matchAll(/(^|\s)#([^\s#]+)/g);
 	const hashtags: Set<string> = new Set();
 	for (const match of matchesIteratorHashTag) {
 		hashtags.add(match[2]);
@@ -704,7 +704,7 @@ export const broadcast = async(pool: SimplePool, relaysToWrite: string[], event4
 };
 
 export const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator<RegExpMatchArray>, string[], {[key: string]: string}] => {
-	const regMatchArray = ['https?://[\\w!?/=+\\-_~:;.,*&@#$%[\\]]+', 'nostr:npub\\w{59}', 'nostr:note\\w{59}', 'nostr:nevent\\w+', '#\\S+'];
+	const regMatchArray = ['https?://[\\w!?/=+\\-_~:;.,*&@#$%[\\]]+', 'nostr:npub\\w{59}', 'nostr:note\\w{59}', 'nostr:nevent\\w+', '#[^\\s#]+'];
 	const emojiUrls: {[key: string]: string} = {};
 	const emojiRegs = [];
 	if (tags === undefined) {
