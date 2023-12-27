@@ -7,7 +7,7 @@ import { browser } from '$app/environment';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
 import { afterUpdate, onDestroy, onMount } from 'svelte';
 import type { Unsubscriber } from 'svelte/store';
-import { SimplePool, nip19, type Event as NostrEvent, type Sub, type Filter, utils, verifySignature } from 'nostr-tools';
+import { SimplePool, nip19, type Event as NostrEvent, type SubCloser, type Filter, utils, verifyEvent } from 'nostr-tools';
 import Sidebar from './Sidebar.svelte';
 import Header from './Header.svelte';
 import ChannelMetadata from './ChannelMetadata.svelte';
@@ -20,7 +20,7 @@ interface Window {
 }
 
 let pool: SimplePool = new SimplePool();
-let subNotes: Sub<0|7|16|40|41|42|10000|10001|10005>;
+let subNotes: SubCloser;
 let relaysToUse: {[key: string]: GetRelays};
 let theme: string;
 let currentChannelId: string | null;
@@ -237,7 +237,7 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 				//console.warn(error);
 				return;
 			}
-			if (!verifySignature(event9734)) {
+			if (!verifyEvent(event9734)) {
 				return;
 			}
 			if (redraw)
@@ -287,7 +287,7 @@ const getSortedChannels = (channelArray: Channel[]) => {
 	return channelArray;
 };
 
-const callbackPhase3 = (subNotesPhase3: Sub<0|7|16|40|41|42|10000|10001|10005>, ev: NostrEvent<0|7|16|40|41|42|10000|10001|10005>) => {
+const callbackPhase3 = (subNotesPhase3: SubCloser, ev: NostrEvent) => {
 	subNotes = subNotesPhase3;
 	callbackEvent(ev);
 };
@@ -322,9 +322,9 @@ const applyRelays = async () => {
 	if (isLoggedin) {
 		eventCopy = [...eventCopy, ...eventsAll.filter(ev => [10000, 10005].includes(ev.kind))]
 	}
-	subNotes?.unsub();
+	subNotes?.close();
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
-	let filters: Filter<0|16|40|41|42>[];
+	let filters: Filter[];
 	const limit = 50;
 	const until = Math.floor(Date.now() / 1000);
 	if (currentChannelId) {
@@ -401,7 +401,7 @@ onDestroy(() => {
 		unsubscribeApplyRelays();
 		unsubscribeApplyRelays = null;
 	}
-	subNotes?.unsub();
+	subNotes?.close();
 	pool?.close(Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]));
 });
 afterUpdate(() => {
@@ -410,7 +410,7 @@ afterUpdate(() => {
 	}
 });
 beforeNavigate(() => {
-	subNotes?.unsub();
+	subNotes?.close();
 	if (unsubscribeApplyRelays) {
 		unsubscribeApplyRelays();
 		unsubscribeApplyRelays = null;
