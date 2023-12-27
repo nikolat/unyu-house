@@ -20,6 +20,7 @@ interface Window {
 }
 
 let pool: SimplePool = new SimplePool();
+pool.trackRelays = true;
 let subNotes: SubCloser;
 let relaysToUse: {[key: string]: GetRelays};
 let theme: string;
