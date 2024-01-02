@@ -80,7 +80,10 @@ export class RelayConnector {
 			filterPhase1.push({kinds: [10000, 10005], authors: [this.#loginPubkey], until: this.#until});
 		}
 		filterPhase1.push({kinds: [7], '#k': ['42'], until: this.#until, limit: limit_fav});
-		const zap_sender_pubkeys = ['be1d89794bf92de5dd64c1e60f6a2c70c140abac9932418fee30c5c637fe9479'];//WoS
+		const zap_sender_pubkeys = [
+			'be1d89794bf92de5dd64c1e60f6a2c70c140abac9932418fee30c5c637fe9479',//WoS
+			'79f00d3f5a19ec806189fcab03c1be4ff81d18ee4f653c88fac41fe03570f432'//Alby
+		];
 		filterPhase1.push({kinds: [9735], authors: zap_sender_pubkeys, until: this.#until, limit: limit_zap});
 		const events: {[key: number]: NostrEvent[]} = {0: [], 7: [], 16: [], 40: [], 41: [], 42: [], 9735: [], 10000: [], 10005: []};
 		for (const filter of filterPhase1) {
