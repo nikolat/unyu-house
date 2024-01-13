@@ -193,11 +193,12 @@ onMount(() => {
 			<div>Filter</div>
 			<select bind:value={filterSelected} on:change={changeFilter}>
 				<option value="fav">❤ &gt; 0</option>
+				<option value="kana">かなカナ</option>
 				<option value="default">Default</option>
 			</select>
 		</section>
 		<div>
-			{#each channels.filter(ch => (filterSelected === 'default' || filterSelected === 'fav' && ch.fav_count > 0) && ch.name) as channel}
+			{#each channels.filter(ch => ch.name && (filterSelected === 'default' || filterSelected === 'fav' && ch.fav_count > 0 || filterSelected === 'kana' && /[ぁ-んァ-ヴｦ-ﾟ]/.test(ch.name))) as channel}
 				{#if !muteList.includes(channel.event.pubkey) && !muteChannels.includes(channel.event.id) && !wordList.some(word => channel.name.includes(word))}
 			<SidebarChannel picture={profs[channel.event.pubkey]?.picture} url={nip19.neventEncode(channel.event)} channelName={channel.name} post_count={channel.post_count} fav_count={channel.fav_count}></SidebarChannel>
 				{/if}
