@@ -152,7 +152,7 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 	{@const noteOrg = note.kind === 42 ? note : [...notes, ...notesQuoted].find(ev => ev.id === note.tags.find(tag => tag.length >= 2 && tag[0] === 'e')?.at(1))}
 	{@const rootId = noteOrg?.tags.find(v => v[0] === 'e' && v[3] === 'root')?.at(1)}
 	{@const channel = channels.find(v => v.event.id === rootId)}
-	{#if noteOrg !== undefined && rootId !== undefined && channel !== undefined}
+	{#if noteOrg !== undefined && rootId !== undefined && channel !== undefined && channel.name}
 		{@const isMutedNotePubkey = muteList.includes(noteOrg.pubkey) || muteList.includes(note.pubkey)}
 		{@const isMutedNoteChannel = muteChannels.includes(rootId)}
 		{@const isMutedNoteWord = wordList.some(word => noteOrg.content.includes(word))}

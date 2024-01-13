@@ -197,13 +197,13 @@ onMount(() => {
 			</select>
 		</section>
 		<div>
-			{#each channels.filter(ch => filterSelected === 'default' || filterSelected === 'fav' && ch.fav_count > 0) as channel}
+			{#each channels.filter(ch => (filterSelected === 'default' || filterSelected === 'fav' && ch.fav_count > 0) && ch.name) as channel}
 				{#if !muteList.includes(channel.event.pubkey) && !muteChannels.includes(channel.event.id) && !wordList.some(word => channel.name.includes(word))}
 			<SidebarChannel picture={profs[channel.event.pubkey]?.picture} url={nip19.neventEncode(channel.event)} channelName={channel.name} post_count={channel.post_count} fav_count={channel.fav_count}></SidebarChannel>
 				{/if}
 			{/each}
 		</div>
-		<p>Total: {channels.length} channels</p>
+		<p>Total: {channels.filter(ch => ch.name).length} channels</p>
 	</section>
 	<section class="config">
 		<button
