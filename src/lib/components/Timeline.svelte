@@ -358,6 +358,8 @@ dt time {
 }
 dd {
 	white-space: pre-wrap;
+	max-height: 50em;
+	overflow-y: auto;
 }
 dd button.content-warning-show,
 dd div.content-warning-reason {
