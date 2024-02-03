@@ -7,7 +7,7 @@ import {
 } from 'nostr-tools';
 import { sendRepost, sendFav, sendDeletion, sendMessage, getExpandTagsList , type Profile, type Channel } from '$lib/util';
 import { storedLoginpubkey, storedRelaysSelected, storedRelaysToUse } from '$lib/store';
-import { defaultRelays } from '$lib/config';
+import { defaultRelays, urlToLinkNaddr } from '$lib/config';
 import Quote from './Quote.svelte';
 import data from '@emoji-mart/data';
 import { Picker } from 'emoji-mart';
@@ -229,11 +229,15 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 				{:else if /nostr:nevent\w+/.test(match[4])}
 					{@const matchedText = match[4]}
 					<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} {muteList} {muteChannels} {wordList} />
-				{:else if /#\S+/.test(match[5])}
+				{:else if /nostr:naddr\w+/.test(match[5])}
 					{@const matchedText = match[5]}
-					<a href="/hashtag/{encodeURI(matchedText.replace('#', ''))}">{matchedText}</a>
-				{:else if match[6]}
+					{@const naddrText = matchedText.replace(/nostr:/, '')}
+					<a href="{urlToLinkNaddr}/{naddrText}" target="_blank" rel="noopener noreferrer">{matchedText}</a>
+				{:else if /#\S+/.test(match[6])}
 					{@const matchedText = match[6]}
+					<a href="/hashtag/{encodeURI(matchedText.replace('#', ''))}">{matchedText}</a>
+				{:else if match[7]}
+					{@const matchedText = match[7]}
 					<img src="{emojiUrls[matchedText]}" alt="{matchedText}" title="{matchedText}" class="emoji" />
 				{/if}
 				{plainTexts.shift()}

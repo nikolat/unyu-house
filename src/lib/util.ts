@@ -723,7 +723,7 @@ export const broadcast = async(pool: SimplePool, relaysToWrite: string[], event4
 };
 
 export const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator<RegExpMatchArray>, string[], {[key: string]: string}] => {
-	const regMatchArray = ['https?://[\\w!?/=+\\-_~:;.,*&@#$%[\\]]+', 'nostr:npub\\w{59}', 'nostr:note\\w{59}', 'nostr:nevent\\w+', '#[^\\s#]+'];
+	const regMatchArray = ['https?://[\\w!?/=+\\-_~:;.,*&@#$%[\\]]+', 'nostr:npub\\w{59}', 'nostr:note\\w{59}', 'nostr:nevent\\w+', 'nostr:naddr\\w+', '#[^\\s#]+'];
 	const emojiUrls: {[key: string]: string} = {};
 	const emojiRegs = [];
 	if (tags === undefined) {
