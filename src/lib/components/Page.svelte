@@ -34,6 +34,7 @@ let muteList: string[] = [];
 let muteChannels: string[] = [];
 let wordList: string[] = [];
 let pinList: string[] = [];
+let followList: string[] = [];
 let emojiMap: Map<string, string> = new Map();
 let repostList: NostrEvent[] = [];
 let favList: NostrEvent[] = [];
@@ -92,7 +93,7 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 	if (eventsAll.some(ev => ev.id === event.id)) {
 		return;
 	}
-	if (eventsAll.some(ev => [0, 41, 10000, 10005, 10030].includes(ev.kind) && ev.kind === event.kind && ev.pubkey === event.pubkey && ev.created_at >= event.created_at)) {
+	if (eventsAll.some(ev => [0, 3, 41, 10000, 10005, 10030].includes(ev.kind) && ev.kind === event.kind && ev.pubkey === event.pubkey && ev.created_at >= event.created_at)) {
 		return;
 	}
 	if (eventsAll.some(ev => [30030].includes(ev.kind) && ev.kind === event.kind && ev.pubkey === event.pubkey && ev.tags.find(tag => tag[0] === 'd')?.at(1) === event.tags.find(tag => tag[0] === 'd')?.at(1) && ev.created_at >= event.created_at)) {
@@ -114,6 +115,9 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 			profs[event.pubkey].tags = event.tags;
 			if (redraw)
 				profs = profs;
+			break;
+		case 3:
+			followList = event.tags.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1]);
 			break;
 		case 7:
 			if (redraw)
@@ -464,7 +468,7 @@ $: repostListToShow = currentChannelId ? repostList.filter(ev16 => {
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div id="container" on:click={hidePostBar}>
 	<Header {title} {profs} {loginPubkey} />
-	<Sidebar {pool} {theme} {relaysToUse} {isLoggedin} {loginPubkey} {channels} {profs} {importRelays} {pinList} {muteList} {muteChannels} {wordList} />
+	<Sidebar {pool} {theme} {relaysToUse} {isLoggedin} {loginPubkey} {channels} {profs} {importRelays} {pinList} {muteList} {muteChannels} {wordList} {followList} />
 	<main>
 	{#if currentChannelId}
 		{@const channel = channels.find(v => v.event.id === currentChannelId)}
