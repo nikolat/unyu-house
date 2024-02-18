@@ -208,131 +208,171 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 			{@const videoUrls = getVideoUrls(noteOrg.content)}
 			{@const audioUrls = getAudioUrls(noteOrg.content)}
 			{@const contentWarningTag = noteOrg.tags.filter(tag => tag[0] === 'content-warning')}
-			<dd>
-			{#if replyTags.length > 0 || replyPubkeys.length > 0}
-				<div class="info-header">
-				{#if replyTags.length > 0}
-					<a href="#note-{replyTags[0][1]}">&gt;&gt;</a>
-				{/if}
-				{#each replyPubkeys as pubkey}
-					&nbsp;@{profs[pubkey]?.name ?? (npubOrg.slice(0, 10) + '...')}
-				{/each}
-				</div>
-			{/if}
-				<div class="content-warning-reason {contentWarningTag.length > 0 ? '' : 'hide'}">Content Warning{#if contentWarningTag.length > 0 && contentWarningTag[0][1]}<br />Reason: {contentWarningTag[0][1]}{/if}</div>
+			<dd>{
+				#if replyTags.length > 0 || replyPubkeys.length > 0
+			}<div class="info-header">{
+				#if replyTags.length > 0
+			}<a href="#note-{replyTags[0][1]}">&gt;&gt;</a>{
+				/if
+			}{
+				#each replyPubkeys as pubkey
+			}&nbsp;@{profs[pubkey]?.name ?? (npubOrg.slice(0, 10) + '...')
+			}{
+				/each
+			}</div>{
+				/if
+			}<div class="content-warning-reason {contentWarningTag.length > 0 ? '' : 'hide'}">Content Warning{#if contentWarningTag.length > 0 && contentWarningTag[0][1]}<br />Reason: {contentWarningTag[0][1]}{/if}</div>
 				<button class="content-warning-show {contentWarningTag.length > 0 ? '' : 'hide'}" on:click={() => showContentWarning(noteOrg.id)}>Show Content</button>
-				<div class="content-warning-target {contentWarningTag.length > 0 ? 'hide' : ''}">
-					<div class="content">{plainTexts.shift()}{#each matchesIterator as match}
-				{#if /https?:\/\/\S+/.test(match[1]) }
-						<a href="{match[1]}" target="_blank" rel="noopener noreferrer">{match[1]}</a>
-				{:else if /nostr:npub\w{59}/.test(match[2])}
-					{@const matchedText = match[2]}
-					{@const npubText = matchedText.replace(/nostr:/, '')}
-					{@const d = nip19.decode(npubText)}
-					{#if d.type === 'npub'}
-						<a href="/{npubText}">@{profs[d.data]?.name ?? (npubText.slice(0, 10) + '...')}</a>
-					{:else}
-						{matchedText}
-					{/if}
-				{:else if /nostr:note\w{59}/.test(match[3])}
-					{@const matchedText = match[3]}
-					<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} {muteList} {muteChannels} {wordList} />
-				{:else if /nostr:nevent\w+/.test(match[4])}
-					{@const matchedText = match[4]}
-					<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} {muteList} {muteChannels} {wordList} />
-				{:else if /nostr:naddr\w+/.test(match[5])}
-					{@const matchedText = match[5]}
-					{@const naddrText = matchedText.replace(/nostr:/, '')}
-					<a href="{urlToLinkNaddr}/{naddrText}" target="_blank" rel="noopener noreferrer">{matchedText}</a>
-				{:else if /#\S+/.test(match[6])}
-					{@const matchedText = match[6]}
-					<a href="/hashtag/{encodeURI(matchedText.replace('#', ''))}">{matchedText}</a>
-				{:else if match[7]}{@const matchedText = match[7]}<img src="{emojiUrls[matchedText]}" alt="{matchedText}" title="{matchedText}" class="emoji" />{/if}{plainTexts.shift()}{/each}</div>
-			{#if imageUrls.length > 0}
-					<div class="image-holder">
-				{#each imageUrls as imageUrl}
-						<figure><a href="{imageUrl}" target="_blank" rel="noopener noreferrer"><img src="{imageUrl}" alt="auto load" /></a></figure>
-				{/each}
-					</div>
-			{/if}
-			{#if videoUrls.length > 0}
-					<div class="video-holder">
-				{#each videoUrls as videoUrl}
-						<video controls preload="metadata">
-							<track kind="captions">
-							<source src="{videoUrl}">
-						</video>
-				{/each}
-					</div>
-			{/if}
-			{#if audioUrls.length > 0}
-					<div class="audio-holder">
-				{#each audioUrls as audioUrl}
-						<audio controls preload="metadata" src="{audioUrl}"></audio>
-				{/each}
-					</div>
-			{/if}
-				</div>
-			{#if favList.some(ev => ev.tags.findLast(tag => tag.length >= 2 && tag[0] === 'e')?.at(1) === noteOrg.id && profs[ev.pubkey])}
-				<ul class="fav-holder" role="list">
-				{#each favList as ev}
-					{#if ev.tags.findLast(tag => tag[0] === 'e')?.at(1) === noteOrg.id && profs[ev.pubkey] && !muteList.includes(ev.pubkey)}
-						{@const emojiTag = ev.tags.find(tag => tag.length >= 3 && tag[0] === 'emoji')}
-						{@const prof = profs[ev.pubkey]}
-						{@const npubFaved = nip19.npubEncode(ev.pubkey)}
-						<li>
-						{#if emojiTag && ev.content === `:${emojiTag[1]}:` && emojiTag[2]}
-							<img src="{emojiTag[2]}" width="20" height="20" alt=":{emojiTag[1]}:" title=":{emojiTag[1]}:" />
-						{:else}
-							{ev.content.replace(/^\+$/, '❤').replace(/^-$/, '👎') || '❤'}
-						{/if}
-						<img src="{prof.picture || '/default.png'}" alt="avatar of {npubFaved}"
-							width="16" height="16" /> {prof.display_name ?? ''} <a href="/{npubFaved}">@{prof.name ?? ''}</a> reacted</li>
-					{/if}
-				{/each}
-				</ul>
-			{/if}
-			{#if zapList.some(ev => ev.tags.find(tag => tag.length >= 2 && tag[0] === 'e')?.at(1) === noteOrg.id)}
-				<ul class="zap-holder" role="list">
-				{#each zapList as ev}
-					{@const event9734 = getevent9734(ev)}
-					{#if event9734.tags.find(tag => tag[0] === 'e')?.at(1) === noteOrg.id && profs[event9734.pubkey] && !muteList.includes(event9734.pubkey)}
-						{@const prof = profs[event9734.pubkey]}
-						{@const npubZapped = nip19.npubEncode(event9734.pubkey)}
-						<li><svg><use xlink:href="/lightning.svg#zap"></use></svg> <img src="{prof.picture || '/default.png'}" alt="avatar of {npubZapped}" width="16" height="16" /> {prof.display_name ?? ''} <a href="/{npubZapped}">@{prof.name ?? ''}</a> zapped{#if event9734.content}<blockquote>{event9734.content}</blockquote>{/if}</li>
-					{/if}
-				{/each}
-				</ul>
-			{/if}
-				<div class="action-bar">
-					{#if isLoggedin}
-					<details>
+				<div class="content-warning-target {contentWarningTag.length > 0 ? 'hide' : ''}"
+					><div class="content">{plainTexts.shift()}{#each matchesIterator as match
+				}{
+					#if /https?:\/\/\S+/.test(match[1])
+				}<a href="{match[1]}" target="_blank" rel="noopener noreferrer">{match[1]}</a>{
+					:else if /nostr:npub\w{59}/.test(match[2])
+				}{
+					@const matchedText = match[2]
+				}{
+					@const npubText = matchedText.replace(/nostr:/, '')
+				}{
+					@const d = nip19.decode(npubText)
+				}{
+					#if d.type === 'npub'
+						}<a href="/{npubText}">@{profs[d.data]?.name ?? (npubText.slice(0, 10) + '...')}</a>{
+					:else
+						}{matchedText}{
+					/if
+				}{
+					:else if /nostr:note\w{59}/.test(match[3])
+				}{
+					@const matchedText = match[3]
+				}<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} {muteList} {muteChannels} {wordList} />{
+					:else if /nostr:nevent\w+/.test(match[4])
+				}{
+					@const matchedText = match[4]
+				}<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} {muteList} {muteChannels} {wordList} />{
+					:else if /nostr:naddr\w+/.test(match[5])
+				}{
+					@const matchedText = match[5]
+				}{
+					@const naddrText = matchedText.replace(/nostr:/, '')
+				}<a href="{urlToLinkNaddr}/{naddrText}" target="_blank" rel="noopener noreferrer">{matchedText}</a>{
+					:else if /#\S+/.test(match[6])
+				}{
+					@const matchedText = match[6]
+				}<a href="/hashtag/{encodeURI(matchedText.replace('#', ''))}">{matchedText}</a>{
+					:else if match[7]
+				}{
+					@const matchedText = match[7]
+				}<img src="{emojiUrls[matchedText]}" alt="{matchedText}" title="{matchedText}" class="emoji" />{
+					/if
+				}{plainTexts.shift()}{
+					/each
+				}</div>{
+				#if imageUrls.length > 0
+			}<div class="image-holder">{
+				#each imageUrls as imageUrl
+			}<figure><a href="{imageUrl}" target="_blank" rel="noopener noreferrer"><img src="{imageUrl}" alt="auto load" /></a></figure>{
+				/each
+			}</div>{
+				/if
+			}{
+				#if videoUrls.length > 0
+			}<div class="video-holder">{
+				#each videoUrls as videoUrl
+			}<video controls preload="metadata">
+				<track kind="captions">
+				<source src="{videoUrl}">
+			</video>{
+				/each
+			}</div>{
+				/if
+			}{
+				#if audioUrls.length > 0
+			}<div class="audio-holder">{
+				#each audioUrls as audioUrl
+			}<audio controls preload="metadata" src="{audioUrl}"></audio>{
+				/each
+			}</div>{
+				/if
+			}</div>{
+				#if favList.some(ev => ev.tags.findLast(tag => tag.length >= 2 && tag[0] === 'e')?.at(1) === noteOrg.id && profs[ev.pubkey])
+			}<ul class="fav-holder" role="list">{
+				#each favList as ev
+				}{
+					#if ev.tags.findLast(tag => tag[0] === 'e')?.at(1) === noteOrg.id && profs[ev.pubkey] && !muteList.includes(ev.pubkey)
+				}{
+					@const emojiTag = ev.tags.find(tag => tag.length >= 3 && tag[0] === 'emoji')
+				}{
+					@const prof = profs[ev.pubkey]
+				}{
+					@const npubFaved = nip19.npubEncode(ev.pubkey)
+					}<li>{
+						#if emojiTag && ev.content === `:${emojiTag[1]}:` && emojiTag[2]
+							}<img src="{emojiTag[2]}" width="20" height="20" alt=":{emojiTag[1]}:" title=":{emojiTag[1]}:" />{
+						:else
+							}{
+							ev.content.replace(/^\+$/, '❤').replace(/^-$/, '👎') || '❤'
+							}{
+						/if
+						}<img src="{prof.picture || '/default.png'}" alt="avatar of {npubFaved}"
+							width="16" height="16" /> {prof.display_name ?? ''} <a href="/{npubFaved}">@{prof.name ?? ''}</a> reacted</li>{
+					/if
+				}{
+					/each
+				}</ul>{
+				/if
+			}{
+				#if zapList.some(ev => ev.tags.find(tag => tag.length >= 2 && tag[0] === 'e')?.at(1) === noteOrg.id)
+			}<ul class="zap-holder" role="list">{
+				#each zapList as ev
+				}{
+					@const event9734 = getevent9734(ev)
+				}{
+					#if event9734.tags.find(tag => tag[0] === 'e')?.at(1) === noteOrg.id && profs[event9734.pubkey] && !muteList.includes(event9734.pubkey)
+					}{
+						@const prof = profs[event9734.pubkey]
+					}{
+						@const npubZapped = nip19.npubEncode(event9734.pubkey)
+					}<li><svg><use xlink:href="/lightning.svg#zap"></use></svg> <img src="{prof.picture || '/default.png'}" alt="avatar of {npubZapped}" width="16" height="16" /> {prof.display_name ?? ''} <a href="/{npubZapped}">@{prof.name ?? ''}</a> zapped{#if event9734.content}<blockquote>{event9734.content}</blockquote>{/if}</li>{
+					/if
+				}{
+				/each
+			}</ul>{
+				/if
+			}<div class="action-bar">{
+				#if isLoggedin
+					}<details>
 						<summary>
 							<svg><use xlink:href="/arrow-bold-reply.svg#reply"></use></svg><span>reply to @{#if profs[noteOrg.pubkey]}{profs[noteOrg.pubkey]?.name ?? ''}{:else}{npubOrg.slice(0, 10)}...{/if}</span>
 						</summary>
-						<textarea id="input-text" bind:value={inputText[noteOrg.id]} on:keydown={(e) => {submitFromKeyboard(e, noteOrg)}}></textarea>
-						<button on:click={() => {callSendMessage(noteOrg)}} disabled={!inputText[noteOrg.id]}>Reply</button>
-					</details>
-					<button class="repost" on:click={() => sendRepost(pool, relaysToWrite, noteOrg)} title="Repost"><svg><use xlink:href="/refresh-cw.svg#repost"></use></svg></button>
-					<button class="fav" on:click={() => sendFav(pool, relaysToWrite, noteOrg, '+')} title="Fav"><svg><use xlink:href="/heart.svg#fav"></use></svg></button>
-					<button class="emoji" on:click={() => callSendEmoji(pool, relaysToWrite, noteOrg)} title="Emoji fav"><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button>
-					<div bind:this={emojiPicker[noteOrg.id]} class={visible[noteOrg.id] ? '' : 'hidden'}></div>
-					<button
+						<textarea id="input-text" bind:value={inputText[noteOrg.id]} on:keydown={(e) => {submitFromKeyboard(e, noteOrg)}}></textarea
+						><button on:click={() => {callSendMessage(noteOrg)}} disabled={!inputText[noteOrg.id]}>Reply</button
+					></details><button
+						class="repost" on:click={() => sendRepost(pool, relaysToWrite, noteOrg)} title="Repost"><svg><use xlink:href="/refresh-cw.svg#repost"></use></svg
+					></button><button
+						class="fav" on:click={() => sendFav(pool, relaysToWrite, noteOrg, '+')} title="Fav"><svg><use xlink:href="/heart.svg#fav"></use></svg
+					></button><button
+						class="emoji" on:click={() => callSendEmoji(pool, relaysToWrite, noteOrg)} title="Emoji fav"><svg><use xlink:href="/smiled.svg#emoji"></use></svg
+					></button><div
+						bind:this={emojiPicker[noteOrg.id]} class={visible[noteOrg.id] ? '' : 'hidden'}
+					></div><button
 						id="zap-{note.id}"
 						aria-label="Zap Button"
 						data-npub={npubOrg}
 						data-note-id={nip19.noteEncode(noteOrg.id)}
 						data-relays={relaysToWrite}
 						class="zap-dummy"
-					>dummy</button>
-					<button class="zap" title="Zap!" on:click={() => zap(note.id)}><svg><use xlink:href="/lightning.svg#zap"></use></svg></button>
-						{#if noteOrg.pubkey === loginPubkey}
-					<button class="delete" on:click={() => callSendDeletion(pool, relaysToWrite, noteOrg.id)} title="Delete"><svg><use xlink:href="/trash.svg#delete"></use></svg></button>
-						{/if}
-					{:else}
-					<button class="login-as-this-account" on:click={() => loginAsThisAccount(noteOrg.pubkey)} title="Login with this pubkey"><svg><use xlink:href="/eye.svg#login-as-this-account"></use></svg></button>
-					{/if}
-					<details>
+					>dummy</button><button
+						class="zap" title="Zap!" on:click={() => zap(note.id)}><svg><use xlink:href="/lightning.svg#zap"></use></svg
+					></button>{
+						#if noteOrg.pubkey === loginPubkey
+					}<button class="delete" on:click={() => callSendDeletion(pool, relaysToWrite, noteOrg.id)} title="Delete"><svg><use xlink:href="/trash.svg#delete"></use></svg></button>{
+						/if
+					}{
+						:else
+					}<button class="login-as-this-account" on:click={() => loginAsThisAccount(noteOrg.pubkey)} title="Login with this pubkey"><svg><use xlink:href="/eye.svg#login-as-this-account"></use></svg></button>{
+						/if
+					}<details>
 						<summary><svg><use xlink:href="/more-horizontal.svg#more"></use></svg></summary>
 						<dl class="details">
 							<dt>User ID</dt>
