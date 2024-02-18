@@ -6,7 +6,7 @@ import {
 	type Event as NostrEvent,
 } from 'nostr-tools';
 import { sendRepost, sendFav, sendDeletion, sendMessage, getExpandTagsList , type Profile, type Channel } from '$lib/util';
-import { storedLoginpubkey, storedRelaysSelected, storedRelaysToUse } from '$lib/store';
+import { preferences, storedRelaysSelected, storedRelaysToUse } from '$lib/store';
 import { defaultRelays, urlToLinkNaddr } from '$lib/config';
 import Quote from './Quote.svelte';
 import data from '@emoji-mart/data';
@@ -31,6 +31,13 @@ export let zapList: NostrEvent[];
 export let resetScroll: Function;
 export let importRelays: Function;
 export let emojiMap: Map<string, string>;
+export let theme: string;
+
+preferences.subscribe((value) => {
+	theme = value.theme ?? theme;
+	loginPubkey = value.loginPubkey;
+	isLoggedin = value.isLoggedin;
+});
 
 let emojiPicker: {[key: string]: HTMLElement} = {};
 let visible: {[key: string]: boolean} = {};
@@ -126,7 +133,7 @@ const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteI
 
 const loginAsThisAccount = (pubkey: string) => {
 	loginPubkey = pubkey;
-	storedLoginpubkey.set(loginPubkey);
+	preferences.set({theme, loginPubkey, isLoggedin});
 	storedRelaysToUse.set(defaultRelays);
 	const relaysSelected = 'default';
 	storedRelaysSelected.set(relaysSelected);

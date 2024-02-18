@@ -1,7 +1,7 @@
 <script lang='ts'>
-import { type Channel, type Profile, type GetRelays, getRelaysToUse, RelayConnector, urlDefaultTheme } from '$lib/util';
+import { type Channel, type Profile, type GetRelays, getRelaysToUse, RelayConnector } from '$lib/util';
 import type { NostrAPI } from '$lib/@types/nostr';
-import { storedIsLoggedin, storedLoginpubkey, storedCurrentChannelId, storedCurrentPubkey, storedCurrentHashtag, storedCurrentEvent, storedNeedApplyRelays, storedRelaysToUse, preferences, storedEvents } from '$lib/store';
+import { storedCurrentChannelId, storedCurrentPubkey, storedCurrentHashtag, storedCurrentEvent, storedNeedApplyRelays, storedRelaysToUse, preferences, storedEvents } from '$lib/store';
 import { defaultRelays, title } from '$lib/config';
 import { browser } from '$app/environment';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
@@ -49,8 +49,10 @@ let eventsAll: NostrEvent[] = [];
 storedRelaysToUse.subscribe((value) => {
 	relaysToUse = value;
 });
-preferences.subscribe((value: { theme: string; }) => {
+preferences.subscribe((value: { theme: string, loginPubkey: string, isLoggedin: boolean }) => {
 	theme = value.theme ?? theme;
+	loginPubkey = value.loginPubkey;
+	isLoggedin = value.isLoggedin;
 	if (browser) {
 		(document.querySelector('link[rel=stylesheet]') as HTMLLinkElement).href = theme ?? $preferences.theme;
 	}
@@ -66,12 +68,6 @@ storedCurrentHashtag.subscribe((value) => {
 });
 storedCurrentEvent.subscribe((value) => {
 	currentEvent = value;
-});
-storedIsLoggedin.subscribe((value) => {
-	isLoggedin = value;
-});
-storedLoginpubkey.subscribe((value) => {
-	loginPubkey = value;
 });
 storedEvents.subscribe((value) => {
 	eventsAll = value;
@@ -498,7 +494,7 @@ $: repostListToShow = currentChannelId ? repostList.filter(ev16 => {
 	{:else}
 		<h2>Error</h2>
 	{/if}
-		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {isLoggedin} {loginPubkey} {muteList} {muteChannels} {wordList} repostList={repostListToShow} {favList} {zapList} {resetScroll} {importRelays} {emojiMap} />
+		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {isLoggedin} {loginPubkey} {muteList} {muteChannels} {wordList} repostList={repostListToShow} {favList} {zapList} {resetScroll} {importRelays} {emojiMap} {theme} />
 	{#if currentChannelId && isLoggedin && channels.some(channel => channel.event.id === currentChannelId)}
 		<Post {pool} {currentChannelId} {relaysToUse} {channels} {hidePostBar} {resetScroll} {emojiMap} />
 	{/if}

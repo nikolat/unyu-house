@@ -5,7 +5,7 @@ import {
 } from 'nostr-tools';
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
-import { storedIsLoggedin, storedLoginpubkey, storedRelaysSelected, storedFilterSelected, preferences } from '$lib/store';
+import { storedRelaysSelected, storedFilterSelected, preferences } from '$lib/store';
 import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile, type GetRelays } from '$lib/util';
 import { urlNIP07guide } from '$lib/config';
 import type { NostrAPI } from '$lib/@types/nostr';
@@ -40,6 +40,8 @@ storedFilterSelected.subscribe((value) => {
 
 preferences.subscribe((value) => {
 	theme = value.theme ?? theme;
+	loginPubkey = value.loginPubkey;
+	isLoggedin = value.isLoggedin;
 });
 
 let newChannelName: string;
@@ -55,8 +57,8 @@ const login = async() => {
 			console.error(error);
 			return;
 		}
-		storedIsLoggedin.set(true);
-		storedLoginpubkey.set(loginPubkey);
+		isLoggedin = true;
+		preferences.set({theme, loginPubkey, isLoggedin});
 		relaysSelected = 'default';
 		importRelays(relaysSelected);
 	}
@@ -65,8 +67,9 @@ const login = async() => {
 	}
 };
 const logout = () => {
-	storedIsLoggedin.set(false);
-	storedLoginpubkey.set('');
+	loginPubkey = '';
+	isLoggedin = false;
+	preferences.set({theme, loginPubkey, isLoggedin});
 	relaysSelected = 'default';
 	importRelays(relaysSelected);
 };
@@ -80,11 +83,11 @@ const callSendCreateChannel = () => {
 const changeTheme = () => {
 	const container = document.getElementById('container');
 	if(theme === urlDarkTheme) {
-		preferences.set({theme: urlDarkTheme});
+		preferences.set({theme: urlDarkTheme, loginPubkey, isLoggedin});
 		container?.classList.remove('light');
 		container?.classList.add('dark');
 	} else {
-		preferences.set({theme: urlLightTheme});
+		preferences.set({theme: urlLightTheme, loginPubkey, isLoggedin});
 		container?.classList.remove('dark');
 		container?.classList.add('light');
 	}
