@@ -95,11 +95,23 @@ const callSendEmoji = (pool: SimplePool, relaysToWrite: string[], targetEvent: N
 	}
 	const picker = new Picker({
 		data,
+		custom: [
+			{
+				id: 'custom-emoji',
+				name: 'Custom Emojis',
+				emojis: Array.from(emojiMap.entries()).map(([shortcode, url]) => {return {
+					id: shortcode,
+					name: shortcode,
+					keywords: [shortcode],
+					skins: [{shortcodes: `:${shortcode}:`, src: url}],
+				};})
+			}
+		],
 		onEmojiSelect
 	});
 	function onEmojiSelect(emoji: BaseEmoji) {
 		visible[noteId] = false;
-		sendFav(pool, relaysToWrite, targetEvent, emoji.native);
+		sendFav(pool, relaysToWrite, targetEvent, emoji.native ?? (emoji as any).shortcodes as string, (emoji as any).src as string);
 	}
 	emojiPicker[noteId].appendChild(picker as any);
 };

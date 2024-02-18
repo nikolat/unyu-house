@@ -433,11 +433,14 @@ export const sendRepost = async(pool: SimplePool, relaysToWrite: string[], targe
 	await Promise.all(pubs);
 };
 
-export const sendFav = async(pool: SimplePool, relaysToWrite: string[], targetEvent: NostrEvent, content: string) => {
+export const sendFav = async(pool: SimplePool, relaysToWrite: string[], targetEvent: NostrEvent, content: string, emojiurl?: string) => {
 	const tags: string[][] = targetEvent.tags.filter(tag => tag.length >= 2 && (tag[0] === 'e' || (tag[0] === 'p' && tag[1] !== targetEvent.pubkey)));
 	tags.push(['e', targetEvent.id, '', '']);
 	tags.push(['p', targetEvent.pubkey, '']);
 	tags.push(['k', String(targetEvent.kind)]);
+	if (emojiurl) {
+		tags.push(['emoji', content.replaceAll(':', ''), emojiurl]);
+	}
 	const baseEvent: EventTemplate = {
 		kind: 7,
 		created_at: Math.floor(Date.now() / 1000),
