@@ -8,6 +8,7 @@ export let relaysToUse: {[key: string]: GetRelays};
 export let channels: Channel[] = [];
 export let hidePostBar: Function;
 export let resetScroll: Function;
+export let emojiMap: Map<string, string>;
 let inputText: string;
 
 const callSendMessage = (noteToReplay: NostrEvent) => {
@@ -18,7 +19,7 @@ const callSendMessage = (noteToReplay: NostrEvent) => {
 	hidePostBar();
 	resetScroll();
 	const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
-	sendMessage(pool, relaysToWrite, content, noteToReplay);
+	sendMessage(pool, relaysToWrite, content, noteToReplay, emojiMap);
 };
 
 const submitFromKeyboard = (event: KeyboardEvent, noteToReplay: NostrEvent) => {

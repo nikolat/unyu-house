@@ -34,6 +34,7 @@ let muteList: string[] = [];
 let muteChannels: string[] = [];
 let wordList: string[] = [];
 let pinList: string[] = [];
+let emojiMap: Map<string, string> = new Map();
 let repostList: NostrEvent[] = [];
 let favList: NostrEvent[] = [];
 let zapList: NostrEvent[] = [];
@@ -91,7 +92,10 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 	if (eventsAll.some(ev => ev.id === event.id)) {
 		return;
 	}
-	if (eventsAll.some(ev => [0, 41, 10000, 10005].includes(ev.kind) && ev.kind === event.kind && ev.pubkey === event.pubkey && ev.created_at >= event.created_at)) {
+	if (eventsAll.some(ev => [0, 41, 10000, 10005, 10030].includes(ev.kind) && ev.kind === event.kind && ev.pubkey === event.pubkey && ev.created_at >= event.created_at)) {
+		return;
+	}
+	if (eventsAll.some(ev => [30030].includes(ev.kind) && ev.kind === event.kind && ev.pubkey === event.pubkey && ev.tags.find(tag => tag[0] === 'd')?.at(1) === event.tags.find(tag => tag[0] === 'd')?.at(1) && ev.created_at >= event.created_at)) {
 		return;
 	}
 	eventsAll = utils.insertEventIntoAscendingList(eventsAll, event);
@@ -265,6 +269,13 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 			break;
 		case 10005:
 			pinList = event.tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]);
+			break;
+		case 10030:
+			break;
+		case 30030:
+			for (const tag of event.tags.filter(tag => tag.length >= 2 && tag[0] === 'emoji')) {
+				emojiMap.set(tag[1], tag[2]);
+			}
 			break;
 		default:
 			if (redraw)
@@ -483,9 +494,9 @@ $: repostListToShow = currentChannelId ? repostList.filter(ev16 => {
 	{:else}
 		<h2>Error</h2>
 	{/if}
-		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {isLoggedin} {loginPubkey} {muteList} {muteChannels} {wordList} repostList={repostListToShow} {favList} {zapList} {resetScroll} {importRelays} />
+		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {isLoggedin} {loginPubkey} {muteList} {muteChannels} {wordList} repostList={repostListToShow} {favList} {zapList} {resetScroll} {importRelays} {emojiMap} />
 	{#if currentChannelId && isLoggedin && channels.some(channel => channel.event.id === currentChannelId)}
-		<Post {pool} {currentChannelId} {relaysToUse} {channels} {hidePostBar} {resetScroll} />
+		<Post {pool} {currentChannelId} {relaysToUse} {channels} {hidePostBar} {resetScroll} {emojiMap} />
 	{/if}
 	</main>
 </div>

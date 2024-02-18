@@ -30,6 +30,7 @@ export let favList: NostrEvent[];
 export let zapList: NostrEvent[];
 export let resetScroll: Function;
 export let importRelays: Function;
+export let emojiMap: Map<string, string>;
 
 let emojiPicker: {[key: string]: HTMLElement} = {};
 let visible: {[key: string]: boolean} = {};
@@ -77,7 +78,7 @@ const callSendMessage = (noteToReplay: NostrEvent) => {
 	const details = <HTMLDetailsElement>document.querySelector(`#note-${noteId} + dd div.action-bar details`);
 	details.open = false;
 	resetScroll();
-	sendMessage(pool, relaysToWrite, content, noteToReplay);
+	sendMessage(pool, relaysToWrite, content, noteToReplay, emojiMap);
 };
 
 const submitFromKeyboard = (event: KeyboardEvent, noteToReplay: NostrEvent) => {

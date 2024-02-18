@@ -77,7 +77,7 @@ export class RelayConnector {
 			{kinds: [41], until: this.#until, limit: limit_channel},
 		];
 		if (this.#loginPubkey) {
-			filterPhase1.push({kinds: [10000, 10005], authors: [this.#loginPubkey], until: this.#until});
+			filterPhase1.push({kinds: [10000, 10005, 10030], authors: [this.#loginPubkey], until: this.#until});
 		}
 		filterPhase1.push({kinds: [7], '#k': ['42'], until: this.#until, limit: limit_fav});
 		const zap_sender_pubkeys = [
@@ -85,7 +85,7 @@ export class RelayConnector {
 			'79f00d3f5a19ec806189fcab03c1be4ff81d18ee4f653c88fac41fe03570f432'//Alby
 		];
 		filterPhase1.push({kinds: [9735], authors: zap_sender_pubkeys, until: this.#until, limit: limit_zap});
-		const events: {[key: number]: NostrEvent[]} = {0: [], 7: [], 16: [], 40: [], 41: [], 42: [], 9735: [], 10000: [], 10005: []};
+		const events: {[key: number]: NostrEvent[]} = {0: [], 7: [], 16: [], 40: [], 41: [], 42: [], 9735: [], 10000: [], 10005: [], 10030: []};
 		for (const filter of filterPhase1) {
 			const evs = await getGeneralEvents(this.#pool, this.#relays, [filter], this.#callbackEvent) as NostrEvent[];
 			for (const ev of evs) {
@@ -93,8 +93,7 @@ export class RelayConnector {
 			}
 		}
 		console.log('getEventsPhase1 * EOSE *');
-		const channels = this.#getChannels(events[7], events[40], events[41], events[42]);
-		const pinList = this.#getPinList(events[10005], channels);
+		const pinList = this.#getPinList(events[10005]);
 		const pubkeysToGet: string[] = this.#getPubkeysForFilter(Object.values(events).flat());
 		const idsToGet: string[] = [
 			...this.#getIdsForFilter([...events[16], ...events[42]]).filter(v => !events[42].map(ev => ev.id).includes(v)),
@@ -106,6 +105,13 @@ export class RelayConnector {
 		}
 		if (idsToGet.length > 0) {
 			filterPhase2.push({ids: idsToGet});
+		}
+		if (events[10030].length > 0) {
+			const atags = events[10030].reduce((a, b) => a.created_at > b.created_at ? a : b).tags.filter(tag => tag.length >= 2 && tag[0] === 'a').map(tag => tag[1]);
+			for (const atag of atags) {
+				const ary = atag.split(':');
+				filterPhase2.push({kinds: [parseInt(ary[0])], authors: [ary[1]], '#d': [ary[2]]});
+			}
 		}
 		const filterPhase3Base: Filter[] = [];
 		for (const f of this.#filterBase) {
@@ -129,13 +135,13 @@ export class RelayConnector {
 	};
 
 	#getEventsPhase2 = async (filterPhase2: Filter[], filterPhase3: Filter[], goPhase3: Boolean) => {
-		const events: {[key: number]: NostrEvent[]} = {0: [], 42: []};
+		const events: {[key: number]: NostrEvent[]} = {0: [], 42: [], 30030: []};
 		const eventsQuoted: NostrEvent[] = [];
 		const eventsAll: NostrEvent[] = [];
 		for (const filter of filterPhase2) {
 			const evs = await getGeneralEvents(this.#pool, this.#relays, [filter], this.#callbackEvent);
 			for (const ev of evs) {
-				if ([0, 42].includes(ev.kind)) {
+				if ([0, 42, 30030].includes(ev.kind)) {
 					events[ev.kind].push(ev);
 				}
 				else {
@@ -280,71 +286,6 @@ export class RelayConnector {
 		return Array.from(ids);
 	};
 
-	#getChannels = (events7: NostrEvent[], events40: NostrEvent[], events41: NostrEvent[], events42: NostrEvent[]): Channel[] => {
-		const channelObjects: {[key: string]: Channel} = {};
-		for (const ev of events40) {
-			let json: any;
-			try {
-				json = JSON.parse(ev.content);
-			} catch (error) {
-				console.warn(error);
-				continue;
-			}
-			if (['name'].some(metadata => !Object.hasOwn(json, metadata))) {
-				continue;
-			}
-			channelObjects[ev.id] = json;
-			channelObjects[ev.id].updated_at = ev.created_at;
-			channelObjects[ev.id].event = ev;
-			channelObjects[ev.id].post_count = 0;
-			channelObjects[ev.id].fav_count = 0;
-		}
-		for (const ev of events41) {
-			for (const tag of ev.tags) {
-				const id = tag[1];
-				if (tag[0] === 'e' && id in channelObjects && ev.pubkey === channelObjects[id].event.pubkey && channelObjects[id].updated_at < ev.created_at) {
-					const savedEvent = channelObjects[id].event;
-					let json: any;
-					try {
-						json = JSON.parse(ev.content);
-					} catch (error) {
-						console.warn(error);
-						continue;
-					}
-					if (['name'].some(metadata => !Object.hasOwn(json, metadata))) {
-						continue;
-					}
-					channelObjects[id] = json;
-					channelObjects[id].updated_at = ev.created_at;
-					channelObjects[id].event = savedEvent;
-					channelObjects[id].event41 = ev;
-					channelObjects[id].post_count = 0;
-					channelObjects[id].fav_count = 0;
-				}
-			}
-		}
-		for (const ev of events42) {
-			const rootid = ev.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1);
-			if (rootid === undefined) {
-				continue;
-			}
-			if (rootid in channelObjects) {
-				channelObjects[rootid].post_count++;
-			}
-		}
-		for (const ev of events7) {
-			const rootid = ev.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1);
-			if (rootid === undefined) {
-				continue;
-			}
-			if (rootid in channelObjects) {
-				channelObjects[rootid].fav_count++;
-			}
-		}
-		const channels: Channel[] = this.#getSortedChannels(channelObjects);
-		return channels;
-	};
-
 	// 降順にソートされたチャンネル情報の配列を返す
 	#getSortedChannels = (channelObjects: {[key: string]: Channel}) => {
 		const channelArray: Channel[] = Object.values(channelObjects);
@@ -360,20 +301,7 @@ export class RelayConnector {
 		return channelArray;
 	};
 
-	#getNotes = (events42: NostrEvent[]): NostrEvent[] => {
-		events42.sort((a, b) => {
-			if (a.created_at < b.created_at) {
-				return -1;
-			}
-			if (a.created_at > b.created_at) {
-				return 1;
-			}
-			return 0;
-		});
-		return events42;
-	};
-
-	#getPinList = (events: NostrEvent[], channels: Channel[]): string[] => {
+	#getPinList = (events: NostrEvent[]): string[] => {
 		if (events.length === 0)
 			return [];
 		return events.reduce((a, b) => a.created_at > b.created_at ? a : b).tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]);
@@ -397,7 +325,7 @@ export class RelayConnector {
 	};
 };
 
-export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], content: string, targetEventToReply: NostrEvent) => {
+export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], content: string, targetEventToReply: NostrEvent, emojiMap: Map<string, string>) => {
 	const seenOn = Array.from(pool.seenOn.get(targetEventToReply.id) ?? []);
 	if (seenOn.length === 0) {
 		throw new Error(`The event to reply is not found: ${targetEventToReply.id}`);
@@ -454,6 +382,12 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 	for (const match of matchesIteratorHashTag) {
 		hashtags.add(match[2]);
 	}
+	const matchesIteratorEmojiTag = content.matchAll(new RegExp(`:(${Array.from(emojiMap.keys()).join('|')}):`,'g'));
+	const emojitags: Set<string> = new Set();
+	for (const match of matchesIteratorEmojiTag) {
+		if (emojiMap.has(match[1]))
+			emojitags.add(match[1]);
+	}
 	for (const id of mentionIds) {
 		tags.push(['e', id, '', 'mention']);
 	}
@@ -462,6 +396,9 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 	}
 	for (const t of hashtags) {
 		tags.push(['t', t]);
+	}
+	for (const e of emojitags) {
+		tags.push(['emoji', e, emojiMap.get(e) as string]);
 	}
 	const baseEvent: EventTemplate = {
 		kind: 42,
