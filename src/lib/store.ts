@@ -3,7 +3,6 @@ import { writable, type Writable } from 'svelte/store';
 import { persisted } from 'svelte-persisted-store';
 import { urlDefaultTheme } from './util';
 
-export const storedRelaysSelected = writable('default');
 export const storedFilterSelected = writable('default');
 export const storedRelaysToUse = writable({});
 export const storedNeedApplyRelays = writable(false);
@@ -17,4 +16,5 @@ export const preferences = persisted('preferences', {
 	theme: urlDefaultTheme,
 	loginPubkey: '',
 	isLoggedin: false,
+	relaysSelected: 'default'
 });

@@ -30,6 +30,7 @@ let currentEvent: nip19.EventPointer | null;
 let currentHashtag: string | null;
 let isLoggedin: boolean;
 let loginPubkey: string;
+let relaysSelected: string;
 let muteList: string[] = [];
 let muteChannels: string[] = [];
 let wordList: string[] = [];
@@ -49,10 +50,11 @@ let eventsAll: NostrEvent[] = [];
 storedRelaysToUse.subscribe((value) => {
 	relaysToUse = value;
 });
-preferences.subscribe((value: { theme: string, loginPubkey: string, isLoggedin: boolean }) => {
+preferences.subscribe((value: { theme: string, loginPubkey: string, isLoggedin: boolean, relaysSelected: string }) => {
 	theme = value.theme ?? theme;
 	loginPubkey = value.loginPubkey;
 	isLoggedin = value.isLoggedin;
+	relaysSelected = value.relaysSelected;
 	if (browser) {
 		(document.querySelector('link[rel=stylesheet]') as HTMLLinkElement).href = theme ?? $preferences.theme;
 	}
@@ -399,7 +401,7 @@ onMount(() => {
 	if (!unsubscribeApplyRelays) {
 		unsubscribeApplyRelays = storedNeedApplyRelays.subscribe((value) => {
 			if (value === true) {
-				applyRelays();
+				importRelays(relaysSelected);
 			}
 		});
 	}
@@ -494,7 +496,7 @@ $: repostListToShow = currentChannelId ? repostList.filter(ev16 => {
 	{:else}
 		<h2>Error</h2>
 	{/if}
-		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {isLoggedin} {loginPubkey} {muteList} {muteChannels} {wordList} repostList={repostListToShow} {favList} {zapList} {resetScroll} {importRelays} {emojiMap} {theme} />
+		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {isLoggedin} {loginPubkey} {relaysSelected} {muteList} {muteChannels} {wordList} repostList={repostListToShow} {favList} {zapList} {resetScroll} {importRelays} {emojiMap} {theme} />
 	{#if currentChannelId && isLoggedin && channels.some(channel => channel.event.id === currentChannelId)}
 		<Post {pool} {currentChannelId} {relaysToUse} {channels} {hidePostBar} {resetScroll} {emojiMap} />
 	{/if}

@@ -5,7 +5,7 @@ import {
 } from 'nostr-tools';
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
-import { storedRelaysSelected, storedFilterSelected, preferences } from '$lib/store';
+import { storedFilterSelected, preferences } from '$lib/store';
 import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile, type GetRelays } from '$lib/util';
 import { urlNIP07guide } from '$lib/config';
 import type { NostrAPI } from '$lib/@types/nostr';
@@ -30,9 +30,6 @@ export let muteChannels: string[];
 export let wordList: string[];
 export let followList: string[];
 let relaysSelected: string;
-storedRelaysSelected.subscribe((value) => {
-	relaysSelected = value;
-});
 let filterSelected: string;
 storedFilterSelected.subscribe((value) => {
 	filterSelected = value;
@@ -42,6 +39,7 @@ preferences.subscribe((value) => {
 	theme = value.theme ?? theme;
 	loginPubkey = value.loginPubkey;
 	isLoggedin = value.isLoggedin;
+	relaysSelected = value.relaysSelected;
 });
 
 let newChannelName: string;
@@ -58,8 +56,8 @@ const login = async() => {
 			return;
 		}
 		isLoggedin = true;
-		preferences.set({theme, loginPubkey, isLoggedin});
 		relaysSelected = 'default';
+		preferences.set({theme, loginPubkey, isLoggedin, relaysSelected});
 		importRelays(relaysSelected);
 	}
 	else if (browser && nostr === undefined) {
@@ -69,8 +67,8 @@ const login = async() => {
 const logout = () => {
 	loginPubkey = '';
 	isLoggedin = false;
-	preferences.set({theme, loginPubkey, isLoggedin});
 	relaysSelected = 'default';
+	preferences.set({theme, loginPubkey, isLoggedin, relaysSelected});
 	importRelays(relaysSelected);
 };
 const callSendCreateChannel = () => {
@@ -83,18 +81,18 @@ const callSendCreateChannel = () => {
 const changeTheme = () => {
 	const container = document.getElementById('container');
 	if(theme === urlDarkTheme) {
-		preferences.set({theme: urlDarkTheme, loginPubkey, isLoggedin});
+		preferences.set({theme: urlDarkTheme, loginPubkey, isLoggedin, relaysSelected});
 		container?.classList.remove('light');
 		container?.classList.add('dark');
 	} else {
-		preferences.set({theme: urlLightTheme, loginPubkey, isLoggedin});
+		preferences.set({theme: urlLightTheme, loginPubkey, isLoggedin, relaysSelected});
 		container?.classList.remove('dark');
 		container?.classList.add('light');
 	}
 };
 
 const changeRelays = () => {
-	storedRelaysSelected.set(relaysSelected);
+	preferences.set({theme, loginPubkey, isLoggedin, relaysSelected});
 	importRelays(relaysSelected);
 };
 
