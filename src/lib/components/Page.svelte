@@ -306,8 +306,9 @@ const callbackPhase3 = (subNotesPhase3: SubCloser, ev: NostrEvent) => {
 	callbackEvent(ev);
 };
 
-const importRelays = (relaysSelected: string) => {
-	eventsAll = [];
+const importRelays = (relaysSelected: string, clearEvents: boolean = true) => {
+	if (clearEvents)
+		eventsAll = [];
 	getRelaysToUse(relaysSelected, pool, loginPubkey)
 		.then((relaysToUseBack: {[key: string]: GetRelays}) => {
 			relaysToUse = relaysToUseBack;
@@ -401,7 +402,7 @@ onMount(() => {
 	if (!unsubscribeApplyRelays) {
 		unsubscribeApplyRelays = storedNeedApplyRelays.subscribe((value) => {
 			if (value === true) {
-				importRelays(relaysSelected);
+				importRelays(relaysSelected, false);
 			}
 		});
 	}
