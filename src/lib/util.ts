@@ -120,6 +120,9 @@ export class RelayConnector {
 		for (const filter of filterPhase1) {
 			const evs = await getGeneralEvents(this.#pool, this.#relays, [filter], this.#callbackEvent) as NostrEvent[];
 			for (const ev of evs) {
+				if (events[ev.kind] === undefined) {
+					events[ev.kind] = [];
+				}
 				events[ev.kind].push(ev);
 			}
 		}
