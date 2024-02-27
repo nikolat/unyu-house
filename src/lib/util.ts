@@ -55,8 +55,9 @@ export class RelayConnector {
 	#since: number;
 	#callbackPhase3: Function;
 	#callbackEvent: Function;
+	#execScroll: Function;
 
-	constructor(pool: SimplePool, relays: string[], loginPubkey: string, filterBase: Filter[], until: number, callbackPhase3: Function, callbackEvent: Function) {
+	constructor(pool: SimplePool, relays: string[], loginPubkey: string, filterBase: Filter[], until: number, callbackPhase3: Function, callbackEvent: Function, execScroll: Function) {
 		this.#pool = pool;
 		this.#relays = relays;
 		this.#loginPubkey = loginPubkey;
@@ -65,12 +66,11 @@ export class RelayConnector {
 		this.#since = until + 1;
 		this.#callbackPhase3 = callbackPhase3;
 		this.#callbackEvent = callbackEvent;
+		this.#execScroll = execScroll;
 	}
 
 	getEventsPhase1 = async () => {
 		const limit_channel = 300;
-		const limit_fav = 100;
-		const limit_zap = 100;
 		const zap_sender_pubkeys = [
 			'be1d89794bf92de5dd64c1e60f6a2c70c140abac9932418fee30c5c637fe9479',//WoS
 			'79f00d3f5a19ec806189fcab03c1be4ff81d18ee4f653c88fac41fe03570f432'//Alby
@@ -102,11 +102,20 @@ export class RelayConnector {
 				events[ev.kind].push(ev);
 			}
 		}
+		this.#execScroll();
 		filterPhase1 = [];
+		const pinList = this.#getPinList(events[10005]);
+		const idsToGet: string[] = [
+			...this.#getIdsForFilter([...events[16], ...events[42]]).filter(v => !events[42].map(ev => ev.id).includes(v)),
+			...pinList,
+		];
+		if (idsToGet.length > 0) {
+			filterPhase1.push({ids: idsToGet});
+		}
+		filterPhase1.push({kinds: [7], until: this.#until, '#e': events[42].map(ev => ev.id)});
+		filterPhase1.push({kinds: [9735], authors: zap_sender_pubkeys, until: this.#until, '#e': events[42].map(ev => ev.id)});
 		filterPhase1.push({kinds: [40], until: this.#until, limit: limit_channel});
 		filterPhase1.push({kinds: [41], until: this.#until, limit: limit_channel});
-		filterPhase1.push({kinds: [7], '#k': ['42'], until: this.#until, limit: limit_fav});
-		filterPhase1.push({kinds: [9735], authors: zap_sender_pubkeys, until: this.#until, limit: limit_zap});
 		//2
 		for (const filter of filterPhase1) {
 			const evs = await getGeneralEvents(this.#pool, this.#relays, [filter], this.#callbackEvent) as NostrEvent[];
@@ -116,14 +125,6 @@ export class RelayConnector {
 		}
 		console.log('getEventsPhase1 * EOSE *');
 		const filterPhase2: Filter[] = [];
-		const pinList = this.#getPinList(events[10005]);
-		const idsToGet: string[] = [
-			...this.#getIdsForFilter([...events[16], ...events[42]]).filter(v => !events[42].map(ev => ev.id).includes(v)),
-			...pinList,
-		];
-		if (idsToGet.length > 0) {
-			filterPhase2.push({ids: idsToGet});
-		}
 		pubkeysToGet = this.#getPubkeysForFilter(Object.values(events).flat()).filter(pubkey => !events[0].map(ev => ev.pubkey).includes(pubkey));
 		if (pubkeysToGet.length > 0) {
 			filterPhase2.push({kinds: [0], authors: pubkeysToGet});

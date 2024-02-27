@@ -233,7 +233,6 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 			}
 			if (redraw) {
 				channels = channels;
-				execScroll();
 			}
 			break;
 		case 9735:
@@ -335,7 +334,7 @@ const applyRelays = async () => {
 	zapList = [];
 	let eventCopy: NostrEvent[] = [...eventsAll.filter(ev => [0, 1, 7, 16, 40, 41, 42, 9735].includes(ev.kind))];
 	if (isLoggedin) {
-		eventCopy = [...eventCopy, ...eventsAll.filter(ev => [3, 10000, 10005, 10030].includes(ev.kind))];
+		eventCopy = [...eventCopy, ...eventsAll.filter(ev => [3, 10000, 10005, 10030, 30030].includes(ev.kind))];
 	}
 	subNotes?.close();
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
@@ -394,7 +393,7 @@ const applyRelays = async () => {
 	repostList = repostList;
 	favList = favList;
 	zapList = zapList;
-	const rc = new RelayConnector(pool, relaysToRead, loginPubkey, filters, until, callbackPhase3, callbackEvent);
+	const rc = new RelayConnector(pool, relaysToRead, loginPubkey, filters, until, callbackPhase3, callbackEvent, execScroll);
 	rc.getEventsPhase1();
 };
 
