@@ -274,7 +274,7 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 		case 10030:
 			break;
 		case 30030:
-			for (const tag of event.tags.filter(tag => tag.length >= 2 && tag[0] === 'emoji')) {
+			for (const tag of event.tags.filter(tag => tag.length >= 3 && tag[0] === 'emoji' && /^\w+$/.test(tag[1]) && URL.canParse(tag[2]))) {
 				emojiMap.set(tag[1], tag[2]);
 			}
 			break;
