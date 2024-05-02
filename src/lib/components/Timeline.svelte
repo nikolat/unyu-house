@@ -392,7 +392,7 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 							<dt>Relays seen on</dt>
 							<dd>
 								<ul>
-								{#each pool.seenOn.get(noteOrg.id) ?? [] as relay}
+								{#each Array.from(pool.seenOn.get(noteOrg.id) ?? []) as relay}
 									<li>{relay.url}</li>
 								{/each}
 								</ul>
