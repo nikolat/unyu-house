@@ -65,17 +65,26 @@ const callSendMuteUser = (toSet: boolean) => {
 			{:else}
 				{matchedText}
 			{/if}
-		{:else if /nostr:note\w{59}/.test(match[3])}
-			{match[3]}
-		{:else if /nostr:nevent\w+/.test(match[4])}
+		{:else if /nostr:nprofile\w+/.test(match[3])}
+			{@const matchedText = match[3]}
+			{@const nprofileText = matchedText.replace(/nostr:/, '')}
+			{@const d = nip19.decode(nprofileText)}
+			{#if d.type === 'nprofile'}
+				<a href="/{nprofileText}">@{profs[d.data.pubkey]?.name ?? (nprofileText.slice(0, 10) + '...')}</a>
+			{:else}
+				{matchedText}
+			{/if}
+		{:else if /nostr:note\w{59}/.test(match[4])}
 			{match[4]}
-		{:else if /nostr:naddr\w+/.test(match[5])}
+		{:else if /nostr:nevent\w+/.test(match[5])}
 			{match[5]}
-		{:else if /#\S+/.test(match[6])}
-			{@const matchedText = match[6]}
-			<a href="/hashtag/{encodeURI(matchedText.replace('#', ''))}">{matchedText}</a>
-		{:else if match[7]}
+		{:else if /nostr:naddr\w+/.test(match[6])}
+			{match[6]}
+		{:else if /#\S+/.test(match[7])}
 			{@const matchedText = match[7]}
+			<a href="/hashtag/{encodeURI(matchedText.replace('#', ''))}">{matchedText}</a>
+		{:else if match[8]}
+			{@const matchedText = match[8]}
 			<img src="{emojiUrls[matchedText]}" alt="{matchedText}" title="{matchedText}" class="emoji" />
 		{/if}
 		{plainTexts.shift()}

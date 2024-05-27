@@ -389,7 +389,7 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 			mentionIds.add(d.data.id);
 		}
 	}
-	const matchesIteratorPubkey = content.matchAll(/(^|\W|\b)(nostr:(npub\w{59}))($|\W|\b)/g);
+	const matchesIteratorPubkey = content.matchAll(/(^|\W|\b)(nostr:(npub\w{59}|nprofile\w+))($|\W|\b)/g);
 	for (const match of matchesIteratorPubkey) {
 		let d;
 		try {
@@ -401,6 +401,9 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 		}
 		if (d.type === 'npub') {
 			mentionPubkeys.add(d.data);
+		}
+		else if (d.type === 'nprofile') {
+			mentionPubkeys.add(d.data.pubkey);
 		}
 	}
 	const matchesIteratorHashTag = content.matchAll(/(^|\s)#([^\s#]+)/g);
@@ -689,7 +692,7 @@ export const broadcast = async(pool: SimplePool, relaysToWrite: string[], event4
 };
 
 export const getExpandTagsList = (content: string, tags: string[][]): [IterableIterator<RegExpMatchArray>, string[], {[key: string]: string}] => {
-	const regMatchArray = ['https?://[\\w!?/=+\\-_~:;.,*&@#$%[\\]]+', 'nostr:npub\\w{59}', 'nostr:note\\w{59}', 'nostr:nevent\\w+', 'nostr:naddr\\w+', '#[^\\s#]+'];
+	const regMatchArray = ['https?://[\\w!?/=+\\-_~:;.,*&@#$%[\\]]+', 'nostr:npub\\w{59}', 'nostr:nprofile\\w+', 'nostr:note\\w{59}', 'nostr:nevent\\w+', 'nostr:naddr\\w+', '#[^\\s#]+'];
 	const emojiUrls: {[key: string]: string} = {};
 	const emojiRegs = [];
 	if (tags === undefined) {

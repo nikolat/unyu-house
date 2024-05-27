@@ -250,27 +250,41 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 						}{matchedText}{
 					/if
 				}{
-					:else if /nostr:note\w{59}/.test(match[3])
+					:else if /nostr:nprofile\w+/.test(match[3])
 				}{
 					@const matchedText = match[3]
-				}<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} {muteList} {muteChannels} {wordList} />{
-					:else if /nostr:nevent\w+/.test(match[4])
+				}{
+					@const nprofileText = matchedText.replace(/nostr:/, '')
+				}{
+					@const d = nip19.decode(nprofileText)
+				}{
+					#if d.type === 'nprofile'
+						}<a href="/{nprofileText}">@{profs[d.data.pubkey]?.name ?? (nprofileText.slice(0, 10) + '...')}</a>{
+					:else
+						}{matchedText}{
+					/if
+				}{
+					:else if /nostr:note\w{59}/.test(match[4])
 				}{
 					@const matchedText = match[4]
 				}<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} {muteList} {muteChannels} {wordList} />{
-					:else if /nostr:naddr\w+/.test(match[5])
+					:else if /nostr:nevent\w+/.test(match[5])
 				}{
 					@const matchedText = match[5]
+				}<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} {muteList} {muteChannels} {wordList} />{
+					:else if /nostr:naddr\w+/.test(match[6])
+				}{
+					@const matchedText = match[6]
 				}{
 					@const naddrText = matchedText.replace(/nostr:/, '')
 				}<a href="{urlToLinkNaddr}/{naddrText}" target="_blank" rel="noopener noreferrer">{matchedText}</a>{
-					:else if /#\S+/.test(match[6])
-				}{
-					@const matchedText = match[6]
-				}<a href="/hashtag/{encodeURI(matchedText.replace('#', ''))}">{matchedText}</a>{
-					:else if match[7]
+					:else if /#\S+/.test(match[7])
 				}{
 					@const matchedText = match[7]
+				}<a href="/hashtag/{encodeURI(matchedText.replace('#', ''))}">{matchedText}</a>{
+					:else if match[8]
+				}{
+					@const matchedText = match[8]
 				}<img src="{emojiUrls[matchedText]}" alt="{matchedText}" title="{matchedText}" class="emoji" />{
 					/if
 				}{plainTexts.shift()}{
