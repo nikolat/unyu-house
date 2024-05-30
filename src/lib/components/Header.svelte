@@ -1,5 +1,5 @@
 <script lang='ts'>
-import { nip19 } from "nostr-tools";
+import { npubEncode } from 'nostr-tools/nip19';
 import type { Profile } from "$lib/util";
 export let title: string;
 export let profs: {[key: string]: Profile};
@@ -13,7 +13,7 @@ const expandSidebar = () => {
 	<h1><a href="/">{title}</a></h1>
 	<button id="toggle" on:click={expandSidebar}><svg><use xlink:href="/menu.svg#hamburger"></use></svg></button>
 	{#if loginPubkey && profs[loginPubkey]}
-		{@const npub = nip19.npubEncode(loginPubkey)}
+		{@const npub = npubEncode(loginPubkey)}
 		<a href="/{npub}"><img id="account-avatar" src="{profs[loginPubkey].picture || '/default.png'}" alt="avatar of {npub}" title="logged in as @{profs[loginPubkey].name ?? ''}" width="32" height="32"></a>
 	{/if}
 </header>

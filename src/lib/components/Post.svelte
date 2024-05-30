@@ -1,10 +1,12 @@
 <script lang='ts'>
-import { sendMessage, type Channel, type GetRelays } from '$lib/util';
-import { type Event as NostrEvent, SimplePool } from 'nostr-tools';
+import { sendMessage, type Channel } from '$lib/util';
+import type { NostrEvent } from 'nostr-tools/core';
+import type { RelayRecord } from 'nostr-tools/relay';
+import type { SimplePool } from 'nostr-tools/pool';
 
-export let pool: SimplePool = new SimplePool();
+export let pool: SimplePool;
 export let currentChannelId: string | null;
-export let relaysToUse: {[key: string]: GetRelays};
+export let relaysToUse: RelayRecord;
 export let channels: Channel[] = [];
 export let hidePostBar: Function;
 export let resetScroll: Function;

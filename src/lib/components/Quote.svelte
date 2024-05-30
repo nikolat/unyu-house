@@ -1,9 +1,7 @@
 <script lang='ts'>
-import {
-	nip19,
-	SimplePool,
-	type Event as NostrEvent,
-} from 'nostr-tools';
+import type { NostrEvent } from 'nostr-tools/core';
+import type { SimplePool } from 'nostr-tools/pool';
+import * as nip19 from 'nostr-tools/nip19';
 import type { Channel, Profile } from '$lib/util';
 import { urlToLinkNote } from '$lib/config';
 import ChannelMetadata from './ChannelMetadata.svelte';

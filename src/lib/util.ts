@@ -1,19 +1,18 @@
-import {
-	SimplePool,
-	nip05,
-	nip19,
-	type Event as NostrEvent,
-	type EventTemplate,
-	type Filter,
-	type SubCloser,
-} from 'nostr-tools';
+import type { SubCloser } from 'nostr-tools/abstract-pool';
+import type { Filter } from 'nostr-tools/filter';
+import type { EventTemplate, NostrEvent } from 'nostr-tools/core';
+import type { SimplePool } from 'nostr-tools/pool';
+import type { RelayRecord } from 'nostr-tools/relay';
+import type { WindowNostr } from 'nostr-tools/nip07';
+import * as nip05 from 'nostr-tools/nip05';
+import * as nip19 from 'nostr-tools/nip19';
 import { defaultRelays, relaysToGetRelays } from './config';
-import type { NostrAPI } from './@types/nostr';
 
-interface Window {
-	nostr?: NostrAPI;
+declare global {
+	interface Window {
+		nostr?: WindowNostr;
+	}
 }
-declare const window: Window & typeof globalThis
 
 export interface Channel {
 	name: string
@@ -34,11 +33,6 @@ export interface Profile {
 	website?: string
 	created_at: number
 	tags: string[][]
-}
-
-export interface GetRelays {
-	read: boolean
-	write: boolean
 }
 
 export const urlDarkTheme = 'https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css';
@@ -626,7 +620,7 @@ const sendPinOrMute = async(pool: SimplePool, relaysToUse: object, loginPubkey: 
 			tags = newestEvent.tags;
 			const publicList = newestEvent.tags.filter(tag => tag.length >= 2 && tag[0] === tagName).map(tag => tag[1]);
 			let list: string[][] = [];
-			if (newestEvent.content !== '') {
+			if (newestEvent.content !== '' && window.nostr.nip04 !== undefined) {
 				try {
 					const content = await window.nostr.nip04.decrypt(loginPubkey, newestEvent.content);
 					list = JSON.parse(content);
@@ -649,7 +643,7 @@ const sendPinOrMute = async(pool: SimplePool, relaysToUse: object, loginPubkey: 
 					tags = tags.filter(tag => !(tag.length >= 2 && tag[0] === tagName && tag[1] === eventId));
 					content = newestEvent.content;
 				}
-				else {
+				else if (window.nostr.nip04 !== undefined) {
 					content = await window.nostr.nip04.encrypt(loginPubkey, JSON.stringify(list.filter(tag => !(tag.length >= 2 && tag[0] === tagName && tag[1] === eventId))));
 				}
 			}
@@ -714,7 +708,7 @@ export const getExpandTagsList = (content: string, tags: string[][]): [IterableI
 	return [matchesIterator, plainTexts, emojiUrls];
 };
 
-export const getRelaysToUse = (relaysSelected: string, pool: SimplePool, loginPubkey: string): Promise<{[key: string]: GetRelays}> => {
+export const getRelaysToUse = (relaysSelected: string, pool: SimplePool, loginPubkey: string): Promise<RelayRecord> => {
 	switch (relaysSelected) {
 		case 'kind3':
 			return new Promise((resolve) => {
@@ -736,9 +730,9 @@ export const getRelaysToUse = (relaysSelected: string, pool: SimplePool, loginPu
 					}
 					else {
 						const ev: NostrEvent = events.reduce((a: NostrEvent, b: NostrEvent) => a.created_at > b.created_at ? a : b)
-						const newRelays: {[key: string]: GetRelays} = {};
+						const newRelays: RelayRecord = {};
 						for (const tag of ev.tags.filter(tag => tag.length >= 2 && tag[0] === 'r')) {
-							newRelays[tag[1]] = {'read': tag.length === 2 || tag[2] === 'read', 'write': tag.length === 2 || tag[2] === 'write'};
+							newRelays[new URL(tag[1]).href] = {'read': tag.length === 2 || tag[2] === 'read', 'write': tag.length === 2 || tag[2] === 'write'};
 						}
 						resolve(newRelays);
 					}
@@ -763,9 +757,9 @@ export const getRelaysToUse = (relaysSelected: string, pool: SimplePool, loginPu
 						resolve({});
 						return;
 					}
-					const newRelays: {[key: string]: GetRelays} = {};
+					const newRelays: RelayRecord = {};
 					for (const relay of p.relays) {
-						newRelays[relay] = {'read': true, 'write': true};
+						newRelays[new URL(relay).href] = {read: true, write: true};
 					}
 					resolve(newRelays);
 				});

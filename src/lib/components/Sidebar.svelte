@@ -1,23 +1,17 @@
 <script lang='ts'>
-import {
-	SimplePool,
-	nip19,
-} from 'nostr-tools';
+import type { RelayRecord } from 'nostr-tools/relay';
+import type { SimplePool } from 'nostr-tools/pool';
+import * as nip19 from 'nostr-tools/nip19';
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 import { storedFilterSelected, preferences } from '$lib/store';
-import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile, type GetRelays } from '$lib/util';
+import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile } from '$lib/util';
 import { urlNIP07guide } from '$lib/config';
-import type { NostrAPI } from '$lib/@types/nostr';
 import { onMount } from 'svelte';
 import SidebarChannel from '$lib/components/SidebarChannel.svelte';
 
-interface Window {
-	nostr?: NostrAPI;
-}
-
 export let pool: SimplePool;
-export let relaysToUse: {[key: string]: GetRelays};
+export let relaysToUse: RelayRecord;
 export let isLoggedin: boolean;
 export let loginPubkey: string;
 export let channels: Channel[];
@@ -47,7 +41,7 @@ let newChannelAbout: string;
 let newChannelPicture: string;
 
 const login = async() => {
-	const nostr = (window as Window).nostr;
+	const nostr = window.nostr;
 	if (browser && nostr?.getPublicKey) {
 		try {
 			loginPubkey = await nostr.getPublicKey();

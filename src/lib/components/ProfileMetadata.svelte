@@ -1,14 +1,16 @@
 
 <script lang='ts'>
-import { getExpandTagsList, sendMuteUser, type GetRelays, type Profile, sendEditProfile } from "$lib/util";
-import { nip19, SimplePool } from "nostr-tools";
+import { getExpandTagsList, sendMuteUser, type Profile, sendEditProfile } from "$lib/util";
+import type { RelayRecord } from 'nostr-tools/relay';
+import type { SimplePool } from 'nostr-tools/pool';
+import * as nip19 from 'nostr-tools/nip19';
 
 export let pool: SimplePool;
 export let profs: {[key: string]: Profile};
 export let currentPubkey: string;
 export let isLoggedin: boolean;
 export let loginPubkey: string;
-export let relaysToUse: {[key: string]: GetRelays};
+export let relaysToUse: RelayRecord;
 export let muteList: string[];
 
 let editProfileName: string;

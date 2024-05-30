@@ -1,13 +1,15 @@
 <script lang='ts'>
-import { type Channel, type Profile, sendPin, type GetRelays, sendMute, sendEditChannel, broadcast } from '$lib/util';
-import { SimplePool, nip19 } from 'nostr-tools';
+import { type Channel, type Profile, sendPin, sendMute, sendEditChannel, broadcast } from '$lib/util';
+import type { RelayRecord } from 'nostr-tools/relay';
+import type { SimplePool } from 'nostr-tools/pool';
+import * as nip19 from 'nostr-tools/nip19';
 
 export let channel: Channel;
 export let pool: SimplePool;
 export let profs: {[key: string]: Profile};
 export let isLoggedin: boolean;
 export let loginPubkey: string;
-export let relaysToUse: {[key: string]: GetRelays};
+export let relaysToUse: RelayRecord;
 export let isQuote: boolean;
 export let pinList: string[];
 export let muteChannels: string[];

@@ -1,13 +1,19 @@
 <script lang='ts'>
-import { type Channel, type Profile, type GetRelays, getRelaysToUse, RelayConnector } from '$lib/util';
-import type { NostrAPI } from '$lib/@types/nostr';
+import { type Channel, type Profile, getRelaysToUse, RelayConnector } from '$lib/util';
 import { storedCurrentChannelId, storedCurrentPubkey, storedCurrentHashtag, storedCurrentEvent, storedNeedApplyRelays, storedRelaysToUse, preferences, storedEvents } from '$lib/store';
 import { defaultRelays, title } from '$lib/config';
 import { browser } from '$app/environment';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
 import { afterUpdate, onDestroy, onMount } from 'svelte';
 import type { Unsubscriber } from 'svelte/store';
-import { SimplePool, nip19, type Event as NostrEvent, type SubCloser, type Filter, utils, verifyEvent } from 'nostr-tools';
+import type { SubCloser } from 'nostr-tools/abstract-pool';
+import type { Filter } from 'nostr-tools/filter';
+import type { NostrEvent } from 'nostr-tools/core';
+import type { RelayRecord } from 'nostr-tools/relay';
+import { verifyEvent } from 'nostr-tools/pure';
+import { SimplePool } from 'nostr-tools/pool';
+import * as nip19 from 'nostr-tools/nip19';
+import * as utils from 'nostr-tools/utils';
 import Sidebar from './Sidebar.svelte';
 import Header from './Header.svelte';
 import ChannelMetadata from './ChannelMetadata.svelte';
@@ -15,14 +21,10 @@ import ProfileMetadata from './ProfileMetadata.svelte';
 import Timeline from './Timeline.svelte';
 import Post from './Post.svelte';
 
-interface Window {
-	nostr?: NostrAPI;
-}
-
 let pool: SimplePool = new SimplePool();
 pool.trackRelays = true;
 let subNotes: SubCloser;
-let relaysToUse: {[key: string]: GetRelays};
+let relaysToUse: RelayRecord;
 let theme: string;
 let currentChannelId: string | null;
 let currentPubkey: string | null;
@@ -255,7 +257,7 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 			muteList = event.tags.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1]) ?? [];
 			muteChannels = event.tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]) ?? [];
 			wordList = event.tags.filter(tag => tag.length >= 2 && tag[0] === 'word').map(tag => tag[1]) ?? [];
-			const nostr = (window as Window).nostr;
+			const nostr = window.nostr;
 			if (isLoggedin && loginPubkey && event.content && browser && nostr?.nip04?.decrypt) {
 				try {
 					const content = await nostr.nip04.decrypt(loginPubkey, event.content);
@@ -309,7 +311,7 @@ const importRelays = (relaysSelected: string, clearEvents: boolean = true) => {
 	if (clearEvents)
 		eventsAll = [];
 	getRelaysToUse(relaysSelected, pool, loginPubkey)
-		.then((relaysToUseBack: {[key: string]: GetRelays}) => {
+		.then((relaysToUseBack: RelayRecord) => {
 			relaysToUse = relaysToUseBack;
 			storedRelaysToUse.set(relaysToUse);
 			applyRelays();
