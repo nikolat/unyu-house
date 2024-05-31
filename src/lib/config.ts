@@ -1,14 +1,16 @@
+import type { RelayRecord } from 'nostr-tools/relay';
+
 export const title = 'うにゅうハウス';
-export const defaultRelays = {
-	'wss://relay-jp.nostr.wirednet.jp': {'read': true, 'write': true},
-	'wss://yabu.me': {'read': true, 'write': true},
-	'wss://nrelay.c-stellar.net': {'read': true, 'write': false},
+export const defaultRelays: RelayRecord = {
+	'wss://relay-jp.nostr.wirednet.jp/': {'read': true, 'write': true},
+	'wss://yabu.me/': {'read': true, 'write': true},
+	'wss://nrelay.c-stellar.net/': {'read': true, 'write': false},
 };
 export const relaysToGetRelays = [
-	'wss://relay-jp.nostr.wirednet.jp',
-	'wss://yabu.me',
-	'wss://nos.lol',
-	'wss://relay.damus.io',
+	'wss://relay-jp.nostr.wirednet.jp/',
+	'wss://yabu.me/',
+	'wss://nos.lol/',
+	'wss://relay.damus.io/',
 ];
 export const urlToLinkNote = 'https://nostter.app';
 export const urlToLinkNaddr = 'https://njump.me';

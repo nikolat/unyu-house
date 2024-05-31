@@ -311,7 +311,11 @@ const importRelays = (relaysSelected: string, clearEvents: boolean = true) => {
 		eventsAll = [];
 	getRelaysToUse(relaysSelected, pool, loginPubkey)
 		.then((relaysToUseBack: RelayRecord) => {
-			relaysToUse = relaysToUseBack;
+			const newRelays: RelayRecord = {};
+			for (const [k, v] of Object.entries(relaysToUseBack)) {
+				newRelays[utils.normalizeURL(k)] = v;
+			}
+			relaysToUse = newRelays;
 			storedRelaysToUse.set(relaysToUse);
 			applyRelays();
 		})
