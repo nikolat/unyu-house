@@ -1,9 +1,10 @@
 import type { SubCloser } from 'nostr-tools/abstract-pool';
 import type { Filter } from 'nostr-tools/filter';
-import type { EventTemplate, NostrEvent } from 'nostr-tools/core';
+import type { EventTemplate, NostrEvent } from 'nostr-tools/pure';
 import type { SimplePool } from 'nostr-tools/pool';
 import type { RelayRecord } from 'nostr-tools/relay';
 import type { WindowNostr } from 'nostr-tools/nip07';
+import { normalizeURL } from 'nostr-tools/utils';
 import * as nip05 from 'nostr-tools/nip05';
 import * as nip19 from 'nostr-tools/nip19';
 import { defaultRelays, relaysToGetRelays } from './config';
@@ -732,7 +733,7 @@ export const getRelaysToUse = (relaysSelected: string, pool: SimplePool, loginPu
 						const ev: NostrEvent = events.reduce((a: NostrEvent, b: NostrEvent) => a.created_at > b.created_at ? a : b)
 						const newRelays: RelayRecord = {};
 						for (const tag of ev.tags.filter(tag => tag.length >= 2 && tag[0] === 'r')) {
-							newRelays[new URL(tag[1]).href] = {'read': tag.length === 2 || tag[2] === 'read', 'write': tag.length === 2 || tag[2] === 'write'};
+							newRelays[normalizeURL(tag[1])] = {'read': tag.length === 2 || tag[2] === 'read', 'write': tag.length === 2 || tag[2] === 'write'};
 						}
 						resolve(newRelays);
 					}
@@ -759,7 +760,7 @@ export const getRelaysToUse = (relaysSelected: string, pool: SimplePool, loginPu
 					}
 					const newRelays: RelayRecord = {};
 					for (const relay of p.relays) {
-						newRelays[new URL(relay).href] = {read: true, write: true};
+						newRelays[normalizeURL(relay)] = {read: true, write: true};
 					}
 					resolve(newRelays);
 				});

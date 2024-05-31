@@ -1,6 +1,6 @@
 <script lang='ts'>
 import { sendMessage, type Channel } from '$lib/util';
-import type { NostrEvent } from 'nostr-tools/core';
+import type { NostrEvent } from 'nostr-tools/pure';
 import type { RelayRecord } from 'nostr-tools/relay';
 import type { SimplePool } from 'nostr-tools/pool';
 

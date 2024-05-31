@@ -1,6 +1,6 @@
 <script lang='ts'>
 
-import type { NostrEvent } from 'nostr-tools/core';
+import type { NostrEvent } from 'nostr-tools/pure';
 import type { SimplePool } from 'nostr-tools/pool';
 import * as nip19 from 'nostr-tools/nip19';
 import { sendRepost, sendFav, sendDeletion, sendMessage, getExpandTagsList , type Profile, type Channel } from '$lib/util';

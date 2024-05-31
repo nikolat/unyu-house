@@ -1,4 +1,4 @@
-import type { NostrEvent } from 'nostr-tools/core';
+import type { NostrEvent } from 'nostr-tools/pure';
 import type { EventPointer } from 'nostr-tools/nip19';
 import { writable, type Writable } from 'svelte/store';
 import { persisted } from 'svelte-persisted-store';
