@@ -459,6 +459,7 @@ export const sendRepost = async(pool: SimplePool, relaysToWrite: string[], targe
 
 export const sendFav = async(pool: SimplePool, relaysToWrite: string[], targetEvent: NostrEvent, content: string, emojiurl?: string) => {
 	const tags: string[][] = [
+		...targetEvent.tags.filter(tag => tag.length >= 2 && (tag[0] === 'e' || (tag[0] === 'p' && tag[1] !== targetEvent.pubkey))),
 		['e', targetEvent.id, '', ''],
 		['p', targetEvent.pubkey, ''],
 		['k', String(targetEvent.kind)]
