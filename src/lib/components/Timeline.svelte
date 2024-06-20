@@ -365,7 +365,7 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 						<summary>
 							<svg><use xlink:href="/arrow-bold-reply.svg#reply"></use></svg><span>reply to @{#if profs[noteOrg.pubkey]}{profs[noteOrg.pubkey]?.name ?? ''}{:else}{npubOrg.slice(0, 10)}...{/if}</span>
 						</summary>
-						<textarea id="input-text" bind:value={inputText[noteOrg.id]} on:keydown={(e) => {submitFromKeyboard(e, noteOrg)}}></textarea
+						<textarea name="input-text" bind:value={inputText[noteOrg.id]} on:keydown={(e) => {submitFromKeyboard(e, noteOrg)}}></textarea
 						><button on:click={() => {callSendMessage(noteOrg)}} disabled={!inputText[noteOrg.id]}>Reply</button
 					></details><button
 						class="repost" on:click={() => sendRepost(pool, relaysToWrite, noteOrg)} title="Repost"><svg><use xlink:href="/refresh-cw.svg#repost"></use></svg

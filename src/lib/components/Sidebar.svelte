@@ -126,7 +126,7 @@ onMount(() => {
 	</section>
 	<section class="config">
 		<div>Theme</div>
-		<select bind:value={theme} on:change={changeTheme}>
+		<select id="select-theme" bind:value={theme} on:change={changeTheme}>
 			<option value={urlDarkTheme}>Dark Theme</option>
 			<option value={urlLightTheme}>Light Theme</option>
 		</select>
@@ -135,7 +135,7 @@ onMount(() => {
 	{#if loginPubkey}
 	<section class="config">
 		<div>Get Relay List</div>
-		<select bind:value={relaysSelected} on:change={changeRelays}>
+		<select id="select-relay-list" bind:value={relaysSelected} on:change={changeRelays}>
 			<option value="kind3">Kind 3</option>
 			<option value="kind10002">Kind 10002</option>
 			<option value="nip05">NIP-05</option>
@@ -161,8 +161,8 @@ onMount(() => {
 			{/await}
 			</td>
 			<td>{relay[0]}</td>
-			<td><input type="checkbox" checked={relay[1].read} disabled /></td>
-			<td><input type="checkbox" checked={relay[1].write} disabled /></td>
+			<td><input type="checkbox" checked={relay[1].read} name="read" disabled /></td>
+			<td><input type="checkbox" checked={relay[1].write} name="write" disabled /></td>
 		</tr>
 		{/each}
 	</table>
@@ -196,7 +196,7 @@ onMount(() => {
 		<h3>All Channels</h3>
 		<section class="config">
 			<div>Filter</div>
-			<select bind:value={filterSelected} on:change={changeFilter}>
+			<select id="select-channel-filter" bind:value={filterSelected} on:change={changeFilter}>
 				<option value="fav">❤ &gt; 0</option>
 				<option value="kana">かなカナ</option>
 				{#if loginPubkey}<option value="follow">follow</option>{/if}
