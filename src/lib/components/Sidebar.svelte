@@ -188,7 +188,7 @@ onMount(() => {
 		<h3>Pinned Channels</h3>
 		<div>
 				{#each channels.filter(ch => pinList.includes(ch.event.id)) as channel}
-			<SidebarChannel picture={profs[channel.event.pubkey]?.picture} url={nip19.neventEncode(channel.event)} channelName={channel.name} post_count={channel.post_count} fav_count={channel.fav_count}></SidebarChannel>
+			<SidebarChannel picture={channel.picture} url={nip19.neventEncode(channel.event)} channelName={channel.name} post_count={channel.post_count} fav_count={channel.fav_count} classname='pinned'></SidebarChannel>
 				{/each}
 		</div>
 			{/if}
@@ -211,7 +211,7 @@ onMount(() => {
 				|| filterSelected === 'follow' && followList.includes(ch.event.pubkey)
 			)) as channel}
 				{#if !muteList.includes(channel.event.pubkey) && !muteChannels.includes(channel.event.id) && !wordList.some(word => channel.name.includes(word))}
-			<SidebarChannel picture={profs[channel.event.pubkey]?.picture} url={nip19.neventEncode(channel.event)} channelName={channel.name} post_count={channel.post_count} fav_count={channel.fav_count}></SidebarChannel>
+			<SidebarChannel picture={profs[channel.event.pubkey]?.picture} url={nip19.neventEncode(channel.event)} channelName={channel.name} post_count={channel.post_count} fav_count={channel.fav_count} classname='all'></SidebarChannel>
 				{/if}
 			{/each}
 		</div>
