@@ -155,9 +155,9 @@ onMount(() => {
 		<tr>
 			<td>
 			{#await nip11.fetchRelayInformation(relay[0]) then r}
-			{#if r.icon} <img src={r.icon} alt="" />{/if}
+				<img src={r.icon || "/default.png"} alt="" />
 			{:catch error}
-			{error.message}
+				{error.message}
 			{/await}
 			</td>
 			<td>{relay[0]}</td>
