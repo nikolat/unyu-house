@@ -29,7 +29,7 @@ storedFilterSelected.subscribe((value) => {
 	filterSelected = value;
 });
 
-preferences.subscribe((value) => {
+preferences.subscribe((value: any) => {
 	theme = value.theme ?? theme;
 	loginPubkey = value.loginPubkey;
 	isLoggedin = value.isLoggedin;

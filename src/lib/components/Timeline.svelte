@@ -32,7 +32,7 @@ export let emojiMap: Map<string, string>;
 export let theme: string;
 export let relaysSelected: string;
 
-preferences.subscribe((value) => {
+preferences.subscribe((value: any) => {
 	theme = value.theme ?? theme;
 	loginPubkey = value.loginPubkey;
 	isLoggedin = value.isLoggedin;
