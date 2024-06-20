@@ -1,6 +1,7 @@
 <script lang='ts'>
 import type { RelayRecord } from 'nostr-tools/relay';
 import type { SimplePool } from 'nostr-tools/pool';
+import * as nip11 from 'nostr-tools/nip11';
 import * as nip19 from 'nostr-tools/nip19';
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
@@ -145,12 +146,20 @@ onMount(() => {
 	{/if}
 	<table>
 		<tr>
+			<th></th>
 			<th>relay</th>
 			<th>r</th>
 			<th>w</th>
 		</tr>
 		{#each Object.entries(relaysToUse) as relay}
 		<tr>
+			<td>
+			{#await nip11.fetchRelayInformation(relay[0]) then r}
+			{#if r.icon} <img src={r.icon} alt="" />{/if}
+			{:catch error}
+			{error.message}
+			{/await}
+			</td>
 			<td>{relay[0]}</td>
 			<td><input type="checkbox" checked={relay[1].read} disabled /></td>
 			<td><input type="checkbox" checked={relay[1].write} disabled /></td>
@@ -264,6 +273,10 @@ onMount(() => {
 }
 #sidebar td {
 	white-space: pre-wrap;
+}
+#sidebar td img {
+	width: 16px;
+	height: 16px;
 }
 .config {
 	display: flex;
