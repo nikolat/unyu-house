@@ -70,10 +70,10 @@ export class RelayConnector {
 			'be1d89794bf92de5dd64c1e60f6a2c70c140abac9932418fee30c5c637fe9479',//WoS
 			'79f00d3f5a19ec806189fcab03c1be4ff81d18ee4f653c88fac41fe03570f432'//Alby
 		];
-		const events: {[key: number]: NostrEvent[]} = {0: [], 3: [], 7: [], 16: [], 40: [], 41: [], 42: [], 9735: [], 10000: [], 10005: [], 10030: []};
+		const events: {[key: number]: NostrEvent[]} = {0: [], 3: [], 7: [], 16: [], 40: [], 41: [], 42: [], 9735: [], 10000: [], 10005: [], 10030: [], 30007: []};
 		let filterPhase1: Filter[] = this.#filterBase;
 		if (this.#loginPubkey) {
-			filterPhase1.unshift({kinds: [3, 10000, 10005, 10030], authors: [this.#loginPubkey], until: this.#until});
+			filterPhase1.unshift({kinds: [3, 10000, 10005, 10030, 30007], authors: [this.#loginPubkey], until: this.#until});
 		}
 		//0
 		for (const filter of filterPhase1) {

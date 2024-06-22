@@ -33,6 +33,9 @@ let isLoggedin: boolean;
 let loginPubkey: string;
 let relaysSelected: string;
 let muteList: string[] = [];
+let muteListFav: string[] = [];
+let muteListRepost: string[] = [];
+let muteListZap: string[] = [];
 let muteChannels: string[] = [];
 let wordList: string[] = [];
 let pinList: string[] = [];
@@ -95,7 +98,7 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 	if (eventsAll.some(ev => [0, 3, 41, 10000, 10005, 10030].includes(ev.kind) && ev.kind === event.kind && ev.pubkey === event.pubkey && ev.created_at >= event.created_at)) {
 		return;
 	}
-	if (eventsAll.some(ev => [30030].includes(ev.kind) && ev.kind === event.kind && ev.pubkey === event.pubkey && ev.tags.find(tag => tag[0] === 'd')?.at(1) === event.tags.find(tag => tag[0] === 'd')?.at(1) && ev.created_at >= event.created_at)) {
+	if (eventsAll.some(ev => [30007, 30030].includes(ev.kind) && ev.kind === event.kind && ev.pubkey === event.pubkey && ev.tags.find(tag => tag[0] === 'd')?.at(1) === event.tags.find(tag => tag[0] === 'd')?.at(1) && ev.created_at >= event.created_at)) {
 		return;
 	}
 	eventsAll = utils.insertEventIntoAscendingList(eventsAll, event);
@@ -253,26 +256,30 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 				zapList.unshift(event);
 			break;
 		case 10000:
-			muteList = event.tags.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1]) ?? [];
-			muteChannels = event.tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]) ?? [];
-			wordList = event.tags.filter(tag => tag.length >= 2 && tag[0] === 'word').map(tag => tag[1]) ?? [];
-			const nostr = window.nostr;
-			if (isLoggedin && loginPubkey && event.content && browser && nostr?.nip04?.decrypt) {
-				try {
-					const content = await nostr.nip04.decrypt(loginPubkey, event.content);
-					const list: string[][] = JSON.parse(content);
-					muteList = muteList.concat(list.filter(tag => tag.length >= 2 && tag[0] === 'p').map(tag => tag[1]));
-					muteChannels = muteChannels.concat(list.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]));
-					wordList = wordList.concat(list.filter(tag => tag.length >= 2 && tag[0] === 'word').map(tag => tag[1]));
-				} catch (error) {
-					console.warn(error);
-				}
-			}
+			muteList = await getListWithEncrypt(event, 'p');
+			muteChannels = await getListWithEncrypt(event, 'e');
+			wordList = await getListWithEncrypt(event, 'word');
 			break;
 		case 10005:
 			pinList = event.tags.filter(tag => tag.length >= 2 && tag[0] === 'e').map(tag => tag[1]);
 			break;
 		case 10030:
+			break;
+		case 30007:
+			const dTagKind = parseInt(event.tags.filter(tag => tag[0] === 'd')[0][1]);
+			switch (dTagKind) {
+				case 7:
+					muteListFav = await getListWithEncrypt(event, 'p');
+					break;
+				case 16:
+					muteListRepost = await getListWithEncrypt(event, 'p');
+					break;
+				case 9735:
+					muteListZap = await getListWithEncrypt(event, 'p');
+					break;
+				default:
+					break;
+			}
 			break;
 		case 30030:
 			for (const tag of event.tags.filter(tag => tag.length >= 3 && tag[0] === 'emoji' && /^\w+$/.test(tag[1]) && URL.canParse(tag[2]))) {
@@ -286,6 +293,21 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 				notesQuoted.unshift(event);
 			break;
 	}
+};
+
+const getListWithEncrypt = async (event: NostrEvent, tagName: string): Promise<string[]> => {
+	let rList = event.tags.filter(tag => tag.length >= 2 && tag[0] === tagName).map(tag => tag[1]) ?? [];
+	const nostr = window.nostr;
+	if (isLoggedin && loginPubkey && event.content && browser && nostr?.nip04?.decrypt) {
+		try {
+			const content = await nostr.nip04.decrypt(loginPubkey, event.content);
+			const list: string[][] = JSON.parse(content);
+			rList = rList.concat(list.filter(tag => tag.length >= 2 && tag[0] === tagName).map(tag => tag[1]));
+		} catch (error) {
+			console.warn(error);
+		}
+	}
+	return rList;
 };
 
 const getSortedChannels = (channelArray: Channel[]) => {
@@ -339,7 +361,7 @@ const applyRelays = async () => {
 	zapList = [];
 	let eventCopy: NostrEvent[] = [...eventsAll.filter(ev => [0, 1, 7, 16, 40, 41, 42, 9735].includes(ev.kind))];
 	if (isLoggedin) {
-		eventCopy = [...eventCopy, ...eventsAll.filter(ev => [3, 10000, 10005, 10030, 30030].includes(ev.kind))];
+		eventCopy = [...eventCopy, ...eventsAll.filter(ev => [3, 10000, 10005, 10030, 30007, 30030].includes(ev.kind))];
 	}
 	subNotes?.close();
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
@@ -501,7 +523,9 @@ $: repostListToShow = currentChannelId ? repostList.filter(ev16 => {
 	{:else}
 		<h2>Error</h2>
 	{/if}
-		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])} {notes} {notesQuoted} {profs} {channels} {isLoggedin} {loginPubkey} {relaysSelected} {muteList} {muteChannels} {wordList} repostList={repostListToShow} {favList} {zapList} {resetScroll} {importRelays} {emojiMap} {theme} />
+		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])}
+			{notes} {notesQuoted} {profs} {channels} {isLoggedin} {loginPubkey} {relaysSelected} {muteList} {muteListFav} {muteListRepost} {muteListZap}
+			{muteChannels} {wordList} repostList={repostListToShow} {favList} {zapList} {resetScroll} {importRelays} {emojiMap} {theme} />
 	{#if currentChannelId && isLoggedin && channels.some(channel => channel.event.id === currentChannelId)}
 		<Post {pool} {currentChannelId} {relaysToUse} {channels} {hidePostBar} {resetScroll} {emojiMap} />
 	{/if}

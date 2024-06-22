@@ -21,6 +21,9 @@ export let channels: Channel[];
 export let isLoggedin: boolean;
 export let loginPubkey: string;
 export let muteList: string[];
+export let muteListFav: string[];
+export let muteListRepost: string[];
+export let muteListZap: string[];
 export let muteChannels: string[];
 export let wordList: string[];
 export let repostList: NostrEvent[];
@@ -173,11 +176,12 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 	{@const channel = channels.find(v => v.event.id === rootId)}
 	{#if noteOrg !== undefined && rootId !== undefined && channel !== undefined && channel.name}
 		{@const isMutedNotePubkey = muteList.includes(noteOrg.pubkey) || muteList.includes(note.pubkey)}
+		{@const isMutedRepostPubkey = note.kind === 16 && muteListRepost.includes(note.pubkey)}
 		{@const isMutedNoteChannel = muteChannels.includes(rootId)}
 		{@const isMutedNoteWord = wordList.some(word => noteOrg.content.includes(word))}
 		{@const isMutedChannelPubkey = muteList.includes(channel.event.pubkey)}
 		{@const isMutedChannelWord = wordList.some(word => channel.name.includes(word))}
-		{@const isMuted = isMutedNotePubkey || isMutedNoteChannel || isMutedNoteWord || isMutedChannelPubkey || isMutedChannelWord}
+		{@const isMuted = isMutedNotePubkey || isMutedRepostPubkey || isMutedNoteChannel || isMutedNoteWord || isMutedChannelPubkey || isMutedChannelWord}
 		{#if !isMuted}
 			{@const npub = nip19.npubEncode(note.pubkey)}
 			{@const npubOrg = nip19.npubEncode(noteOrg.pubkey)}
@@ -319,7 +323,7 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 			}<ul class="fav-holder" role="list">{
 				#each favList as ev
 				}{
-					#if ev.tags.findLast(tag => tag[0] === 'e')?.at(1) === noteOrg.id && profs[ev.pubkey] && !muteList.includes(ev.pubkey)
+					#if ev.tags.findLast(tag => tag[0] === 'e')?.at(1) === noteOrg.id && profs[ev.pubkey] && !muteList.includes(ev.pubkey) && !muteListFav.includes(ev.pubkey)
 				}{
 					@const emojiTag = ev.tags.find(tag => tag.length >= 3 && tag[0] === 'emoji')
 				}{
@@ -348,7 +352,7 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 				}{
 					@const event9734 = getevent9734(ev)
 				}{
-					#if event9734.tags.find(tag => tag[0] === 'e')?.at(1) === noteOrg.id && profs[event9734.pubkey] && !muteList.includes(event9734.pubkey)
+					#if event9734.tags.find(tag => tag[0] === 'e')?.at(1) === noteOrg.id && profs[event9734.pubkey] && !muteList.includes(event9734.pubkey) && !muteListZap.includes(event9734.pubkey)
 					}{
 						@const prof = profs[event9734.pubkey]
 					}{
