@@ -346,7 +346,7 @@ export class RelayConnector {
 	};
 };
 
-export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], content: string, targetEventToReply: NostrEvent, emojiMap: Map<string, string>) => {
+export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], content: string, targetEventToReply: NostrEvent, emojiMap: Map<string, string>, contentWarningReason: string | undefined = undefined) => {
 	const seenOn = Array.from(pool.seenOn.get(targetEventToReply.id) ?? []);
 	if (seenOn.length === 0) {
 		throw new Error(`The event to reply is not found: ${targetEventToReply.id}`);
@@ -423,6 +423,9 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 	}
 	for (const e of emojitags) {
 		tags.push(['emoji', e, emojiMap.get(e) as string]);
+	}
+	if (contentWarningReason !== undefined) {
+		tags.push(['content-warning', contentWarningReason]);
 	}
 	const baseEvent: EventTemplate = {
 		kind: 42,

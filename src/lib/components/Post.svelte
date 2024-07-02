@@ -18,6 +18,7 @@ export let emojiMap: Map<string, string>;
 let inputText: string;
 let emojiPicker: HTMLElement;
 let emojiVisible: boolean = false;
+let contentWarningReason: string | undefined;
 
 const callSendMessage = (noteToReplay: NostrEvent) => {
 	const content = inputText;
@@ -27,7 +28,7 @@ const callSendMessage = (noteToReplay: NostrEvent) => {
 	hidePostBar();
 	resetScroll();
 	const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
-	sendMessage(pool, relaysToWrite, content, noteToReplay, emojiMap);
+	sendMessage(pool, relaysToWrite, content, noteToReplay, emojiMap, contentWarningReason);
 };
 
 const callGetEmoji = () => {
@@ -59,7 +60,7 @@ const callGetEmoji = () => {
 	emojiPicker.appendChild(picker as any);
 };
 
-const insertText = (word: string) => {
+const insertText = (word: string): void => {
 	const textarea = document.getElementById('input-text') as HTMLTextAreaElement;
 	let sentence = textarea.value;
 	const len = sentence.length;
@@ -68,6 +69,14 @@ const insertText = (word: string) => {
 	const after = sentence.slice(pos, pos + len);
 	sentence = before + word + after;
 	textarea.value = sentence;
+	textarea.focus();
+	textarea.selectionStart = pos + word.length;
+	textarea.selectionEnd = pos + word.length;
+	inputText = sentence;
+};
+
+const setContentWarning = (reason: string | undefined) => {
+	contentWarningReason = reason;
 };
 
 const submitFromKeyboard = (event: KeyboardEvent, noteToReplay: NostrEvent) => {
@@ -93,6 +102,11 @@ const showPostBar = () => {
 		<button on:click={() => {callSendMessage(channel.event)}} disabled={!inputText}>Post</button>
 		<button class="emoji" on:click={() => callGetEmoji()} title="Select Emoji"><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button>
 		<div id="emoji-picker-post" bind:this={emojiPicker} class={emojiVisible ? '' : 'hidden'}></div>
+		{#if contentWarningReason === undefined}
+		<button class="content-warning off" on:click={() => setContentWarning('')} title="Add Content Warning"><svg><use xlink:href="/alert-triangle.svg#content-warning"></use></svg></button>
+		{:else}
+		<button class="content-warning on" on:click={() => setContentWarning(undefined)} title="Remove Content Warning"><svg><use xlink:href="/alert-triangle.svg#content-warning"></use></svg></button>
+		{/if}
 	</div>
 	<button id="show-post-bar" on:click|stopPropagation={showPostBar}><svg><use xlink:href="/pencil-create.svg#pencil"></use></svg></button>
 	{/if}
@@ -138,7 +152,8 @@ const showPostBar = () => {
 div.hidden {
 	display: none;
 }
-button.emoji {
+button.emoji,
+button.content-warning {
 	background-color: transparent;
 	border: none;
 	outline: none;
@@ -150,5 +165,14 @@ button.emoji {
 	position: relative;
 	bottom: 500px;
 	left: 15px;
+}
+:global(#container.dark button.content-warning) {
+	fill: white;
+}
+:global(#container.light button.content-warning) {
+	fill: black;
+}
+:global(#container button.content-warning.on) {
+	fill: yellow;
 }
 </style>
