@@ -1,12 +1,16 @@
 <script lang='ts'>
 import { sendMessage, type Channel } from '$lib/util';
-import type { NostrEvent } from 'nostr-tools/pure';
+import type { EventTemplate, NostrEvent } from 'nostr-tools/pure';
 import type { RelayRecord } from 'nostr-tools/relay';
 import type { SimplePool } from 'nostr-tools/pool';
+import { readServerConfig, type OptionalFormDataFields } from 'nostr-tools/nip96';
+import { getToken } from 'nostr-tools/nip98';
+import { uploadFile } from '$lib/nip96';
 import data from '@emoji-mart/data';
 import { Picker } from 'emoji-mart';
 // @ts-ignore
 import type { BaseEmoji } from '@types/emoji-mart';
+import { uploaderURLs } from '$lib/config';
 
 export let pool: SimplePool;
 export let currentChannelId: string | null;
@@ -19,6 +23,8 @@ let inputText: string;
 let emojiPicker: HTMLElement;
 let emojiVisible: boolean = false;
 let contentWarningReason: string | undefined;
+let targetUrlToUpload: string;
+let filesToUpload: FileList;
 
 const callSendMessage = (noteToReplay: NostrEvent) => {
 	const content = inputText;
@@ -79,6 +85,36 @@ const setContentWarning = (reason: string | undefined) => {
 	contentWarningReason = reason;
 };
 
+const uploadFileExec = async () => {
+	if (filesToUpload === undefined || filesToUpload.length === 0) {
+		return;
+	}
+	const nostr = window.nostr;
+	if (nostr === undefined) {
+		return;
+	}
+	const f = (e: EventTemplate) => nostr.signEvent(e);
+	const c = await readServerConfig(targetUrlToUpload);
+	const s = await getToken(c.api_url, 'POST', f, true);
+	let file: File | undefined;
+	for (const f of filesToUpload) {
+		file = f;
+	}
+	if (file === undefined) {
+		return;
+	}
+	const option: OptionalFormDataFields = {
+		size: String(file.size),
+		content_type: file.type,
+	};
+	const fileUploadResponse = await uploadFile(file, c.api_url, s, option);
+	const uploadedFileUrl = fileUploadResponse.nip94_event?.tags.find(tag => tag[0] === 'url')?.at(1);
+	if (uploadedFileUrl === undefined) {
+		return;
+	}
+	insertText(uploadedFileUrl);
+};
+
 const submitFromKeyboard = (event: KeyboardEvent, noteToReplay: NostrEvent) => {
 	if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
 		callSendMessage(noteToReplay);
@@ -107,6 +143,13 @@ const showPostBar = () => {
 		{:else}
 		<button class="content-warning on" on:click={() => setContentWarning(undefined)} title="Remove Content Warning"><svg><use xlink:href="/alert-triangle.svg#content-warning"></use></svg></button>
 		{/if}
+		<button class="attachment" on:click={() => { document.getElementById('select-upload-file')?.click(); }} title="Select Attachment"><svg><use xlink:href="/image.svg#attachment"></use></svg></button>
+		<input id="select-upload-file" type="file" accept="image/*,video/*,audio/*" bind:files={filesToUpload} on:change={uploadFileExec} />
+		<select id="uploader-url-to-upload" bind:value={targetUrlToUpload}>
+			{#each uploaderURLs as url}
+				<option value={url}>{url}</option>
+			{/each}
+		</select>
 	</div>
 	<button id="show-post-bar" on:click|stopPropagation={showPostBar}><svg><use xlink:href="/pencil-create.svg#pencil"></use></svg></button>
 	{/if}
@@ -116,8 +159,8 @@ const showPostBar = () => {
 #input {
 	position: fixed;
 	width: 100%;
-	height: 8em;
-	bottom: -8em;
+	height: 12em;
+	bottom: -12em;
 	left: -0.5em;
 	background-color: rgba(64, 32, 128, 0.7);
 	transition: bottom 0.1s;
@@ -139,7 +182,7 @@ const showPostBar = () => {
 	bottom: 1em;
 	background-color: transparent;
 }
-#show-post-bar svg {
+svg {
 	width: 24px;
 	height: 24px;
 }
@@ -147,13 +190,14 @@ const showPostBar = () => {
 	display: none;
 }
 #input > * {
-	vertical-align: top;
+	vertical-align: middle;
 }
 div.hidden {
 	display: none;
 }
 button.emoji,
-button.content-warning {
+button.content-warning,
+button.attachment {
 	background-color: transparent;
 	border: none;
 	outline: none;
@@ -166,10 +210,19 @@ button.content-warning {
 	bottom: 500px;
 	left: 15px;
 }
-:global(#container.dark button.content-warning) {
+#select-upload-file {
+	display: none;
+}
+#uploader-url-to-upload {
+	display: inline;
+	margin-left: 1em;
+}
+:global(#container.dark button.content-warning,
+#container.dark button.attachment) {
 	fill: white;
 }
-:global(#container.light button.content-warning) {
+:global(#container.light button.content-warning,
+#container.light button.attachment) {
 	fill: black;
 }
 :global(#container button.content-warning.on) {
