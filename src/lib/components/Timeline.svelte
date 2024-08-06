@@ -156,6 +156,11 @@ const getevent9734 = (event9735: NostrEvent): NostrEvent => {
 	return event9734;
 };
 
+const getDefaultAvatar = (pubkey: string, size: number = 32): string => {
+	const url = `https://api.dicebear.com/9.x/thumbs/svg?seed=${nip19.npubEncode(pubkey)}&size=${size}`;
+	return url;
+};
+
 $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 	if (a.created_at < b.created_at) {
 		return -1;
@@ -191,18 +196,18 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 			{#if note.kind === 16}
 				reposted by
 				{#if profs[note.pubkey]}
-				<img src="{profs[note.pubkey].picture || '/default.png'}" alt="avatar of {npub}" width="16" height="16"> {profs[note.pubkey].display_name ?? ''} <a href="/{npub}">@{profs[note.pubkey]?.name ?? ''}</a>
+				<img src="{profs[note.pubkey].picture || getDefaultAvatar(note.pubkey, 16)}" alt="avatar of {npub}" width="16" height="16"> {profs[note.pubkey].display_name ?? ''} <a href="/{npub}">@{profs[note.pubkey]?.name ?? ''}</a>
 				{:else}
-				<img src="/default.png" alt="" width="16" height="16"><a href="/{npub}">@{npub.slice(0, 10)}...</a>
+				<img src={getDefaultAvatar(note.pubkey, 16)} alt="" width="16" height="16"><a href="/{npub}">@{npub.slice(0, 10)}...</a>
 				{/if}
 				<br />
 				<time>{(new Date(1000 * note.created_at)).toLocaleString()}</time>
 				<br />
 			{/if}
 			{#if profs[noteOrg.pubkey]}
-				<img src="{profs[noteOrg.pubkey].picture || '/default.png'}" alt="avatar of {npubOrg}" width="32" height="32"> {profs[noteOrg.pubkey].display_name ?? ''} <a href="/{npubOrg}">@{profs[noteOrg.pubkey]?.name ?? ''}</a>
+				<img src="{profs[noteOrg.pubkey].picture || getDefaultAvatar(noteOrg.pubkey, 32)}" alt="avatar of {npubOrg}" width="32" height="32"> {profs[noteOrg.pubkey].display_name ?? ''} <a href="/{npubOrg}">@{profs[noteOrg.pubkey]?.name ?? ''}</a>
 			{:else}
-				<img src="/default.png" alt="" width="32" height="32"><a href="/{npubOrg}">@{npubOrg.slice(0, 10)}...</a>
+				<img src={getDefaultAvatar(noteOrg.pubkey, 32)} alt="" width="32" height="32"><a href="/{npubOrg}">@{npubOrg.slice(0, 10)}...</a>
 			{/if}
 				<br />
 				<a href="/{neventOrg}"><time>{(new Date(1000 * noteOrg.created_at)).toLocaleString()}</time></a>
@@ -338,7 +343,7 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 							ev.content.replace(/^\+$/, '❤').replace(/^-$/, '👎') || '❤'
 							}{
 						/if
-						}<img src="{prof.picture || '/default.png'}" alt="avatar of {npubFaved}"
+						}<img src={prof.picture || getDefaultAvatar(ev.pubkey, 16)} alt="avatar of {npubFaved}"
 							width="16" height="16" /> {prof.display_name ?? ''} <a href="/{npubFaved}">@{prof.name ?? ''}</a> reacted</li>{
 					/if
 				}{
@@ -357,7 +362,7 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 						@const prof = profs[event9734.pubkey]
 					}{
 						@const npubZapped = nip19.npubEncode(event9734.pubkey)
-					}<li><svg><use xlink:href="/lightning.svg#zap"></use></svg> <img src="{prof.picture || '/default.png'}" alt="avatar of {npubZapped}" width="16" height="16" /> {prof.display_name ?? ''} <a href="/{npubZapped}">@{prof.name ?? ''}</a> zapped{#if event9734.content}<blockquote>{event9734.content}</blockquote>{/if}</li>{
+					}<li><svg><use xlink:href="/lightning.svg#zap"></use></svg> <img src={prof.picture || getDefaultAvatar(ev.pubkey, 16)} alt="avatar of {npubZapped}" width="16" height="16" /> {prof.display_name ?? ''} <a href="/{npubZapped}">@{prof.name ?? ''}</a> zapped{#if event9734.content}<blockquote>{event9734.content}</blockquote>{/if}</li>{
 					/if
 				}{
 				/each
