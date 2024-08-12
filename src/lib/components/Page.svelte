@@ -1,5 +1,5 @@
 <script lang='ts'>
-import { type Channel, type Profile, getRelaysToUse, RelayConnector } from '$lib/util';
+import { type Channel, type Profile, getRelaysToUse, RelayConnector, insertEventIntoAscendingList } from '$lib/util';
 import { storedCurrentChannelId, storedCurrentPubkey, storedCurrentHashtag, storedCurrentEvent, storedNeedApplyRelays, storedRelaysToUse, preferences, storedEvents } from '$lib/store';
 import { defaultRelays, title } from '$lib/config';
 import { browser } from '$app/environment';
@@ -101,7 +101,7 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 	if (eventsAll.some(ev => [30007, 30030].includes(ev.kind) && ev.kind === event.kind && ev.pubkey === event.pubkey && ev.tags.find(tag => tag[0] === 'd')?.at(1) === event.tags.find(tag => tag[0] === 'd')?.at(1) && ev.created_at >= event.created_at)) {
 		return;
 	}
-	eventsAll = utils.insertEventIntoAscendingList(eventsAll, event);
+	eventsAll = insertEventIntoAscendingList(eventsAll, event);
 	storedEvents.set(eventsAll);
 	if (redraw)
 		console.info(`kind:${event.kind}`);
@@ -123,7 +123,7 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 			break;
 		case 7:
 			if (redraw)
-				favList = utils.insertEventIntoAscendingList(favList, event);
+				favList = insertEventIntoAscendingList(favList, event);
 			else
 				favList.unshift(event);
 			const targetChannel7 = channels.find(channel => channel.event.id === event.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1));
@@ -154,7 +154,7 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 			if (!isRepostToShow)
 				return;
 			if (redraw)
-				repostList = utils.insertEventIntoAscendingList(repostList, event);
+				repostList = insertEventIntoAscendingList(repostList, event);
 			else
 				repostList.unshift(event);
 			break;
@@ -217,10 +217,10 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 			}
 			if (redraw) {
 				if (isQuote) {
-					notesQuoted = utils.insertEventIntoAscendingList(notesQuoted, event);
+					notesQuoted = insertEventIntoAscendingList(notesQuoted, event);
 				}
 				else {
-					notes = utils.insertEventIntoAscendingList(notes, event);
+					notes = insertEventIntoAscendingList(notes, event);
 				}
 			}
 			else {
@@ -251,7 +251,7 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 				return;
 			}
 			if (redraw)
-				zapList = utils.insertEventIntoAscendingList(zapList, event);
+				zapList = insertEventIntoAscendingList(zapList, event);
 			else
 				zapList.unshift(event);
 			break;
@@ -288,7 +288,7 @@ const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
 			break;
 		default:
 			if (redraw)
-				notesQuoted = utils.insertEventIntoAscendingList(notesQuoted, event);
+				notesQuoted = insertEventIntoAscendingList(notesQuoted, event);
 			else
 				notesQuoted.unshift(event);
 			break;

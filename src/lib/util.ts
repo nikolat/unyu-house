@@ -4,7 +4,7 @@ import type { EventTemplate, NostrEvent } from 'nostr-tools/pure';
 import type { SimplePool } from 'nostr-tools/pool';
 import type { RelayRecord } from 'nostr-tools/relay';
 import type { WindowNostr } from 'nostr-tools/nip07';
-import { normalizeURL } from 'nostr-tools/utils';
+import { binarySearch, normalizeURL } from 'nostr-tools/utils';
 import * as nip05 from 'nostr-tools/nip05';
 import * as nip19 from 'nostr-tools/nip19';
 import { defaultRelays, relaysToGetRelays } from './config';
@@ -799,3 +799,15 @@ const getGeneralEvents = (pool: SimplePool, relays: string[], filters: Filter[],
 		);
 	});
 };
+
+export function insertEventIntoAscendingList(sortedArray: NostrEvent[], event: NostrEvent): NostrEvent[] {
+  const [idx, found] = binarySearch(sortedArray, b => {
+    if (event.id === b.id) return 0;
+    if (event.created_at === b.created_at) return event.id.localeCompare(b.id);
+    return event.created_at - b.created_at;
+  })
+  if (!found) {
+    sortedArray.splice(idx, 0, event);
+  }
+  return sortedArray;
+}
