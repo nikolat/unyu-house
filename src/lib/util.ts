@@ -488,7 +488,7 @@ export const sendCreateChannel = async(pool: SimplePool, relaysToWrite: string[]
 		kind: 40,
 		created_at: Math.floor(Date.now() / 1000),
 		tags: [],
-		content: JSON.stringify({name: name ?? '', about: about ?? '', picture: picture ?? ''})
+		content: JSON.stringify({name: name ?? '', about: about ?? '', picture: picture ?? '', relays: relaysToWrite})
 	};
 	if (window.nostr === undefined)
 		return;
@@ -515,6 +515,7 @@ export const sendEditChannel = async(pool: SimplePool, relaysToUse: object, logi
 		(objContent as any).name = name;
 		(objContent as any).about = about;
 		(objContent as any).picture = picture;
+		(objContent as any).relays = relaysToWrite;
 		const recommendeRelay = Array.from(pool.seenOn.get(currentChannelId) ?? [])?.at(0)?.url ?? '';
 		const baseEvent: EventTemplate = {
 			kind: 41,
