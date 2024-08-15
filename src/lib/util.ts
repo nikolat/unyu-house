@@ -583,11 +583,11 @@ export const sendEditProfile = async(pool: SimplePool, relaysToUse: object, logi
 	let newestEvent: NostrEvent;
 };
 
-export const sendDeletion = async(pool: SimplePool, relaysToWrite: string[], eventId: string) => {
+export const sendDeletion = async(pool: SimplePool, relaysToWrite: string[], event: NostrEvent) => {
 	const baseEvent: EventTemplate = {
 		kind: 5,
 		created_at: Math.floor(Date.now() / 1000),
-		tags: [['e', eventId]],
+		tags: [['e', event.id], ['k', String(event.kind)]],
 		content: ''
 	};
 	if (window.nostr === undefined)

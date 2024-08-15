@@ -126,12 +126,12 @@ const callSendEmoji = (pool: SimplePool, relaysToWrite: string[], targetEvent: N
 	emojiPicker[noteId].appendChild(picker as any);
 };
 
-const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], noteId: string) => {
+const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], event: NostrEvent) => {
 	if (!confirm('Delete this post?')) {
 		return;
 	}
-	notes = notes.filter(ev => ev.id !== noteId);
-	await sendDeletion(pool, relaysToWrite, noteId);
+	await sendDeletion(pool, relaysToWrite, event);
+	notes = notes.filter(ev => ev.id !== event.id);
 };
 
 const loginAsThisAccount = (pubkey: string) => {
@@ -395,7 +395,7 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 						class="zap" title="Zap!" on:click={() => zap(note.id)}><svg><use xlink:href="/lightning.svg#zap"></use></svg
 					></button>{
 						#if noteOrg.pubkey === loginPubkey
-					}<button class="delete" on:click={() => callSendDeletion(pool, relaysToWrite, noteOrg.id)} title="Delete"><svg><use xlink:href="/trash.svg#delete"></use></svg></button>{
+					}<button class="delete" on:click={() => callSendDeletion(pool, relaysToWrite, noteOrg)} title="Delete"><svg><use xlink:href="/trash.svg#delete"></use></svg></button>{
 						/if
 					}{
 						:else
