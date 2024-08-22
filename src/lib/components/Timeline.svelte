@@ -239,7 +239,7 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 			}<div class="content-warning-reason {contentWarningTag.length > 0 ? '' : 'hide'}">Content Warning{#if contentWarningTag.length > 0 && contentWarningTag[0][1]}<br />Reason: {contentWarningTag[0][1]}{/if}</div>
 				<button class="content-warning-show {contentWarningTag.length > 0 ? '' : 'hide'}" on:click={() => showContentWarning(noteOrg.id)}>Show Content</button>
 				<div class="content-warning-target {contentWarningTag.length > 0 ? 'hide' : ''}"
-					><div class="content">{plainTexts.shift()}{#each matchesIterator as match
+					><div class="content">{plainTexts.shift()}{#each Array.from(matchesIterator) as match
 				}{
 					#if /https?:\/\/\S+/.test(match[1])
 				}<a href="{match[1]}" target="_blank" rel="noopener noreferrer">{match[1]}</a>{
@@ -288,7 +288,7 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 					:else if /#\S+/.test(match[7])
 				}{
 					@const matchedText = match[7]
-				}<a href="/hashtag/{encodeURI(matchedText.replace('#', ''))}">{matchedText}</a>{
+				}<a href="/hashtag/{encodeURI(matchedText.toLowerCase().replace('#', ''))}">{matchedText}</a>{
 					:else if match[8]
 				}{
 					@const matchedText = match[8]
