@@ -419,7 +419,7 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 		tags.push(['p', p, '']);
 	}
 	for (const t of hashtags) {
-		tags.push(['t', t]);
+		tags.push(['t', t.toLowerCase()]);
 	}
 	for (const e of emojitags) {
 		tags.push(['emoji', e, emojiMap.get(e) as string]);
