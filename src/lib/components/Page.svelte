@@ -1,5 +1,5 @@
 <script lang='ts'>
-import { type Channel, type Profile, getRelaysToUse, RelayConnector, insertEventIntoAscendingList } from '$lib/util';
+import { type Channel, type Profile, getRelaysToUse, RelayConnector, insertEventIntoAscendingList, sortEvents } from '$lib/util';
 import { storedCurrentChannelId, storedCurrentPubkey, storedCurrentHashtag, storedCurrentEvent, storedNeedApplyRelays, storedRelaysToUse, preferences, storedEvents } from '$lib/store';
 import { defaultRelays, title } from '$lib/config';
 import { browser } from '$app/environment';
@@ -359,10 +359,11 @@ const applyRelays = async () => {
 	repostList = [];
 	favList = [];
 	zapList = [];
-	let eventCopy: NostrEvent[] = [...eventsAll.filter(ev => [0, 1, 7, 16, 40, 41, 42, 9735].includes(ev.kind))];
+	let eventCopy: NostrEvent[] = eventsAll.filter(ev => [0, 1, 7, 16, 40, 41, 42, 9735].includes(ev.kind));
 	if (isLoggedin) {
 		eventCopy = [...eventCopy, ...eventsAll.filter(ev => [3, 10000, 10005, 10030, 30007, 30030].includes(ev.kind))];
 	}
+	eventCopy = sortEvents(eventCopy);
 	subNotes?.close();
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
 	let filters: Filter[];

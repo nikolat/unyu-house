@@ -802,13 +802,22 @@ const getGeneralEvents = (pool: SimplePool, relays: string[], filters: Filter[],
 };
 
 export function insertEventIntoAscendingList(sortedArray: NostrEvent[], event: NostrEvent): NostrEvent[] {
-  const [idx, found] = binarySearch(sortedArray, b => {
-    if (event.id === b.id) return 0;
-    if (event.created_at === b.created_at) return event.id.localeCompare(b.id);
-    return event.created_at - b.created_at;
-  })
-  if (!found) {
-    sortedArray.splice(idx, 0, event);
-  }
-  return sortedArray;
+	const [idx, found] = binarySearch(sortedArray, b => {
+		if (event.id === b.id) return 0;
+		if (event.created_at === b.created_at) return event.id.localeCompare(b.id);
+		return event.created_at - b.created_at;
+	})
+	if (!found) {
+		sortedArray.splice(idx, 0, event);
+	}
+	return sortedArray;
 }
+
+export const sortEvents = (events: NostrEvent[]): NostrEvent[] => {
+	return events.sort((a: NostrEvent, b: NostrEvent): number => {
+	  if (a.created_at !== b.created_at) {
+		return b.created_at - a.created_at;
+	  }
+	  return b.id.localeCompare(a.id);
+	});
+};
