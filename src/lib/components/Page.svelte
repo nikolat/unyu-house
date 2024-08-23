@@ -1,5 +1,5 @@
 <script lang='ts'>
-import { type Channel, type Profile, getRelaysToUse, RelayConnector, insertEventIntoAscendingList, sortEvents } from '$lib/util';
+import { type Channel, type Profile, getRelaysToUse, RelayConnector, insertEventIntoAscendingList } from '$lib/util';
 import { storedCurrentChannelId, storedCurrentPubkey, storedCurrentHashtag, storedCurrentEvent, storedNeedApplyRelays, storedRelaysToUse, preferences, storedEvents } from '$lib/store';
 import { defaultRelays, title } from '$lib/config';
 import { browser } from '$app/environment';
@@ -9,7 +9,7 @@ import type { Unsubscriber } from 'svelte/store';
 import type { SubCloser } from 'nostr-tools/abstract-pool';
 import type { Filter } from 'nostr-tools/filter';
 import type { RelayRecord } from 'nostr-tools/relay';
-import { type NostrEvent, verifyEvent } from 'nostr-tools/pure';
+import { type NostrEvent, sortEvents, verifyEvent } from 'nostr-tools/pure';
 import { SimplePool } from 'nostr-tools/pool';
 import * as nip19 from 'nostr-tools/nip19';
 import * as utils from 'nostr-tools/utils';
