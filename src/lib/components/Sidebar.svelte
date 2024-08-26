@@ -1,6 +1,5 @@
 <script lang='ts'>
 import type { RelayRecord } from 'nostr-tools/relay';
-import type { SimplePool } from 'nostr-tools/pool';
 import * as nip11 from 'nostr-tools/nip11';
 import * as nip19 from 'nostr-tools/nip19';
 import { browser } from '$app/environment';
@@ -10,8 +9,9 @@ import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type C
 import { urlNIP07guide } from '$lib/config';
 import { onMount } from 'svelte';
 import SidebarChannel from '$lib/components/SidebarChannel.svelte';
+import type { RxNostr } from 'rx-nostr';
 
-export let pool: SimplePool;
+export let rxNostr: RxNostr;
 export let relaysToUse: RelayRecord;
 export let isLoggedin: boolean;
 export let loginPubkey: string;
@@ -70,7 +70,7 @@ const callSendCreateChannel = () => {
 	const [channelName, channelAbout, channelPicture] = [newChannelName, newChannelAbout, newChannelPicture];
 	[newChannelName, newChannelAbout, newChannelPicture] = ['', '', ''];
 	const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
-	sendCreateChannel(pool, relaysToWrite, channelName, channelAbout, channelPicture);
+	sendCreateChannel(rxNostr, relaysToWrite, channelName, channelAbout, channelPicture);
 }
 
 const changeTheme = () => {

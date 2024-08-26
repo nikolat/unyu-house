@@ -6,11 +6,9 @@ import { browser } from '$app/environment';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
 import { afterUpdate, onDestroy, onMount } from 'svelte';
 import type { Unsubscriber } from 'svelte/store';
-import type { SubCloser } from 'nostr-tools/abstract-pool';
 import type { Filter } from 'nostr-tools/filter';
 import type { RelayRecord } from 'nostr-tools/relay';
 import { type NostrEvent, sortEvents, verifyEvent } from 'nostr-tools/pure';
-import { SimplePool } from 'nostr-tools/pool';
 import * as nip19 from 'nostr-tools/nip19';
 import * as utils from 'nostr-tools/utils';
 import Sidebar from './Sidebar.svelte';
@@ -19,10 +17,11 @@ import ChannelMetadata from './ChannelMetadata.svelte';
 import ProfileMetadata from './ProfileMetadata.svelte';
 import Timeline from './Timeline.svelte';
 import Post from './Post.svelte';
+import { createRxNostr, createTie } from 'rx-nostr';
+import { verifier } from 'rx-nostr-crypto';
 
-let pool: SimplePool = new SimplePool();
-pool.trackRelays = true;
-let subNotes: SubCloser;
+const rxNostr = createRxNostr({verifier});
+const [tie, seenOn] = createTie();
 let relaysToUse: RelayRecord;
 let theme: string;
 let currentChannelId: string | null;
@@ -323,15 +322,14 @@ const getSortedChannels = (channelArray: Channel[]) => {
 	return channelArray;
 };
 
-const callbackPhase3 = (subNotesPhase3: SubCloser, ev: NostrEvent) => {
-	subNotes = subNotesPhase3;
+const callbackPhase3 = (ev: NostrEvent) => {
 	callbackEvent(ev);
 };
 
 const importRelays = (relaysSelected: string, clearEvents: boolean = true) => {
 	if (clearEvents)
 		eventsAll = [];
-	getRelaysToUse(relaysSelected, pool, loginPubkey)
+	getRelaysToUse(relaysSelected, rxNostr, tie, loginPubkey)
 		.then((relaysToUseBack: RelayRecord) => {
 			const newRelays: RelayRecord = {};
 			for (const [k, v] of Object.entries(relaysToUseBack)) {
@@ -364,7 +362,6 @@ const applyRelays = async () => {
 		eventCopy = [...eventCopy, ...eventsAll.filter(ev => [3, 10000, 10005, 10030, 30007, 30030].includes(ev.kind))];
 	}
 	eventCopy = sortEvents(eventCopy);
-	subNotes?.close();
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
 	let filters: Filter[];
 	const limit = 50;
@@ -421,7 +418,7 @@ const applyRelays = async () => {
 	repostList = repostList;
 	favList = favList;
 	zapList = zapList;
-	const rc = new RelayConnector(pool, relaysToRead, loginPubkey, filters, until, callbackPhase3, callbackEvent, execScroll);
+	const rc = new RelayConnector(rxNostr, tie, relaysToRead, loginPubkey, filters, until, callbackPhase3, callbackEvent, execScroll);
 	rc.getEventsPhase1();
 };
 
@@ -443,8 +440,6 @@ onDestroy(() => {
 		unsubscribeApplyRelays();
 		unsubscribeApplyRelays = null;
 	}
-	subNotes?.close();
-	pool?.close(Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]));
 });
 afterUpdate(() => {
 	if (!scrolled) {
@@ -452,7 +447,6 @@ afterUpdate(() => {
 	}
 });
 beforeNavigate(() => {
-	subNotes?.close();
 	if (unsubscribeApplyRelays) {
 		unsubscribeApplyRelays();
 		unsubscribeApplyRelays = null;
@@ -494,18 +488,18 @@ $: repostListToShow = currentChannelId ? repostList.filter(ev16 => {
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div id="container" on:click={hidePostBar}>
 	<Header {title} {profs} {loginPubkey} />
-	<Sidebar {pool} {theme} {relaysToUse} {isLoggedin} {loginPubkey} {channels} {profs} {importRelays} {pinList} {muteList} {muteChannels} {wordList} {followList} />
+	<Sidebar {rxNostr} {theme} {relaysToUse} {isLoggedin} {loginPubkey} {channels} {profs} {importRelays} {pinList} {muteList} {muteChannels} {wordList} {followList} />
 	<main>
 	{#if currentChannelId}
 		{@const channel = channels.find(v => v.event.id === currentChannelId)}
 		{#if channel}
-		<ChannelMetadata {channel} {pool} {profs} {isLoggedin} {loginPubkey} {relaysToUse} isQuote={false} {pinList} {muteChannels} />
+		<ChannelMetadata {channel} {rxNostr} {tie} {seenOn} {profs} {isLoggedin} {loginPubkey} {relaysToUse} isQuote={false} {pinList} {muteChannels} />
 		{:else}
 		<h2>Channel View</h2>
 		{/if}
 	{:else if currentPubkey}
 		{#if profs[currentPubkey]}
-		<ProfileMetadata {pool} {profs} {currentPubkey} {isLoggedin} {loginPubkey} {relaysToUse} {muteList} />
+		<ProfileMetadata {rxNostr} {profs} {tie} {currentPubkey} {isLoggedin} {loginPubkey} {relaysToUse} {muteList} />
 		{:else}
 		<h2>Profile View</h2>
 		{/if}
@@ -515,7 +509,7 @@ $: repostListToShow = currentChannelId ? repostList.filter(ev16 => {
 		{@const rootId = notes.at(0)?.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1)}
 		{@const channel = channels.find(v => v.event.id === rootId)}
 		{#if channel}
-		<ChannelMetadata {channel} {pool} {profs} {isLoggedin} {loginPubkey} {relaysToUse} isQuote={false} {pinList} {muteChannels} />
+		<ChannelMetadata {channel} {rxNostr} {tie} {seenOn} {profs} {isLoggedin} {loginPubkey} {relaysToUse} isQuote={false} {pinList} {muteChannels} />
 		{:else}
 		<h2>Event View</h2>
 		{/if}
@@ -524,11 +518,11 @@ $: repostListToShow = currentChannelId ? repostList.filter(ev16 => {
 	{:else}
 		<h2>Error</h2>
 	{/if}
-		<Timeline {pool} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])}
+		<Timeline {rxNostr} {tie} {seenOn} relaysToWrite={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])}
 			{notes} {notesQuoted} {profs} {channels} {isLoggedin} {loginPubkey} {relaysSelected} {muteList} {muteListFav} {muteListRepost} {muteListZap}
 			{muteChannels} {wordList} repostList={repostListToShow} {favList} {zapList} {resetScroll} {importRelays} {emojiMap} {theme} />
 	{#if currentChannelId && isLoggedin && channels.some(channel => channel.event.id === currentChannelId)}
-		<Post {pool} {currentChannelId} {relaysToUse} {channels} {hidePostBar} {resetScroll} {emojiMap} />
+		<Post {rxNostr} {seenOn} {currentChannelId} {relaysToUse} {channels} {hidePostBar} {resetScroll} {emojiMap} />
 	{/if}
 	</main>
 </div>

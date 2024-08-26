@@ -2,10 +2,12 @@
 <script lang='ts'>
 import { getExpandTagsList, sendMuteUser, type Profile, sendEditProfile } from "$lib/util";
 import type { RelayRecord } from 'nostr-tools/relay';
-import type { SimplePool } from 'nostr-tools/pool';
 import * as nip19 from 'nostr-tools/nip19';
+import type { EventPacket, RxNostr } from "rx-nostr";
+import type { OperatorFunction } from 'rxjs';
 
-export let pool: SimplePool;
+export let rxNostr: RxNostr;
+export let tie: OperatorFunction<EventPacket, EventPacket & { seenOn: Set<string>; isNew: boolean; }>;
 export let profs: {[key: string]: Profile};
 export let currentPubkey: string;
 export let isLoggedin: boolean;
@@ -38,11 +40,11 @@ const callSendEditProfile = () => {
 		created_at: 0,
 		tags: [],
 	};
-	sendEditProfile(pool, relaysToUse, loginPubkey, prof);
+	sendEditProfile(rxNostr, tie, relaysToUse, loginPubkey, prof);
 };
 
 const callSendMuteUser = (toSet: boolean) => {
-	sendMuteUser(pool, relaysToUse, loginPubkey, currentPubkey, toSet);
+	sendMuteUser(rxNostr, tie, relaysToUse, loginPubkey, currentPubkey, toSet);
 }
 
 </script>
@@ -55,7 +57,7 @@ const callSendMuteUser = (toSet: boolean) => {
 {@const emojiUrls = r[2]}
 <p id="profile-about">
 	{plainTexts.shift()}
-	{#each matchesIterator as match}
+	{#each Array.from(matchesIterator) as match}
 		{#if /https?:\/\/\S+/.test(match[1]) }
 			<a href="{match[1]}" target="_blank" rel="noopener noreferrer">{match[1]}</a>
 		{:else if /nostr:npub\w{59}/.test(match[2])}

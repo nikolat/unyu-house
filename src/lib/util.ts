@@ -1,13 +1,14 @@
-import type { SubCloser } from 'nostr-tools/abstract-pool';
 import type { Filter } from 'nostr-tools/filter';
 import type { EventTemplate, NostrEvent } from 'nostr-tools/pure';
-import type { SimplePool } from 'nostr-tools/pool';
 import type { RelayRecord } from 'nostr-tools/relay';
 import type { WindowNostr } from 'nostr-tools/nip07';
 import { binarySearch, normalizeURL } from 'nostr-tools/utils';
 import * as nip05 from 'nostr-tools/nip05';
 import * as nip19 from 'nostr-tools/nip19';
 import { defaultRelays, relaysToGetRelays } from './config';
+import { createRxBackwardReq, createRxForwardReq, type RxNostr, type EventPacket } from 'rx-nostr';
+import { Subject } from 'rxjs';
+import type { OperatorFunction } from 'rxjs';
 
 declare global {
 	interface Window {
@@ -42,7 +43,11 @@ export const urlDefaultTheme = urlDarkTheme;
 
 export class RelayConnector {
 
-	#pool: SimplePool;
+	#rxNostr: RxNostr;
+	#tie: OperatorFunction<EventPacket, EventPacket & {
+		seenOn: Set<string>;
+		isNew: boolean;
+	}>;
 	#relays: string[];
 	#loginPubkey: string;
 	#filterBase: Filter[];
@@ -52,8 +57,9 @@ export class RelayConnector {
 	#callbackEvent: Function;
 	#execScroll: Function;
 
-	constructor(pool: SimplePool, relays: string[], loginPubkey: string, filterBase: Filter[], until: number, callbackPhase3: Function, callbackEvent: Function, execScroll: Function) {
-		this.#pool = pool;
+	constructor(rxNostr: RxNostr, tie: OperatorFunction<EventPacket, EventPacket & { seenOn: Set<string>; isNew: boolean; }>, relays: string[], loginPubkey: string, filterBase: Filter[], until: number, callbackPhase3: Function, callbackEvent: Function, execScroll: Function) {
+		this.#rxNostr = rxNostr;
+		this.#tie = tie;
 		this.#relays = relays;
 		this.#loginPubkey = loginPubkey;
 		this.#filterBase = filterBase;
@@ -77,7 +83,7 @@ export class RelayConnector {
 		}
 		//0
 		for (const filter of filterPhase1) {
-			const evs = await getGeneralEvents(this.#pool, this.#relays, [filter], this.#callbackEvent) as NostrEvent[];
+			const evs = await getGeneralEvents(this.#rxNostr, this.#tie, this.#relays, [filter], this.#callbackEvent) as NostrEvent[];
 			for (const ev of evs) {
 				events[ev.kind].push(ev);
 			}
@@ -92,7 +98,7 @@ export class RelayConnector {
 		}
 		//1
 		for (const filter of filterPhase1) {
-			const evs = await getGeneralEvents(this.#pool, this.#relays, [filter], this.#callbackEvent) as NostrEvent[];
+			const evs = await getGeneralEvents(this.#rxNostr, this.#tie, this.#relays, [filter], this.#callbackEvent) as NostrEvent[];
 			for (const ev of evs) {
 				events[ev.kind].push(ev);
 			}
@@ -107,13 +113,13 @@ export class RelayConnector {
 		if (idsToGet.length > 0) {
 			filterPhase1.push({ids: idsToGet});
 		}
-		filterPhase1.push({kinds: [7], until: this.#until, '#e': events[42].map(ev => ev.id)});
-		filterPhase1.push({kinds: [9735], authors: zap_sender_pubkeys, until: this.#until, '#e': events[42].map(ev => ev.id)});
+		//filterPhase1.push({kinds: [7], until: this.#until, '#e': events[42].map(ev => ev.id)});
+		//filterPhase1.push({kinds: [9735], authors: zap_sender_pubkeys, until: this.#until, '#e': events[42].map(ev => ev.id)});
 		filterPhase1.push({kinds: [40], until: this.#until, limit: limit_channel});
 		filterPhase1.push({kinds: [41], until: this.#until, limit: limit_channel});
 		//2
 		for (const filter of filterPhase1) {
-			const evs = await getGeneralEvents(this.#pool, this.#relays, [filter], this.#callbackEvent) as NostrEvent[];
+			const evs = await getGeneralEvents(this.#rxNostr, this.#tie, this.#relays, [filter], this.#callbackEvent) as NostrEvent[];
 			for (const ev of evs) {
 				if (events[ev.kind] === undefined) {
 					events[ev.kind] = [];
@@ -160,7 +166,7 @@ export class RelayConnector {
 		const eventsQuoted: NostrEvent[] = [];
 		const eventsAll: NostrEvent[] = [];
 		for (const filter of filterPhase2) {
-			const evs = await getGeneralEvents(this.#pool, this.#relays, [filter], this.#callbackEvent);
+			const evs = await getGeneralEvents(this.#rxNostr, this.#tie, this.#relays, [filter], this.#callbackEvent);
 			for (const ev of evs) {
 				if ([0, 42, 30030].includes(ev.kind)) {
 					events[ev.kind].push(ev);
@@ -193,32 +199,30 @@ export class RelayConnector {
 	};
 
 	#getEventsPhase3 = (filterPhase3: Filter[], pubkeysObtained: string[], idsObtained: string[]) => {
-		const onevent = (ev: NostrEvent) => {
-			this.#callbackPhase3(sub, ev);
-			const pubkeysToGet: string[] = this.#getPubkeysForFilter([ev]).filter(v => !pubkeysObtained.includes(v));
-			const idsToGet: string[] = this.#getIdsForFilter([ev]).filter(v => !idsObtained.includes(v));
-			if (pubkeysToGet.length > 0 || idsToGet.length > 0) {
-				const filterPhase2: Filter[] = [];
-				if (pubkeysToGet.length > 0) {
-					pubkeysObtained = pubkeysObtained.concat(pubkeysToGet);
-					filterPhase2.push({kinds: [0], authors: pubkeysToGet});
+		const rxReq = createRxForwardReq();
+		this.#rxNostr.setDefaultRelays(this.#relays);
+		const flushes$ = new Subject<void>();
+		this.#rxNostr.use(rxReq).pipe(this.#tie).subscribe({
+			next: (packet) => {
+				const ev = packet.event;
+				this.#callbackPhase3(ev);
+				const pubkeysToGet: string[] = this.#getPubkeysForFilter([ev]).filter(v => !pubkeysObtained.includes(v));
+				const idsToGet: string[] = this.#getIdsForFilter([ev]).filter(v => !idsObtained.includes(v));
+				if (pubkeysToGet.length > 0 || idsToGet.length > 0) {
+					const filterPhase2: Filter[] = [];
+					if (pubkeysToGet.length > 0) {
+						pubkeysObtained = pubkeysObtained.concat(pubkeysToGet);
+						filterPhase2.push({kinds: [0], authors: pubkeysToGet});
+					}
+					if (idsToGet.length > 0) {
+						idsObtained = idsObtained.concat(idsToGet);
+						filterPhase2.push({ids: idsToGet});
+					}
+					this.#getEventsPhase2(filterPhase2, [], false);
 				}
-				if (idsToGet.length > 0) {
-					idsObtained = idsObtained.concat(idsToGet);
-					filterPhase2.push({ids: idsToGet});
-				}
-				this.#getEventsPhase2(filterPhase2, [], false);
-			}
-		};
-		const oneose = () => {
-			//これは永続的に走らせておく
-			console.log('getEventsPhase3 * EOSE *');
-		};
-		const sub: SubCloser = this.#pool.subscribeMany(
-			this.#relays,
-			filterPhase3,
-			{ onevent, oneose }
-		);
+			},
+		});
+		rxReq.emit(filterPhase3);
 	};
 
 	#getPubkeysForFilter = (events: NostrEvent[]): string[] => {
@@ -346,12 +350,12 @@ export class RelayConnector {
 	};
 };
 
-export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], content: string, targetEventToReply: NostrEvent, emojiMap: Map<string, string>, contentWarningReason: string | undefined = undefined) => {
-	const seenOn = Array.from(pool.seenOn.get(targetEventToReply.id) ?? []);
-	if (seenOn.length === 0) {
+export const sendMessage = async(rxNostr: RxNostr, seenOn: Map<string, Set<string>>, relaysToWrite: string[], content: string, targetEventToReply: NostrEvent, emojiMap: Map<string, string>, contentWarningReason: string | undefined = undefined) => {
+	const seenOnAry = Array.from(seenOn.get(targetEventToReply.id) ?? []);
+	if (seenOnAry.length === 0) {
 		throw new Error(`The event to reply is not found: ${targetEventToReply.id}`);
 	}
-	const recommendeRelay = seenOn[0].url;
+	const recommendeRelay = seenOnAry[0];
 	const tags: string[][] = [];
 	const mentionPubkeys: Set<string> = new Set();
 	const rootTag = targetEventToReply.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root');
@@ -436,12 +440,12 @@ export const sendMessage = async(pool: SimplePool, relaysToWrite: string[], cont
 	if (window.nostr === undefined)
 		return;
 	const newEvent = await window.nostr.signEvent(baseEvent);
-	const pubs = pool.publish(relaysToWrite, newEvent);
-	await Promise.all(pubs);
+	rxNostr.setDefaultRelays(relaysToWrite);
+	rxNostr.send(newEvent);
 };
 
-export const sendRepost = async(pool: SimplePool, relaysToWrite: string[], targetEvent: NostrEvent) => {
-	const recommendeRelay = Array.from(pool.seenOn.get(targetEvent.id) ?? [])?.at(0)?.url ?? '';
+export const sendRepost = async(rxNostr: RxNostr, seenOn: Map<string, Set<string>>, relaysToWrite: string[], targetEvent: NostrEvent) => {
+	const recommendeRelay = Array.from(seenOn.get(targetEvent.id) ?? []).at(0) ?? '';
 	const tags: string[][] = [
 		['e', targetEvent.id, recommendeRelay, ''],
 		['p', targetEvent.pubkey, ''],
@@ -456,11 +460,11 @@ export const sendRepost = async(pool: SimplePool, relaysToWrite: string[], targe
 	if (window.nostr === undefined)
 		return;
 	const newEvent = await window.nostr.signEvent(baseEvent);
-	const pubs = pool.publish(relaysToWrite, newEvent);
-	await Promise.all(pubs);
+	rxNostr.setDefaultRelays(relaysToWrite);
+	rxNostr.send(newEvent);
 };
 
-export const sendFav = async(pool: SimplePool, relaysToWrite: string[], targetEvent: NostrEvent, content: string, emojiurl?: string) => {
+export const sendFav = async(rxNostr: RxNostr, relaysToWrite: string[], targetEvent: NostrEvent, content: string, emojiurl?: string) => {
 	const tags: string[][] = [
 		...targetEvent.tags.filter(tag => tag.length >= 2 && (tag[0] === 'e' || (tag[0] === 'p' && tag[1] !== targetEvent.pubkey))),
 		['e', targetEvent.id, '', ''],
@@ -479,11 +483,11 @@ export const sendFav = async(pool: SimplePool, relaysToWrite: string[], targetEv
 	if (window.nostr === undefined)
 		return;
 	const newEvent = await window.nostr.signEvent(baseEvent);
-	const pubs = pool.publish(relaysToWrite, newEvent);
-	await Promise.all(pubs);
+	rxNostr.setDefaultRelays(relaysToWrite);
+	rxNostr.send(newEvent);
 };
 
-export const sendCreateChannel = async(pool: SimplePool, relaysToWrite: string[], name: string, about: string, picture: string) => {
+export const sendCreateChannel = async(rxNostr: RxNostr, relaysToWrite: string[], name: string, about: string, picture: string) => {
 	const baseEvent: EventTemplate = {
 		kind: 40,
 		created_at: Math.floor(Date.now() / 1000),
@@ -493,20 +497,21 @@ export const sendCreateChannel = async(pool: SimplePool, relaysToWrite: string[]
 	if (window.nostr === undefined)
 		return;
 	const newEvent = await window.nostr.signEvent(baseEvent);
-	const pubs = pool.publish(relaysToWrite, newEvent);
-	await Promise.all(pubs);
+	rxNostr.setDefaultRelays(relaysToWrite);
+	rxNostr.send(newEvent);
 };
 
-export const sendEditChannel = async(pool: SimplePool, relaysToUse: object, loginPubkey: string, currentChannelId: string, name: string, about: string, picture: string) => {
+export const sendEditChannel = async(rxNostr: RxNostr, tie: OperatorFunction<EventPacket, EventPacket & { seenOn: Set<string>; isNew: boolean; }>, seenOn: Map<string, Set<string>>, relaysToUse: object, loginPubkey: string, currentChannelId: string, name: string, about: string, picture: string) => {
 	let newestEvent: NostrEvent;
-	const onevent = (ev: NostrEvent) => {
+	const onevent = (packet: EventPacket & {
+		seenOn: Set<string>}) => {
+		const ev = packet.event;
 		if (ev.pubkey === loginPubkey && (!newestEvent || newestEvent.created_at < ev.created_at)) {
 			newestEvent = ev;
 		}
 	};
 	const oneose = async () => {
 		console.log('sendEditChannelPhase1 * EOSE *');
-		sub.close();
 		if (!newestEvent) {
 			throw new Error(`The event to edit does not exist: ${currentChannelId}`);
 		}
@@ -516,7 +521,7 @@ export const sendEditChannel = async(pool: SimplePool, relaysToUse: object, logi
 		(objContent as any).about = about;
 		(objContent as any).picture = picture;
 		(objContent as any).relays = relaysToWrite;
-		const recommendeRelay = Array.from(pool.seenOn.get(currentChannelId) ?? [])?.at(0)?.url ?? '';
+		const recommendeRelay = Array.from(seenOn.get(currentChannelId) ?? []).at(0) ?? '';
 		const baseEvent: EventTemplate = {
 			kind: 41,
 			created_at: Math.floor(Date.now() / 1000),
@@ -526,28 +531,31 @@ export const sendEditChannel = async(pool: SimplePool, relaysToUse: object, logi
 		if (window.nostr === undefined)
 			return;
 		const newEvent = await window.nostr.signEvent(baseEvent);
-		const pubs = pool.publish(relaysToWrite, newEvent);
-		await Promise.all(pubs);
+		rxNostr.setDefaultRelays(relaysToWrite);
+		rxNostr.send(newEvent);
 		console.log('sendEditChannelPhase2 * Complete *');
 	};
 	const limit = 500;
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
-	const sub: SubCloser = pool.subscribeMany(
-		relaysToRead,
-		[{kinds: [40], ids: [currentChannelId], limit: limit}, {kinds: [41], authors: [loginPubkey], '#e': [currentChannelId], limit: limit}],
-		{ onevent, oneose }
-	);
+	const rxReq = createRxBackwardReq();
+	rxNostr.use(rxReq).pipe(tie).subscribe({
+		next: onevent,
+		complete: oneose,
+	});
+	rxReq.emit([{kinds: [40], ids: [currentChannelId], limit: limit}, {kinds: [41], authors: [loginPubkey], '#e': [currentChannelId], limit: limit}], {relays: relaysToRead});
+	rxReq.over();
 };
 
-export const sendEditProfile = async(pool: SimplePool, relaysToUse: object, loginPubkey: string, prof: Profile) => {
-	const onevent = (ev: NostrEvent) => {
+export const sendEditProfile = async(rxNostr: RxNostr, tie: OperatorFunction<EventPacket, EventPacket & { seenOn: Set<string>; isNew: boolean; }>, relaysToUse: object, loginPubkey: string, prof: Profile) => {
+	const onevent = (packet: EventPacket & {
+		seenOn: Set<string>}) => {
+		const ev = packet.event;
 		if (ev.pubkey === loginPubkey && (!newestEvent || newestEvent.created_at < ev.created_at)) {
 			newestEvent = ev;
 		}
 	};
 	const oneose = async () => {
 		console.log('sendEditProfilePhase1 * EOSE *');
-		sub.close();
 		const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
 		let objContent: object;
 		if (newestEvent !== undefined) {
@@ -570,20 +578,22 @@ export const sendEditProfile = async(pool: SimplePool, relaysToUse: object, logi
 		if (window.nostr === undefined)
 			return;
 		const newEvent = await window.nostr.signEvent(baseEvent);
-		const pubs = pool.publish(relaysToWrite, newEvent);
-		await Promise.all(pubs);
+		rxNostr.setDefaultRelays(relaysToWrite);
+		rxNostr.send(newEvent);
 		console.log('sendEditProfilePhase2 * Complete *');
 	};
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
-	const sub: SubCloser = pool.subscribeMany(
-		relaysToRead,
-		[{kinds: [0], authors: [loginPubkey]}],
-		{ onevent, oneose }
-	);
+	const rxReq = createRxBackwardReq();
+	rxNostr.use(rxReq).pipe(tie).subscribe({
+		next: onevent,
+		complete: oneose,
+	});
+	rxReq.emit([{kinds: [0], authors: [loginPubkey]}], {relays: relaysToRead});
+	rxReq.over();
 	let newestEvent: NostrEvent;
 };
 
-export const sendDeletion = async(pool: SimplePool, relaysToWrite: string[], event: NostrEvent) => {
+export const sendDeletion = async(rxNostr: RxNostr, relaysToWrite: string[], event: NostrEvent) => {
 	const baseEvent: EventTemplate = {
 		kind: 5,
 		created_at: Math.floor(Date.now() / 1000),
@@ -593,32 +603,33 @@ export const sendDeletion = async(pool: SimplePool, relaysToWrite: string[], eve
 	if (window.nostr === undefined)
 		return;
 	const newEvent = await window.nostr.signEvent(baseEvent);
-	const pubs = pool.publish(relaysToWrite, newEvent);
-	await Promise.all(pubs);
+	rxNostr.setDefaultRelays(relaysToWrite);
+	rxNostr.send(newEvent);
 };
 
-export const sendMuteUser = async(pool: SimplePool, relaysToUse: object, loginPubkey: string, pubkey: string, toSet: boolean) => {
-	await sendPinOrMute(pool, relaysToUse, loginPubkey, pubkey, toSet, 10000, 'p');
+export const sendMuteUser = async(rxNostr: RxNostr, tie: OperatorFunction<EventPacket, EventPacket & { seenOn: Set<string>; isNew: boolean; }>, relaysToUse: object, loginPubkey: string, pubkey: string, toSet: boolean) => {
+	await sendPinOrMute(rxNostr, tie, relaysToUse, loginPubkey, pubkey, toSet, 10000, 'p');
 };
 
-export const sendMute = async(pool: SimplePool, relaysToUse: object, loginPubkey: string, eventId: string, toSet: boolean) => {
-	await sendPinOrMute(pool, relaysToUse, loginPubkey, eventId, toSet, 10000, 'e');
+export const sendMute = async(rxNostr: RxNostr, tie: OperatorFunction<EventPacket, EventPacket & { seenOn: Set<string>; isNew: boolean; }>, relaysToUse: object, loginPubkey: string, eventId: string, toSet: boolean) => {
+	await sendPinOrMute(rxNostr, tie, relaysToUse, loginPubkey, eventId, toSet, 10000, 'e');
 };
 
-export const sendPin = async(pool: SimplePool, relaysToUse: object, loginPubkey: string, eventId: string, toSet: boolean) => {
-	await sendPinOrMute(pool, relaysToUse, loginPubkey, eventId, toSet, 10005, 'e');
+export const sendPin = async(rxNostr: RxNostr, tie: OperatorFunction<EventPacket, EventPacket & { seenOn: Set<string>; isNew: boolean; }>, relaysToUse: object, loginPubkey: string, eventId: string, toSet: boolean) => {
+	await sendPinOrMute(rxNostr, tie, relaysToUse, loginPubkey, eventId, toSet, 10005, 'e');
 };
 
-const sendPinOrMute = async(pool: SimplePool, relaysToUse: object, loginPubkey: string, eventId: string, toSet: boolean, kind: number, tagName: string) => {
+const sendPinOrMute = async(rxNostr: RxNostr, tie: OperatorFunction<EventPacket, EventPacket & { seenOn: Set<string>; isNew: boolean; }>, relaysToUse: object, loginPubkey: string, eventId: string, toSet: boolean, kind: number, tagName: string) => {
 	let newestEvent: NostrEvent;
-	const onevent = (ev: NostrEvent) => {
+	const onevent = (packet: EventPacket & {
+		seenOn: Set<string>}) => {
+		const ev = packet.event;
 		if (ev.pubkey === loginPubkey && (!newestEvent || newestEvent.created_at < ev.created_at)) {
 			newestEvent = ev;
 		}
 	};
 	const oneose = async () => {
 		console.log('sendPinOrMutePhase1 * EOSE *');
-		sub.close();
 		if (window.nostr === undefined)
 			return;
 		let tags;
@@ -671,24 +682,27 @@ const sendPinOrMute = async(pool: SimplePool, relaysToUse: object, loginPubkey: 
 			content: content
 		};
 		const newEvent = await window.nostr.signEvent(baseEvent);
-		const pubs = pool.publish(relaysToWrite, newEvent);
-		await Promise.all(pubs);
+		rxNostr.setDefaultRelays(relaysToWrite);
+		rxNostr.send(newEvent);
 		console.log('sendPinOrMutePhase2 * Complete *');
 	};
 	const relaysToRead = Object.entries(relaysToUse).filter(v => v[1].read).map(v => v[0]);
-	const sub: SubCloser = pool.subscribeMany(
-		relaysToRead,
-		[{kinds: [kind], authors: [loginPubkey]}],
-		{ onevent, oneose }
-	);
+
+	const rxReq = createRxBackwardReq();
+	rxNostr.use(rxReq).pipe(tie).subscribe({
+		next: onevent,
+		complete: oneose,
+	});
+	rxReq.emit([{kinds: [0], authors: [loginPubkey]}], {relays: relaysToRead});
+	rxReq.over();
 };
 
-export const broadcast = async(pool: SimplePool, relaysToWrite: string[], event40: NostrEvent, event41: NostrEvent | undefined) => {
-	let pubs = pool.publish(relaysToWrite, event40);
+export const broadcast = async(rxNostr: RxNostr, relaysToWrite: string[], event40: NostrEvent, event41: NostrEvent | undefined) => {
+	rxNostr.setDefaultRelays(relaysToWrite);
+	rxNostr.send(event40);
 	if (event41 !== undefined) {
-		pubs = pubs.concat(pool.publish(relaysToWrite, event41));
+		rxNostr.send(event41);
 	}
-	await Promise.all(pubs);
 	console.log('broadcast * Complete *');
 };
 
@@ -715,11 +729,11 @@ export const getExpandTagsList = (content: string, tags: string[][]): [IterableI
 	return [matchesIterator, plainTexts, emojiUrls];
 };
 
-export const getRelaysToUse = (relaysSelected: string, pool: SimplePool, loginPubkey: string): Promise<RelayRecord> => {
+export const getRelaysToUse = (relaysSelected: string, rxNostr: RxNostr, tie: OperatorFunction<EventPacket, EventPacket & { seenOn: Set<string>; isNew: boolean; }>, loginPubkey: string): Promise<RelayRecord> => {
 	switch (relaysSelected) {
 		case 'kind3':
 			return new Promise((resolve) => {
-				getGeneralEvents(pool, relaysToGetRelays, [{kinds: [3], authors: [loginPubkey]}]).then((events: NostrEvent[]) => {
+				getGeneralEvents(rxNostr, tie, relaysToGetRelays, [{kinds: [3], authors: [loginPubkey]}]).then((events: NostrEvent[]) => {
 					if (events.length === 0) {
 						resolve({});
 					}
@@ -731,7 +745,7 @@ export const getRelaysToUse = (relaysSelected: string, pool: SimplePool, loginPu
 			});
 		case 'kind10002':
 			return new Promise((resolve) => {
-				getGeneralEvents(pool, relaysToGetRelays, [{kinds: [10002], authors: [loginPubkey]}]).then((events: NostrEvent[]) => {
+				getGeneralEvents(rxNostr, tie, relaysToGetRelays, [{kinds: [10002], authors: [loginPubkey]}]).then((events: NostrEvent[]) => {
 					if (events.length === 0) {
 						resolve({});
 					}
@@ -747,7 +761,7 @@ export const getRelaysToUse = (relaysSelected: string, pool: SimplePool, loginPu
 			});
 		case 'nip05':
 			return new Promise((resolve) => {
-				getGeneralEvents(pool, relaysToGetRelays, [{kinds: [0], authors: [loginPubkey]}]).then(async (events: NostrEvent[]) => {
+				getGeneralEvents(rxNostr, tie, relaysToGetRelays, [{kinds: [0], authors: [loginPubkey]}]).then(async (events: NostrEvent[]) => {
 					if (events.length === 0) {
 						resolve({});
 						return;
@@ -781,23 +795,24 @@ export const getRelaysToUse = (relaysSelected: string, pool: SimplePool, loginPu
 	}
 };
 
-const getGeneralEvents = (pool: SimplePool, relays: string[], filters: Filter[], callbackEvent: Function = () => {}): Promise<NostrEvent[]> => {
+const getGeneralEvents = (rxNostr: RxNostr, tie: OperatorFunction<EventPacket, EventPacket & { seenOn: Set<string>; isNew: boolean; }>, relays: string[], filters: Filter[], callbackEvent: Function = () => {}): Promise<NostrEvent[]> => {
 	return new Promise((resolve) => {
 		const events: NostrEvent[] = [];
-		const onevent = (ev: NostrEvent) => {
-			events.push(ev);
-			callbackEvent(ev);
-		};
-		const oneose = () => {
-			console.log('getGeneralEvents * EOSE *');
-			sub.close();
-			resolve(events);
-		};
-		const sub: SubCloser = pool.subscribeMany(
-			relays,
-			filters,
-			{ onevent, oneose }
-		);
+		const rxReq = createRxBackwardReq();
+		rxNostr.use(rxReq).pipe(tie).subscribe({
+			next: (packet: EventPacket & {
+				seenOn: Set<string>}) => {
+				const ev = packet.event;
+				events.push(ev);
+				callbackEvent(ev);
+			},
+			complete: () => {
+				console.log('getGeneralEvents * EOSE *');
+				resolve(events);
+			},
+		});
+		rxReq.emit(filters, {relays});
+		rxReq.over();
 	});
 };
 

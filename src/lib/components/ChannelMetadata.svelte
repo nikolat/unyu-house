@@ -1,11 +1,14 @@
 <script lang='ts'>
 import { type Channel, type Profile, sendPin, sendMute, sendEditChannel, broadcast } from '$lib/util';
 import type { RelayRecord } from 'nostr-tools/relay';
-import type { SimplePool } from 'nostr-tools/pool';
 import * as nip19 from 'nostr-tools/nip19';
+import type { EventPacket, RxNostr } from 'rx-nostr';
+import type { OperatorFunction } from 'rxjs';
 
 export let channel: Channel;
-export let pool: SimplePool;
+export let rxNostr: RxNostr;
+export let tie: OperatorFunction<EventPacket, EventPacket & { seenOn: Set<string>; isNew: boolean; }>;
+export let seenOn: Map<string, Set<string>>;
 export let profs: {[key: string]: Profile};
 export let isLoggedin: boolean;
 export let loginPubkey: string;
@@ -27,7 +30,7 @@ const setChannelMetadata = (currentChannelName: string, currentChannelAbout: str
 
 const callSendEditChannel = () => {
 	if (channel?.event.id) {
-		sendEditChannel(pool, relaysToUse, loginPubkey, channel.event.id, editChannelName, editChannelAbout, editChannelPicture);
+		sendEditChannel(rxNostr, tie, seenOn, relaysToUse, loginPubkey, channel.event.id, editChannelName, editChannelAbout, editChannelPicture);
 	}
 };
 
@@ -36,16 +39,16 @@ const callBroadcast = async () => {
 	if (!confirm(`Are you sure you want to broadcast this channel event? (kind 40 and 41)\n${relaysToWrite.join('\n')}`)) {
 		return;
 	}
-	await broadcast(pool, relaysToWrite, channel.event, channel.event41);
+	await broadcast(rxNostr, relaysToWrite, channel.event, channel.event41);
 	alert('Completed.');
 };
 
 const callSendPin = (toSet: boolean) => {
-	sendPin(pool, relaysToUse, loginPubkey, channel.event.id, toSet);
+	sendPin(rxNostr, tie, relaysToUse, loginPubkey, channel.event.id, toSet);
 }
 
 const callSendMute = (toSet: boolean) => {
-	sendMute(pool, relaysToUse, loginPubkey, channel.event.id, toSet);
+	sendMute(rxNostr, tie, relaysToUse, loginPubkey, channel.event.id, toSet);
 }
 
 </script>

@@ -2,7 +2,6 @@
 import { sendMessage, type Channel } from '$lib/util';
 import type { EventTemplate, NostrEvent } from 'nostr-tools/pure';
 import type { RelayRecord } from 'nostr-tools/relay';
-import type { SimplePool } from 'nostr-tools/pool';
 import { readServerConfig, type OptionalFormDataFields } from 'nostr-tools/nip96';
 import { getToken } from 'nostr-tools/nip98';
 import { uploadFile } from '$lib/nip96';
@@ -11,8 +10,10 @@ import { Picker } from 'emoji-mart';
 // @ts-ignore
 import type { BaseEmoji } from '@types/emoji-mart';
 import { uploaderURLs } from '$lib/config';
+import type { RxNostr } from 'rx-nostr';
 
-export let pool: SimplePool;
+export let rxNostr: RxNostr;
+export let seenOn: Map<string, Set<string>>;
 export let currentChannelId: string | null;
 export let relaysToUse: RelayRecord;
 export let channels: Channel[] = [];
@@ -34,7 +35,7 @@ const callSendMessage = (noteToReplay: NostrEvent) => {
 	hidePostBar();
 	resetScroll();
 	const relaysToWrite = Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]);
-	sendMessage(pool, relaysToWrite, content, noteToReplay, emojiMap, contentWarningReason);
+	sendMessage(rxNostr, seenOn, relaysToWrite, content, noteToReplay, emojiMap, contentWarningReason);
 };
 
 const callGetEmoji = () => {

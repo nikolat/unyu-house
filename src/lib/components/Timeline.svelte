@@ -1,7 +1,6 @@
 <script lang='ts'>
 
 import type { NostrEvent } from 'nostr-tools/pure';
-import type { SimplePool } from 'nostr-tools/pool';
 import * as nip19 from 'nostr-tools/nip19';
 import { sendRepost, sendFav, sendDeletion, sendMessage, getExpandTagsList , type Profile, type Channel } from '$lib/util';
 import { preferences, storedRelaysToUse } from '$lib/store';
@@ -11,8 +10,12 @@ import data from '@emoji-mart/data';
 import { Picker } from 'emoji-mart';
 // @ts-ignore
 import type { BaseEmoji } from '@types/emoji-mart';
+import type { EventPacket, RxNostr } from 'rx-nostr';
+import type { OperatorFunction } from 'rxjs';
 
-export let pool: SimplePool;
+export let rxNostr: RxNostr;
+export let tie: OperatorFunction<EventPacket, EventPacket & { seenOn: Set<string>; isNew: boolean; }>;
+export let seenOn: Map<string, Set<string>>;
 export let relaysToWrite: string[];
 export let notes: NostrEvent[];
 export let notesQuoted: NostrEvent[];
@@ -88,7 +91,7 @@ const callSendMessage = (noteToReplay: NostrEvent) => {
 	const details = <HTMLDetailsElement>document.querySelector(`#note-${noteId} + dd div.action-bar details`);
 	details.open = false;
 	resetScroll();
-	sendMessage(pool, relaysToWrite, content, noteToReplay, emojiMap);
+	sendMessage(rxNostr, seenOn, relaysToWrite, content, noteToReplay, emojiMap);
 };
 
 const submitFromKeyboard = (event: KeyboardEvent, noteToReplay: NostrEvent) => {
@@ -97,7 +100,7 @@ const submitFromKeyboard = (event: KeyboardEvent, noteToReplay: NostrEvent) => {
 	}
 }
 
-const callSendEmoji = (pool: SimplePool, relaysToWrite: string[], targetEvent: NostrEvent) => {
+const callSendEmoji = (rxNostr: RxNostr, relaysToWrite: string[], targetEvent: NostrEvent) => {
 	const noteId = targetEvent.id;
 	visible[noteId] = !visible[noteId];
 	if (emojiPicker[noteId].children.length > 0) {
@@ -121,16 +124,16 @@ const callSendEmoji = (pool: SimplePool, relaysToWrite: string[], targetEvent: N
 	});
 	function onEmojiSelect(emoji: BaseEmoji) {
 		visible[noteId] = false;
-		sendFav(pool, relaysToWrite, targetEvent, emoji.native ?? (emoji as any).shortcodes as string, (emoji as any).src as string);
+		sendFav(rxNostr, relaysToWrite, targetEvent, emoji.native ?? (emoji as any).shortcodes as string, (emoji as any).src as string);
 	}
 	emojiPicker[noteId].appendChild(picker as any);
 };
 
-const callSendDeletion = async (pool: SimplePool, relaysToWrite: string[], event: NostrEvent) => {
+const callSendDeletion = async (rxNostr: RxNostr, relaysToWrite: string[], event: NostrEvent) => {
 	if (!confirm('Delete this post?')) {
 		return;
 	}
-	await sendDeletion(pool, relaysToWrite, event);
+	await sendDeletion(rxNostr, relaysToWrite, event);
 	notes = notes.filter(ev => ev.id !== event.id);
 };
 
@@ -274,11 +277,11 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 					:else if /nostr:note\w{59}/.test(match[4])
 				}{
 					@const matchedText = match[4]
-				}<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} {muteList} {muteChannels} {wordList} />{
+				}<Quote {rxNostr} {tie} {seenOn} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} {muteList} {muteChannels} {wordList} />{
 					:else if /nostr:nevent\w+/.test(match[5])
 				}{
 					@const matchedText = match[5]
-				}<Quote {pool} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} {muteList} {muteChannels} {wordList} />{
+				}<Quote {rxNostr} {tie} {seenOn} {matchedText} {notes} {notesQuoted} {channels} {profs} {loginPubkey} {muteList} {muteChannels} {wordList} />{
 					:else if /nostr:naddr\w+/.test(match[6])
 				}{
 					@const matchedText = match[6]
@@ -377,11 +380,11 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 						<textarea name="input-text" bind:value={inputText[noteOrg.id]} on:keydown={(e) => {submitFromKeyboard(e, noteOrg)}}></textarea
 						><button on:click={() => {callSendMessage(noteOrg)}} disabled={!inputText[noteOrg.id]}>Reply</button
 					></details><button
-						class="repost" on:click={() => sendRepost(pool, relaysToWrite, noteOrg)} title="Repost"><svg><use xlink:href="/refresh-cw.svg#repost"></use></svg
+						class="repost" on:click={() => sendRepost(rxNostr, seenOn, relaysToWrite, noteOrg)} title="Repost"><svg><use xlink:href="/refresh-cw.svg#repost"></use></svg
 					></button><button
-						class="fav" on:click={() => sendFav(pool, relaysToWrite, noteOrg, '+')} title="Fav"><svg><use xlink:href="/heart.svg#fav"></use></svg
+						class="fav" on:click={() => sendFav(rxNostr, relaysToWrite, noteOrg, '+')} title="Fav"><svg><use xlink:href="/heart.svg#fav"></use></svg
 					></button><button
-						class="emoji" on:click={() => callSendEmoji(pool, relaysToWrite, noteOrg)} title="Emoji fav"><svg><use xlink:href="/smiled.svg#emoji"></use></svg
+						class="emoji" on:click={() => callSendEmoji(rxNostr, relaysToWrite, noteOrg)} title="Emoji fav"><svg><use xlink:href="/smiled.svg#emoji"></use></svg
 					></button><div
 						bind:this={emojiPicker[noteOrg.id]} class={visible[noteOrg.id] ? '' : 'hidden'}
 					></div><button
@@ -395,7 +398,7 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 						class="zap" title="Zap!" on:click={() => zap(note.id)}><svg><use xlink:href="/lightning.svg#zap"></use></svg
 					></button>{
 						#if noteOrg.pubkey === loginPubkey
-					}<button class="delete" on:click={() => callSendDeletion(pool, relaysToWrite, noteOrg)} title="Delete"><svg><use xlink:href="/trash.svg#delete"></use></svg></button>{
+					}<button class="delete" on:click={() => callSendDeletion(rxNostr, relaysToWrite, noteOrg)} title="Delete"><svg><use xlink:href="/trash.svg#delete"></use></svg></button>{
 						/if
 					}{
 						:else
@@ -413,8 +416,8 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 							<dt>Relays seen on</dt>
 							<dd>
 								<ul>
-								{#each Array.from(pool.seenOn.get(noteOrg.id) ?? []) as relay}
-									<li>{relay.url}</li>
+								{#each Array.from(seenOn.get(noteOrg.id) ?? []) as relay}
+									<li>{relay}</li>
 								{/each}
 								</ul>
 							</dd>
