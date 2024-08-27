@@ -330,8 +330,10 @@ const callbackPhase3 = (ev: NostrEvent) => {
 };
 
 const importRelays = (relaysSelected: string, clearEvents: boolean = true) => {
-	if (clearEvents)
+	if (clearEvents) {
 		eventsAll = [];
+		storedEvents.set(eventsAll);
+	}
 	getRelaysToUse(relaysSelected, rxNostr, tie, loginPubkey)
 		.then((relaysToUseBack: RelayRecord) => {
 			const newRelays: RelayRecord = {};
@@ -340,6 +342,9 @@ const importRelays = (relaysSelected: string, clearEvents: boolean = true) => {
 			}
 			relaysToUse = newRelays;
 			storedRelaysToUse.set(relaysToUse);
+			rxNostr?.dispose();
+			rxNostr = createRxNostr({verifier});
+			[tie, seenOn] = createTie();
 			applyRelays();
 		})
 		.catch((error) => {
@@ -427,7 +432,6 @@ const applyRelays = async () => {
 
 onMount(() => {
 	rxNostr = createRxNostr({verifier});
-	console.log('onMount');
 	[tie, seenOn] = createTie();
 	if (Object.keys(relaysToUse).length === 0) {
 		relaysToUse = defaultRelays;
@@ -436,22 +440,19 @@ onMount(() => {
 	applyRelays();
 });
 onDestroy(() => {
-	console.log('onDestroy');
 	rxNostr?.dispose();
 });
 afterUpdate(() => {
-	console.log('afterUpdate');
 	if (!scrolled) {
 		execScroll();
 	}
 });
 beforeNavigate(() => {
-	console.log('beforeNavigate');
 	rxNostr?.dispose();
 });
 afterNavigate(() => {
-	console.log('afterNavigate');
 	rxNostr = createRxNostr({verifier});
+	[tie, seenOn] = createTie();
 	if (Object.keys(relaysToUse).length === 0) {
 		relaysToUse = defaultRelays;
 		storedRelaysToUse.set(relaysToUse);

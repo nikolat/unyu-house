@@ -7,7 +7,6 @@ import * as nip05 from 'nostr-tools/nip05';
 import * as nip19 from 'nostr-tools/nip19';
 import { defaultRelays, relaysToGetRelays } from './config';
 import { createRxBackwardReq, createRxForwardReq, type RxNostr, type EventPacket } from 'rx-nostr';
-import { Subject } from 'rxjs';
 import type { OperatorFunction } from 'rxjs';
 
 declare global {
@@ -201,7 +200,6 @@ export class RelayConnector {
 	#getEventsPhase3 = (filterPhase3: Filter[], pubkeysObtained: string[], idsObtained: string[]) => {
 		const rxReq = createRxForwardReq();
 		this.#rxNostr.setDefaultRelays(this.#relays);
-		const flushes$ = new Subject<void>();
 		this.#rxNostr.use(rxReq).pipe(this.#tie).subscribe({
 			next: (packet) => {
 				const ev = packet.event;
@@ -222,7 +220,11 @@ export class RelayConnector {
 				}
 			},
 		});
-		rxReq.emit(filterPhase3);
+		try {
+			rxReq.emit(filterPhase3);
+		} catch (error) {
+			console.error(error);
+		}
 	};
 
 	#getPubkeysForFilter = (events: NostrEvent[]): string[] => {
