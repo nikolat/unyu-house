@@ -112,8 +112,8 @@ export class RelayConnector {
 		if (idsToGet.length > 0) {
 			filterPhase1.push({ids: idsToGet});
 		}
-		//filterPhase1.push({kinds: [7], until: this.#until, '#e': events[42].map(ev => ev.id)});
-		//filterPhase1.push({kinds: [9735], authors: zap_sender_pubkeys, until: this.#until, '#e': events[42].map(ev => ev.id)});
+		filterPhase1.push({kinds: [7], until: this.#until, '#e': events[42].map(ev => ev.id)});
+		filterPhase1.push({kinds: [9735], authors: zap_sender_pubkeys, until: this.#until, '#e': events[42].map(ev => ev.id)});
 		filterPhase1.push({kinds: [40], until: this.#until, limit: limit_channel});
 		filterPhase1.push({kinds: [41], until: this.#until, limit: limit_channel});
 		//2
