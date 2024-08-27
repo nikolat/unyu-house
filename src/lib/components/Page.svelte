@@ -431,16 +431,10 @@ const applyRelays = async () => {
 };
 
 onMount(() => {
-	rxNostr = createRxNostr({verifier});
-	[tie, seenOn] = createTie();
-	if (Object.keys(relaysToUse).length === 0) {
-		relaysToUse = defaultRelays;
-		storedRelaysToUse.set(relaysToUse);
-	}
-	applyRelays();
+	console.log('[onMount]');
 });
 onDestroy(() => {
-	rxNostr?.dispose();
+	console.log('[onDestroy]');
 });
 afterUpdate(() => {
 	if (!scrolled) {
@@ -448,9 +442,11 @@ afterUpdate(() => {
 	}
 });
 beforeNavigate(() => {
+	console.log('[beforeNavigate]');
 	rxNostr?.dispose();
 });
 afterNavigate(() => {
+	console.log('[afterNavigate]');
 	rxNostr = createRxNostr({verifier});
 	[tie, seenOn] = createTie();
 	if (Object.keys(relaysToUse).length === 0) {

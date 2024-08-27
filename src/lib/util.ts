@@ -81,12 +81,14 @@ export class RelayConnector {
 			filterPhase1.unshift({kinds: [3, 10000, 10005, 10030, 30007], authors: [this.#loginPubkey], until: this.#until});
 		}
 		//0
-		for (const filter of filterPhase1) {
-			const evs = await getGeneralEvents(this.#rxNostr, this.#tie, this.#relays, [filter], this.#callbackEvent) as NostrEvent[];
-			for (const ev of evs) {
-				events[ev.kind].push(ev);
-			}
-		}
+		const promises = [];
+		promises.push(getGeneralEvents(this.#rxNostr, this.#tie, this.#relays, filterPhase1, this.#callbackEvent)
+			.then((evs: NostrEvent[]) => {
+				for (const ev of evs) {
+					events[ev.kind].push(ev);
+				}
+			}));
+		await Promise.all(promises);
 		filterPhase1 = [];
 		const channelsToGet: string[] = events[42].map(ev => ev.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1) ?? '').filter(e => e !== '');
 		filterPhase1.push({kinds: [40], ids: channelsToGet});
@@ -96,12 +98,14 @@ export class RelayConnector {
 			filterPhase1.push({kinds: [0], authors: pubkeysToGet});
 		}
 		//1
-		for (const filter of filterPhase1) {
-			const evs = await getGeneralEvents(this.#rxNostr, this.#tie, this.#relays, [filter], this.#callbackEvent) as NostrEvent[];
-			for (const ev of evs) {
-				events[ev.kind].push(ev);
-			}
-		}
+		promises.length = 0;
+		promises.push(getGeneralEvents(this.#rxNostr, this.#tie, this.#relays, filterPhase1, this.#callbackEvent)
+			.then((evs: NostrEvent[]) => {
+				for (const ev of evs) {
+					events[ev.kind].push(ev);
+				}
+			}));
+		await Promise.all(promises);
 		this.#execScroll();
 		filterPhase1 = [];
 		const pinList = this.#getPinList(events[10005]);
@@ -117,15 +121,17 @@ export class RelayConnector {
 		filterPhase1.push({kinds: [40], until: this.#until, limit: limit_channel});
 		filterPhase1.push({kinds: [41], until: this.#until, limit: limit_channel});
 		//2
-		for (const filter of filterPhase1) {
-			const evs = await getGeneralEvents(this.#rxNostr, this.#tie, this.#relays, [filter], this.#callbackEvent) as NostrEvent[];
-			for (const ev of evs) {
-				if (events[ev.kind] === undefined) {
-					events[ev.kind] = [];
+		promises.length = 0;
+		promises.push(getGeneralEvents(this.#rxNostr, this.#tie, this.#relays, filterPhase1, this.#callbackEvent)
+			.then((evs: NostrEvent[]) => {
+				for (const ev of evs) {
+					if (events[ev.kind] === undefined) {
+						events[ev.kind] = [];
+					}
+					events[ev.kind].push(ev);
 				}
-				events[ev.kind].push(ev);
-			}
-		}
+			}));
+		await Promise.all(promises);
 		console.log('getEventsPhase1 * EOSE *');
 		const filterPhase2: Filter[] = [];
 		pubkeysToGet = this.#getPubkeysForFilter(Object.values(events).flat()).filter(pubkey => !events[0].map(ev => ev.pubkey).includes(pubkey));
@@ -151,11 +157,13 @@ export class RelayConnector {
 		const filterPhase3: Filter[] = [
 			...filterPhase3Base,
 			{kinds: [7], '#k': ['42'], since: this.#since},
-			{kinds: [0, 40, 41], since: this.#since},
-			{kinds: [9735], authors: zap_sender_pubkeys, since: this.#since}
+			{kinds: [40, 41], since: this.#since},
 		];
 		if (this.#loginPubkey) {
-			filterPhase3.push({kinds: [10000, 10005], authors: [this.#loginPubkey], since: this.#since});
+			filterPhase3.push(
+				{kinds: [0, 10000, 10005], authors: [this.#loginPubkey], since: this.#since},
+				{kinds: [9735], authors: zap_sender_pubkeys, since: this.#since}
+			);
 		}
 		this.#getEventsPhase2(filterPhase2, filterPhase3, true);
 	};
@@ -164,18 +172,20 @@ export class RelayConnector {
 		const events: {[key: number]: NostrEvent[]} = {0: [], 42: [], 30030: []};
 		const eventsQuoted: NostrEvent[] = [];
 		const eventsAll: NostrEvent[] = [];
-		for (const filter of filterPhase2) {
-			const evs = await getGeneralEvents(this.#rxNostr, this.#tie, this.#relays, [filter], this.#callbackEvent);
-			for (const ev of evs) {
-				if ([0, 42, 30030].includes(ev.kind)) {
-					events[ev.kind].push(ev);
+		const promises = [];
+		promises.push(getGeneralEvents(this.#rxNostr, this.#tie, this.#relays, filterPhase2, this.#callbackEvent)
+			.then((evs: NostrEvent[]) => {
+				for (const ev of evs) {
+					if ([0, 42, 30030].includes(ev.kind)) {
+						events[ev.kind].push(ev);
+					}
+					else {
+						eventsQuoted.push(ev);
+					}
+					eventsAll.push(ev);
 				}
-				else {
-					eventsQuoted.push(ev);
-				}
-				eventsAll.push(ev);
-			}
-		}
+			}));
+		await Promise.all(promises);
 		if (goPhase3) {
 			console.log('getEventsPhase2 * EOSE *');
 		}
@@ -198,6 +208,7 @@ export class RelayConnector {
 	};
 
 	#getEventsPhase3 = (filterPhase3: Filter[], pubkeysObtained: string[], idsObtained: string[]) => {
+		console.log('getEventsPhase3 * START *');
 		const rxReq = createRxForwardReq();
 		this.#rxNostr.setDefaultRelays(this.#relays);
 		this.#rxNostr.use(rxReq).pipe(this.#tie).subscribe({
@@ -311,21 +322,6 @@ export class RelayConnector {
 			}
 		}
 		return Array.from(ids);
-	};
-
-	// 降順にソートされたチャンネル情報の配列を返す
-	#getSortedChannels = (channelObjects: {[key: string]: Channel}) => {
-		const channelArray: Channel[] = Object.values(channelObjects);
-		channelArray.sort((a, b) => {
-			if (a.updated_at < b.updated_at) {
-				return 1;
-			}
-			if (a.updated_at > b.updated_at) {
-				return -1;
-			}
-			return 0;
-		});
-		return channelArray;
 	};
 
 	#getPinList = (events: NostrEvent[]): string[] => {
