@@ -5,7 +5,6 @@ import { defaultRelays, title } from '$lib/config';
 import { browser } from '$app/environment';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
 import { afterUpdate, onDestroy, onMount } from 'svelte';
-import type { Unsubscriber } from 'svelte/store';
 import type { Filter } from 'nostr-tools/filter';
 import type { RelayRecord } from 'nostr-tools/relay';
 import { type NostrEvent, sortEvents, verifyEvent } from 'nostr-tools/pure';
@@ -17,11 +16,16 @@ import ChannelMetadata from './ChannelMetadata.svelte';
 import ProfileMetadata from './ProfileMetadata.svelte';
 import Timeline from './Timeline.svelte';
 import Post from './Post.svelte';
-import { createRxNostr, createTie } from 'rx-nostr';
+import { createRxNostr, createTie, type EventPacket, type RxNostr } from 'rx-nostr';
 import { verifier } from 'rx-nostr-crypto';
+import type { OperatorFunction } from 'rxjs';
 
-const rxNostr = createRxNostr({verifier});
-const [tie, seenOn] = createTie();
+let rxNostr: RxNostr;
+let tie: OperatorFunction<EventPacket, EventPacket & {
+    seenOn: Set<string>;
+    isNew: boolean;
+}>;
+let seenOn: Map<string, Set<string>>;
 let relaysToUse: RelayRecord;
 let theme: string;
 let currentChannelId: string | null;
@@ -47,7 +51,6 @@ let channels: Channel[] = [];
 let notes: NostrEvent[] = [];
 let notesQuoted: NostrEvent[] = [];
 let profs: {[key: string]: Profile} = {};
-let unsubscribeApplyRelays: Unsubscriber | null;
 let scrolled: boolean = false;
 let eventsAll: NostrEvent[] = [];
 storedRelaysToUse.subscribe((value) => {
@@ -423,47 +426,37 @@ const applyRelays = async () => {
 };
 
 onMount(() => {
-	if (!unsubscribeApplyRelays) {
-		unsubscribeApplyRelays = storedNeedApplyRelays.subscribe((value) => {
-			if (value === true) {
-				importRelays(relaysSelected, false);
-			}
-		});
-	}
+	rxNostr = createRxNostr({verifier});
+	console.log('onMount');
+	[tie, seenOn] = createTie();
 	if (Object.keys(relaysToUse).length === 0) {
 		relaysToUse = defaultRelays;
 		storedRelaysToUse.set(relaysToUse);
 	}
+	applyRelays();
 });
 onDestroy(() => {
-	if (unsubscribeApplyRelays) {
-		unsubscribeApplyRelays();
-		unsubscribeApplyRelays = null;
-	}
+	console.log('onDestroy');
+	rxNostr?.dispose();
 });
 afterUpdate(() => {
+	console.log('afterUpdate');
 	if (!scrolled) {
 		execScroll();
 	}
 });
 beforeNavigate(() => {
-	if (unsubscribeApplyRelays) {
-		unsubscribeApplyRelays();
-		unsubscribeApplyRelays = null;
-	}
+	console.log('beforeNavigate');
+	rxNostr?.dispose();
 });
 afterNavigate(() => {
-	if (!unsubscribeApplyRelays) {
-		unsubscribeApplyRelays = storedNeedApplyRelays.subscribe((value) => {
-			if (value === true) {
-				applyRelays();
-			}
-		});
-	}
+	console.log('afterNavigate');
+	rxNostr = createRxNostr({verifier});
 	if (Object.keys(relaysToUse).length === 0) {
 		relaysToUse = defaultRelays;
 		storedRelaysToUse.set(relaysToUse);
 	}
+	applyRelays();
 });
 
 const hidePostBar = () => {
