@@ -3,7 +3,6 @@ import type { RelayRecord } from 'nostr-tools/relay';
 import * as nip11 from 'nostr-tools/nip11';
 import * as nip19 from 'nostr-tools/nip19';
 import { browser } from '$app/environment';
-import { goto } from '$app/navigation';
 import { storedFilterSelected, preferences } from '$lib/store';
 import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile, zap } from '$lib/util';
 import { urlNIP07guide } from '$lib/config';
@@ -56,7 +55,7 @@ const login = async() => {
 		importRelays(relaysSelected);
 	}
 	else if (browser && nostr === undefined) {
-		goto(urlNIP07guide);
+		window.location.href = urlNIP07guide;
 	}
 };
 const logout = () => {

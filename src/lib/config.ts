@@ -22,4 +22,4 @@ export const uploaderURLs = [
 ];
 export const urlToLinkNote = 'https://nostter.app';
 export const urlToLinkNaddr = 'https://njump.me';
-export const urlNIP07guide = 'https://scrapbox.io/nostr/nos2x%E3%81%AE%E3%82%BB%E3%83%83%E3%83%88%E3%82%A2%E3%83%83%E3%83%97%E3%81%A8%E4%BD%BF%E3%81%84%E6%96%B9';
+export const urlNIP07guide = 'https://welcome.nostr-jp.org/tutorial/nip-07.html';
