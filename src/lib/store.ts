@@ -14,8 +14,8 @@ export const storedCurrentHashtag: Writable<string | null> = writable('');
 export const storedEvents: Writable<NostrEvent[]> = writable([]);
 
 export const preferences = persisted('preferences', {
-	theme: urlDefaultTheme,
-	loginPubkey: '',
-	isLoggedin: false,
-	relaysSelected: 'default'
+  theme: urlDefaultTheme,
+  loginPubkey: '',
+  isLoggedin: false,
+  relaysSelected: 'default',
 });

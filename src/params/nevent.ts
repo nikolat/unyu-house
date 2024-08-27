@@ -1,3 +1,3 @@
 export function match(param: string) {
-	return /^nevent\w+$/.test(param);
+  return /^nevent\w+$/.test(param);
 }
