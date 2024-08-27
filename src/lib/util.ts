@@ -265,12 +265,12 @@ export class RelayConnector {
     const filterPhase3: Filter[] = [
       ...filterPhase3Base,
       { kinds: [7], '#k': ['42'], since: this.#since },
-      { kinds: [40, 41], since: this.#since },
+      { kinds: [0, 40, 41], since: this.#since },
     ];
     if (this.#loginPubkey) {
       filterPhase3.push(
         {
-          kinds: [0, 10000, 10005],
+          kinds: [10000, 10005],
           authors: [this.#loginPubkey],
           since: this.#since,
         },
