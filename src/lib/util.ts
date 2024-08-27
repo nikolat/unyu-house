@@ -91,11 +91,11 @@ export class RelayConnector {
 		await Promise.all(promises);
 		filterPhase1 = [];
 		const channelsToGet: string[] = events[42].map(ev => ev.tags.find(tag => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1) ?? '').filter(e => e !== '');
-		filterPhase1.push({kinds: [40], ids: channelsToGet});
-		filterPhase1.push({kinds: [41], '#e': channelsToGet});
+		filterPhase1.push({kinds: [40], ids: channelsToGet, until: this.#until});
+		filterPhase1.push({kinds: [41], '#e': channelsToGet, until: this.#until});
 		let pubkeysToGet: string[] = this.#getPubkeysForFilter(Object.values(events).flat());
 		if (pubkeysToGet.length > 0) {
-			filterPhase1.push({kinds: [0], authors: pubkeysToGet});
+			filterPhase1.push({kinds: [0], authors: pubkeysToGet, until: this.#until});
 		}
 		//1
 		promises.length = 0;
@@ -114,7 +114,7 @@ export class RelayConnector {
 			...pinList,
 		];
 		if (idsToGet.length > 0) {
-			filterPhase1.push({ids: idsToGet});
+			filterPhase1.push({ids: idsToGet, until: this.#until});
 		}
 		filterPhase1.push({kinds: [7], until: this.#until, '#e': events[42].map(ev => ev.id)});
 		filterPhase1.push({kinds: [9735], authors: zap_sender_pubkeys, until: this.#until, '#e': events[42].map(ev => ev.id)});
@@ -136,13 +136,13 @@ export class RelayConnector {
 		const filterPhase2: Filter[] = [];
 		pubkeysToGet = this.#getPubkeysForFilter(Object.values(events).flat()).filter(pubkey => !events[0].map(ev => ev.pubkey).includes(pubkey));
 		if (pubkeysToGet.length > 0) {
-			filterPhase2.push({kinds: [0], authors: pubkeysToGet});
+			filterPhase2.push({kinds: [0], authors: pubkeysToGet, until: this.#until});
 		}
 		if (events[10030].length > 0) {
 			const atags = events[10030].reduce((a, b) => a.created_at > b.created_at ? a : b).tags.filter(tag => tag.length >= 2 && tag[0] === 'a').map(tag => tag[1]);
 			for (const atag of atags) {
 				const ary = atag.split(':');
-				filterPhase2.push({kinds: [parseInt(ary[0])], authors: [ary[1]], '#d': [ary[2]]});
+				filterPhase2.push({kinds: [parseInt(ary[0])], authors: [ary[1]], '#d': [ary[2]], until: this.#until});
 			}
 		}
 		const filterPhase3Base: Filter[] = [];
@@ -198,8 +198,14 @@ export class RelayConnector {
 			const idsToGet: string[] = this.#getIdsForFilter(events[42]).filter(v => !events[42].map(ev => ev.id).includes(v));
 			if (eventsAll.length > 0) {
 				const pubkeysToGet: string[] = this.#getPubkeysForFilter(eventsAll).filter(v => !pubkeysObtained.includes(v));
+				const newFilterPhase2: Filter[] = [];
 				if (pubkeysToGet.length > 0) {
-					const newFilterPhase2: Filter[] = [{kinds: [0], authors: pubkeysToGet}, {ids: idsToGet}];
+					newFilterPhase2.push({kinds: [0], authors: pubkeysToGet, until: this.#until});
+				}
+				if (idsToGet.length > 0) {
+					newFilterPhase2.push({ids: idsToGet, until: this.#until});
+				}
+				if (newFilterPhase2.length > 0) {
 					this.#getEventsPhase2(newFilterPhase2, [], false);
 				}
 			}
@@ -221,11 +227,11 @@ export class RelayConnector {
 					const filterPhase2: Filter[] = [];
 					if (pubkeysToGet.length > 0) {
 						pubkeysObtained = pubkeysObtained.concat(pubkeysToGet);
-						filterPhase2.push({kinds: [0], authors: pubkeysToGet});
+						filterPhase2.push({kinds: [0], authors: pubkeysToGet, until: this.#until});
 					}
 					if (idsToGet.length > 0) {
 						idsObtained = idsObtained.concat(idsToGet);
-						filterPhase2.push({ids: idsToGet});
+						filterPhase2.push({ids: idsToGet, until: this.#until});
 					}
 					this.#getEventsPhase2(filterPhase2, [], false);
 				}

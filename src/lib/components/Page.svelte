@@ -379,14 +379,14 @@ const applyRelays = async () => {
 			{kinds: [40], ids: [currentChannelId]},
 			{kinds: [41], '#e': [currentChannelId]},
 			{kinds: [42], '#e': [currentChannelId], until: until, limit: limit},
-			{kinds: [16], '#k': ['42'], limit: limit, until: until}
+			{kinds: [16], '#k': ['42'], limit: limit, until: until},
 		];
 	}
 	else if (currentPubkey) {
 		filters = [
 			{kinds: [0], authors: [currentPubkey]},
 			{kinds: [42], authors: [currentPubkey], until: until, limit: limit},
-			{kinds: [16], '#k': ['42'], authors: [currentPubkey], until: until, limit: limit}
+			{kinds: [16], '#k': ['42'], authors: [currentPubkey], until: until, limit: limit},
 		];
 	}
 	else if (currentHashtag) {
