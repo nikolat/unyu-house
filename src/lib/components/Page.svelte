@@ -483,6 +483,7 @@ $: repostListToShow = currentChannelId ? repostList.filter(ev16 => {
 
 <svelte:head>
 	<title>{titleString}</title>
+	<script type="module" src="https://cdn.jsdelivr.net/npm/nostr-zap@1.1.0"></script>
 </svelte:head>
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->

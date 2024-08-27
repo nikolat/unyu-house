@@ -5,7 +5,7 @@ import * as nip19 from 'nostr-tools/nip19';
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 import { storedFilterSelected, preferences } from '$lib/store';
-import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile } from '$lib/util';
+import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile, zap } from '$lib/util';
 import { urlNIP07guide } from '$lib/config';
 import { onMount } from 'svelte';
 import SidebarChannel from '$lib/components/SidebarChannel.svelte';
@@ -220,12 +220,14 @@ onMount(() => {
 	<section class="config">
 		<button
 			id="nostr-zap-target"
+			class="zap"
+			title="Zap!"
 			aria-label="Zap Button"
-			data-npub="npub1dv9xpnlnajj69vjstn9n7ufnmppzq3wtaaq085kxrz0mpw2jul2qjy6uhz"
-			data-note-id="note1fejz3tnexnfc5s8vf3f3fmmskyzadc78dgprqsn8z9mjajl7vjsqsrd2xh"
-			data-relays={Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0]).join(',')}
-		>Zap Me ⚡️</button>
-		<script src="https://cdn.jsdelivr.net/npm/nostr-zap@0.21.0"></script>
+			on:click={() => zap(
+				'npub1dv9xpnlnajj69vjstn9n7ufnmppzq3wtaaq085kxrz0mpw2jul2qjy6uhz',
+				'note1fejz3tnexnfc5s8vf3f3fmmskyzadc78dgprqsn8z9mjajl7vjsqsrd2xh',
+				Object.entries(relaysToUse).filter(v => v[1].write).map(v => v[0])
+			)}>Zap Me ⚡️</button>
 		<p><a href="https://github.com/nikolat/unyu-house">nikolat/unyu-house</a></p>
 	</section>
 </div>

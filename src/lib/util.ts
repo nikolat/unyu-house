@@ -827,3 +827,12 @@ export function insertEventIntoAscendingList(sortedArray: NostrEvent[], event: N
 	}
 	return sortedArray;
 }
+
+export const zap = (npub: string, id: string, relays: string[]) => {
+	const elm = document.createElement('button') as HTMLButtonElement;
+	elm.dataset.npub = npub;
+	elm.dataset.noteId = id;
+	elm.dataset.relays = relays.join(',');
+	(window as any).nostrZap.initTarget(elm);
+	elm.dispatchEvent(new Event('click'));
+};

@@ -2,7 +2,7 @@
 
 import type { NostrEvent } from 'nostr-tools/pure';
 import * as nip19 from 'nostr-tools/nip19';
-import { sendRepost, sendFav, sendDeletion, sendMessage, getExpandTagsList , type Profile, type Channel } from '$lib/util';
+import { sendRepost, sendFav, sendDeletion, sendMessage, getExpandTagsList , type Profile, type Channel, zap } from '$lib/util';
 import { preferences, storedRelaysToUse } from '$lib/store';
 import { defaultRelays, urlToLinkNaddr } from '$lib/config';
 import Quote from './Quote.svelte';
@@ -144,15 +144,6 @@ const loginAsThisAccount = (pubkey: string) => {
 	storedRelaysToUse.set(defaultRelays);
 	importRelays(relaysSelected);
 }
-
-const zap = (id: string) => {
-	const elm = document.getElementById(`zap-${id}`) as HTMLButtonElement;
-	if (!elm.disabled) {
-		(window as any).nostrZap.initTarget(elm);
-		elm.dispatchEvent(new Event('click'));
-		elm.disabled = true;
-	}
-};
 
 const getevent9734 = (event9735: NostrEvent): NostrEvent => {
 	const event9734 = JSON.parse(event9735.tags.find(tag => tag[0] === 'description')?.at(1) ?? '{}');
@@ -390,12 +381,9 @@ $: notesToShow = [...notes, ...repostList].sort((a, b) => {
 					></div><button
 						id="zap-{note.id}"
 						aria-label="Zap Button"
-						data-npub={npubOrg}
-						data-note-id={nip19.noteEncode(noteOrg.id)}
-						data-relays={relaysToWrite}
-						class="zap-dummy"
-					>dummy</button><button
-						class="zap" title="Zap!" on:click={() => zap(note.id)}><svg><use xlink:href="/lightning.svg#zap"></use></svg
+						class="zap"
+						title="Zap!"
+						on:click={() => zap(npubOrg, nip19.noteEncode(noteOrg.id), relaysToWrite)}><svg><use xlink:href="/lightning.svg#zap"></use></svg
 					></button>{
 						#if noteOrg.pubkey === loginPubkey
 					}<button class="delete" on:click={() => callSendDeletion(rxNostr, relaysToWrite, noteOrg)} title="Delete"><svg><use xlink:href="/trash.svg#delete"></use></svg></button>{
@@ -509,9 +497,6 @@ dd button.login-as-this-account {
 	padding: 0;
 	width: 24px;
 	height: 24px;
-}
-.zap-dummy {
-	display: none;
 }
 .zap-holder svg {
 	width: 24px;
