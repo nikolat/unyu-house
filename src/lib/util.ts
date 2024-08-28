@@ -377,12 +377,11 @@ export class RelayConnector {
             filterPhase2.push({
               kinds: [0],
               authors: pubkeysToGet,
-              until: this.#until,
             });
           }
           if (idsToGet.length > 0) {
             idsObtained = idsObtained.concat(idsToGet);
-            filterPhase2.push({ ids: idsToGet, until: this.#until });
+            filterPhase2.push({ ids: idsToGet });
           }
           if (filterPhase2.length > 0) {
             this.#getEventsPhase2(filterPhase2, [], false);
