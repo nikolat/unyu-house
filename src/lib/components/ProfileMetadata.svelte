@@ -27,6 +27,7 @@
   let editProfileAbout: string;
   let editProfilePicture: string;
   let editProfileWebsite: string | undefined;
+  let isCallingSendEditProfile: boolean = false;
 
   const setProfileMetadata = (currentProfile: Profile) => {
     editProfileName = currentProfile.name;
@@ -37,7 +38,7 @@
     return '';
   };
 
-  const callSendEditProfile = () => {
+  const callSendEditProfile = async () => {
     const prof: Profile = {
       name: editProfileName,
       display_name:
@@ -48,7 +49,13 @@
       created_at: 0,
       tags: [],
     };
-    sendEditProfile(rxNostr, tie, relaysToUse, loginPubkey, prof);
+    isCallingSendEditProfile = true;
+    try {
+      await sendEditProfile(rxNostr, relaysToUse, loginPubkey, prof);
+    } catch (error) {
+      console.error(error);
+    }
+    isCallingSendEditProfile = false;
   };
 
   const callSendMuteUser = (toSet: boolean) => {
@@ -138,57 +145,56 @@
   <details>
     <summary>Edit Profile</summary>
     {setProfileMetadata(profs[currentPubkey])}
-    <form>
-      <dl>
-        <dt><label for="edit-channel-name">name</label></dt>
-        <dd>
-          <input
-            id="edit-channel-name"
-            type="text"
-            placeholder="name"
-            bind:value={editProfileName}
-          />
-        </dd>
-        <dt><label for="edit-channel-display_name">display_name</label></dt>
-        <dd>
-          <input
-            id="edit-channel-name"
-            type="text"
-            placeholder="display_name"
-            bind:value={editProfileDisplayName}
-          />
-        </dd>
-        <dt><label for="edit-channel-about">about</label></dt>
-        <dd>
-          <textarea
-            id="edit-channel-about"
-            placeholder="about"
-            bind:value={editProfileAbout}
-          ></textarea>
-        </dd>
-        <dt><label for="edit-channel-picture">picture</label></dt>
-        <dd>
-          <input
-            id="edit-channel-picture"
-            type="url"
-            placeholder="https://..."
-            bind:value={editProfilePicture}
-          />
-        </dd>
-        <dt><label for="edit-channel-website">website</label></dt>
-        <dd>
-          <input
-            id="edit-channel-website"
-            type="url"
-            placeholder="https://..."
-            bind:value={editProfileWebsite}
-          />
-        </dd>
-      </dl>
-      <button on:click={callSendEditProfile} disabled={!editProfileName}
-        >Edit</button
-      >
-    </form>
+    <dl>
+      <dt><label for="edit-channel-name">name</label></dt>
+      <dd>
+        <input
+          id="edit-channel-name"
+          type="text"
+          placeholder="name"
+          bind:value={editProfileName}
+        />
+      </dd>
+      <dt><label for="edit-channel-display_name">display_name</label></dt>
+      <dd>
+        <input
+          id="edit-channel-name"
+          type="text"
+          placeholder="display_name"
+          bind:value={editProfileDisplayName}
+        />
+      </dd>
+      <dt><label for="edit-channel-about">about</label></dt>
+      <dd>
+        <textarea
+          id="edit-channel-about"
+          placeholder="about"
+          bind:value={editProfileAbout}
+        ></textarea>
+      </dd>
+      <dt><label for="edit-channel-picture">picture</label></dt>
+      <dd>
+        <input
+          id="edit-channel-picture"
+          type="url"
+          placeholder="https://..."
+          bind:value={editProfilePicture}
+        />
+      </dd>
+      <dt><label for="edit-channel-website">website</label></dt>
+      <dd>
+        <input
+          id="edit-channel-website"
+          type="url"
+          placeholder="https://..."
+          bind:value={editProfileWebsite}
+        />
+      </dd>
+    </dl>
+    <button
+      on:click={callSendEditProfile}
+      disabled={!editProfileName || isCallingSendEditProfile}>Edit</button
+    >
   </details>
 {/if}
 

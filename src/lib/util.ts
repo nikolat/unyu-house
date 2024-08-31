@@ -787,68 +787,69 @@ export const sendEditChannel = async (
 
 export const sendEditProfile = async (
   rxNostr: RxNostr,
-  tie: OperatorFunction<
-    EventPacket,
-    EventPacket & { seenOn: Set<string>; isNew: boolean }
-  >,
   relaysToUse: object,
   loginPubkey: string,
   prof: Profile,
-) => {
-  const onevent = (
-    packet: EventPacket & {
-      seenOn: Set<string>;
-    },
-  ) => {
-    const ev = packet.event;
-    if (
-      ev.pubkey === loginPubkey &&
-      (!newestEvent || newestEvent.created_at < ev.created_at)
-    ) {
-      newestEvent = ev;
-    }
-  };
-  const oneose = async () => {
-    console.log('sendEditProfilePhase1 * EOSE *');
-    const relaysToWrite = Object.entries(relaysToUse)
-      .filter((v) => v[1].write)
-      .map((v) => v[0]);
-    let objContent: object;
-    if (newestEvent !== undefined) {
-      objContent = JSON.parse(newestEvent.content);
-    } else {
-      objContent = {};
-    }
-    (objContent as any).name = prof.name;
-    (objContent as any).about = prof.about;
-    (objContent as any).picture = prof.picture;
-    (objContent as any).display_name = prof.display_name;
-    (objContent as any).website = prof.website;
-    const baseEvent: EventTemplate = {
-      kind: 0,
-      created_at: Math.floor(Date.now() / 1000),
-      tags: newestEvent?.tags ?? [],
-      content: JSON.stringify(objContent),
+): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    let newestEvent: NostrEvent;
+    const onevent = (packet: EventPacket) => {
+      const ev = packet.event;
+      if (
+        ev.pubkey === loginPubkey &&
+        (!newestEvent || newestEvent.created_at < ev.created_at)
+      ) {
+        newestEvent = ev;
+      }
     };
-    if (window.nostr === undefined) return;
-    const newEvent = await window.nostr.signEvent(baseEvent);
-    rxNostr.setDefaultRelays(relaysToWrite);
-    rxNostr.send(newEvent);
-    console.log('sendEditProfilePhase2 * Complete *');
-  };
-  const relaysToRead = Object.entries(relaysToUse)
-    .filter((v) => v[1].read)
-    .map((v) => v[0]);
-  const rxReq = createRxBackwardReq();
-  rxNostr.use(rxReq).pipe(tie).subscribe({
-    next: onevent,
-    complete: oneose,
+    const oneose = async () => {
+      console.log('sendEditProfilePhase1 * EOSE *');
+      const relaysToWrite = Object.entries(relaysToUse)
+        .filter((v) => v[1].write)
+        .map((v) => v[0]);
+      let objContent: object;
+      if (newestEvent !== undefined) {
+        objContent = JSON.parse(newestEvent.content);
+      } else {
+        objContent = {};
+      }
+      (objContent as any).name = prof.name;
+      (objContent as any).about = prof.about;
+      (objContent as any).picture = prof.picture;
+      (objContent as any).display_name = prof.display_name;
+      (objContent as any).website = prof.website;
+      const baseEvent: EventTemplate = {
+        kind: 0,
+        created_at: Math.floor(Date.now() / 1000),
+        tags: newestEvent?.tags ?? [],
+        content: JSON.stringify(objContent),
+      };
+      if (window.nostr === undefined) return;
+      let newEvent;
+      try {
+        newEvent = await window.nostr.signEvent(baseEvent);
+      } catch (error) {
+        reject(error);
+        return;
+      }
+      rxNostr.setDefaultRelays(relaysToWrite);
+      rxNostr.send(newEvent);
+      console.log('sendEditProfilePhase2 * Complete *');
+      resolve();
+    };
+    const relaysToRead = Object.entries(relaysToUse)
+      .filter((v) => v[1].read)
+      .map((v) => v[0]);
+    const rxReq = createRxBackwardReq();
+    rxNostr.use(rxReq).subscribe({
+      next: onevent,
+      complete: oneose,
+    });
+    rxReq.emit([{ kinds: [0], authors: [loginPubkey] }], {
+      relays: relaysToRead,
+    });
+    rxReq.over();
   });
-  rxReq.emit([{ kinds: [0], authors: [loginPubkey] }], {
-    relays: relaysToRead,
-  });
-  rxReq.over();
-  let newestEvent: NostrEvent;
 };
 
 export const sendDeletion = async (
