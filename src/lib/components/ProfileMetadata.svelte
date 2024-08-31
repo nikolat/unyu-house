@@ -7,14 +7,9 @@
   } from '$lib/util';
   import type { RelayRecord } from 'nostr-tools/relay';
   import * as nip19 from 'nostr-tools/nip19';
-  import type { EventPacket, RxNostr } from 'rx-nostr';
-  import type { OperatorFunction } from 'rxjs';
+  import type { RxNostr } from 'rx-nostr';
 
   export let rxNostr: RxNostr;
-  export let tie: OperatorFunction<
-    EventPacket,
-    EventPacket & { seenOn: Set<string>; isNew: boolean }
-  >;
   export let profs: { [key: string]: Profile };
   export let currentPubkey: string;
   export let isLoggedin: boolean;
@@ -28,6 +23,7 @@
   let editProfilePicture: string;
   let editProfileWebsite: string | undefined;
   let isCallingSendEditProfile: boolean = false;
+  let isCallingSendMuteUser: boolean = false;
 
   const setProfileMetadata = (currentProfile: Profile) => {
     editProfileName = currentProfile.name;
@@ -58,8 +54,20 @@
     isCallingSendEditProfile = false;
   };
 
-  const callSendMuteUser = (toSet: boolean) => {
-    sendMuteUser(rxNostr, tie, relaysToUse, loginPubkey, currentPubkey, toSet);
+  const callSendMuteUser = async (toSet: boolean) => {
+    isCallingSendMuteUser = true;
+    try {
+      await sendMuteUser(
+        rxNostr,
+        relaysToUse,
+        loginPubkey,
+        currentPubkey,
+        toSet,
+      );
+    } catch (error) {
+      console.error(error);
+    }
+    isCallingSendMuteUser = false;
   };
 </script>
 
@@ -203,6 +211,7 @@
     <button
       class="profile-metadata on"
       on:click={() => callSendMuteUser(false)}
+      disabled={isCallingSendMuteUser}
       title="Unmute"
       ><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button
     >
@@ -210,6 +219,7 @@
     <button
       class="profile-metadata off"
       on:click={() => callSendMuteUser(true)}
+      disabled={isCallingSendMuteUser}
       title="Mute"><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button
     >
   {/if}

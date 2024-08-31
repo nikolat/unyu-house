@@ -4,14 +4,9 @@
   import type { Channel, Profile } from '$lib/util';
   import { urlToLinkNote } from '$lib/config';
   import ChannelMetadata from './ChannelMetadata.svelte';
-  import type { EventPacket, RxNostr } from 'rx-nostr';
-  import type { OperatorFunction } from 'rxjs';
+  import type { RxNostr } from 'rx-nostr';
 
   export let rxNostr: RxNostr;
-  export let tie: OperatorFunction<
-    EventPacket,
-    EventPacket & { seenOn: Set<string>; isNew: boolean }
-  >;
   export let seenOn: Map<string, Set<string>>;
   export let matchedText: string;
   export let notes: NostrEvent[];
@@ -69,7 +64,6 @@
             <ChannelMetadata
               {channel}
               {rxNostr}
-              {tie}
               {seenOn}
               {profs}
               isLoggedin={false}

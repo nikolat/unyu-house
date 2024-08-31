@@ -9,15 +9,10 @@
   } from '$lib/util';
   import type { RelayRecord } from 'nostr-tools/relay';
   import * as nip19 from 'nostr-tools/nip19';
-  import type { EventPacket, RxNostr } from 'rx-nostr';
-  import type { OperatorFunction } from 'rxjs';
+  import type { RxNostr } from 'rx-nostr';
 
   export let channel: Channel;
   export let rxNostr: RxNostr;
-  export let tie: OperatorFunction<
-    EventPacket,
-    EventPacket & { seenOn: Set<string>; isNew: boolean }
-  >;
   export let seenOn: Map<string, Set<string>>;
   export let profs: { [key: string]: Profile };
   export let isLoggedin: boolean;
@@ -80,11 +75,11 @@
   };
 
   const callSendPin = (toSet: boolean) => {
-    sendPin(rxNostr, tie, relaysToUse, loginPubkey, channel.event.id, toSet);
+    sendPin(rxNostr, relaysToUse, loginPubkey, channel.event.id, toSet);
   };
 
   const callSendMute = (toSet: boolean) => {
-    sendMute(rxNostr, tie, relaysToUse, loginPubkey, channel.event.id, toSet);
+    sendMute(rxNostr, relaysToUse, loginPubkey, channel.event.id, toSet);
   };
 </script>
 

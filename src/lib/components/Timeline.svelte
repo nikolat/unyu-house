@@ -18,14 +18,9 @@
   import { Picker } from 'emoji-mart';
   // @ts-ignore
   import type { BaseEmoji } from '@types/emoji-mart';
-  import type { EventPacket, RxNostr } from 'rx-nostr';
-  import type { OperatorFunction } from 'rxjs';
+  import type { RxNostr } from 'rx-nostr';
 
   export let rxNostr: RxNostr;
-  export let tie: OperatorFunction<
-    EventPacket,
-    EventPacket & { seenOn: Set<string>; isNew: boolean }
-  >;
   export let seenOn: Map<string, Set<string>>;
   export let relaysToWrite: string[];
   export let notes: NostrEvent[];
@@ -377,7 +372,6 @@
                     >{:else}{matchedText}{/if}{:else if /nostr:note\w{59}/.test(match[4])}{@const matchedText =
                     match[4]}<Quote
                     {rxNostr}
-                    {tie}
                     {seenOn}
                     {matchedText}
                     {notes}
@@ -391,7 +385,6 @@
                   />{:else if /nostr:nevent\w+/.test(match[5])}{@const matchedText =
                     match[5]}<Quote
                     {rxNostr}
-                    {tie}
                     {seenOn}
                     {matchedText}
                     {notes}

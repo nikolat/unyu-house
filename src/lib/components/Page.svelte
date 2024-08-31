@@ -684,7 +684,6 @@
         <ChannelMetadata
           {channel}
           {rxNostr}
-          {tie}
           {seenOn}
           {profs}
           {isLoggedin}
@@ -702,7 +701,6 @@
         <ProfileMetadata
           {rxNostr}
           {profs}
-          {tie}
           {currentPubkey}
           {isLoggedin}
           {loginPubkey}
@@ -726,7 +724,6 @@
         <ChannelMetadata
           {channel}
           {rxNostr}
-          {tie}
           {seenOn}
           {profs}
           {isLoggedin}
@@ -746,7 +743,6 @@
     {/if}
     <Timeline
       {rxNostr}
-      {tie}
       {seenOn}
       relaysToWrite={Object.entries(relaysToUse)
         .filter((v) => v[1].write)

@@ -874,10 +874,6 @@ export const sendDeletion = async (
 
 export const sendMuteUser = async (
   rxNostr: RxNostr,
-  tie: OperatorFunction<
-    EventPacket,
-    EventPacket & { seenOn: Set<string>; isNew: boolean }
-  >,
   relaysToUse: object,
   loginPubkey: string,
   pubkey: string,
@@ -885,7 +881,6 @@ export const sendMuteUser = async (
 ) => {
   await sendPinOrMute(
     rxNostr,
-    tie,
     relaysToUse,
     loginPubkey,
     pubkey,
@@ -897,10 +892,6 @@ export const sendMuteUser = async (
 
 export const sendMute = async (
   rxNostr: RxNostr,
-  tie: OperatorFunction<
-    EventPacket,
-    EventPacket & { seenOn: Set<string>; isNew: boolean }
-  >,
   relaysToUse: object,
   loginPubkey: string,
   eventId: string,
@@ -908,7 +899,6 @@ export const sendMute = async (
 ) => {
   await sendPinOrMute(
     rxNostr,
-    tie,
     relaysToUse,
     loginPubkey,
     eventId,
@@ -920,10 +910,6 @@ export const sendMute = async (
 
 export const sendPin = async (
   rxNostr: RxNostr,
-  tie: OperatorFunction<
-    EventPacket,
-    EventPacket & { seenOn: Set<string>; isNew: boolean }
-  >,
   relaysToUse: object,
   loginPubkey: string,
   eventId: string,
@@ -931,7 +917,6 @@ export const sendPin = async (
 ) => {
   await sendPinOrMute(
     rxNostr,
-    tie,
     relaysToUse,
     loginPubkey,
     eventId,
@@ -943,125 +928,134 @@ export const sendPin = async (
 
 const sendPinOrMute = async (
   rxNostr: RxNostr,
-  tie: OperatorFunction<
-    EventPacket,
-    EventPacket & { seenOn: Set<string>; isNew: boolean }
-  >,
   relaysToUse: object,
   loginPubkey: string,
   eventId: string,
   toSet: boolean,
   kind: number,
   tagName: string,
-) => {
-  let newestEvent: NostrEvent;
-  const onevent = (
-    packet: EventPacket & {
-      seenOn: Set<string>;
-    },
-  ) => {
-    const ev = packet.event;
-    if (
-      ev.pubkey === loginPubkey &&
-      (!newestEvent || newestEvent.created_at < ev.created_at)
-    ) {
-      newestEvent = ev;
-    }
-  };
-  const oneose = async () => {
-    console.log('sendPinOrMutePhase1 * EOSE *');
-    if (window.nostr === undefined) return;
-    let tags;
-    let content = '';
-    if (newestEvent) {
-      tags = newestEvent.tags;
-      const publicList = newestEvent.tags
-        .filter((tag) => tag.length >= 2 && tag[0] === tagName)
-        .map((tag) => tag[1]);
-      let list: string[][] = [];
-      if (newestEvent.content !== '' && window.nostr.nip04 !== undefined) {
-        try {
-          const content = await window.nostr.nip04.decrypt(
-            loginPubkey,
-            newestEvent.content,
-          );
-          list = JSON.parse(content);
-        } catch (error) {
-          console.warn(error);
-          return;
-        }
+): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    let newestEvent: NostrEvent;
+    const onevent = (packet: EventPacket) => {
+      const ev = packet.event;
+      if (
+        ev.pubkey === loginPubkey &&
+        (!newestEvent || newestEvent.created_at < ev.created_at)
+      ) {
+        newestEvent = ev;
       }
-      const privateList = list
-        .filter((tag) => tag.length >= 2 && tag[0] === tagName)
-        .map((tag) => tag[1]);
-      const includes: boolean = [...publicList, ...privateList].includes(
-        eventId,
-      );
-      if ((includes && toSet) || (!includes && !toSet)) {
-        throw new Error(`The event does not have to update: ${newestEvent.id}`);
-      }
-      if (toSet) {
-        tags = [...tags, [tagName, eventId]];
-        content = newestEvent.content;
-      } else {
-        if (publicList.includes(eventId)) {
-          tags = tags.filter(
-            (tag) =>
-              !(tag.length >= 2 && tag[0] === tagName && tag[1] === eventId),
-          );
-          content = newestEvent.content;
-        } else if (window.nostr.nip04 !== undefined) {
-          content = await window.nostr.nip04.encrypt(
-            loginPubkey,
-            JSON.stringify(
-              list.filter(
-                (tag) =>
-                  !(
-                    tag.length >= 2 &&
-                    tag[0] === tagName &&
-                    tag[1] === eventId
-                  ),
-              ),
-            ),
-          );
-        }
-      }
-    } else {
-      if (toSet) {
-        tags = [[tagName, eventId]];
-      } else {
-        throw new Error(
-          `The kind ${kind} event to remove the pin does not exist: ${eventId}`,
-        );
-      }
-    }
-    const relaysToWrite = Object.entries(relaysToUse)
-      .filter((v) => v[1].write)
-      .map((v) => v[0]);
-    const baseEvent: EventTemplate = {
-      kind: kind,
-      created_at: Math.floor(Date.now() / 1000),
-      tags: tags,
-      content: content,
     };
-    const newEvent = await window.nostr.signEvent(baseEvent);
-    rxNostr.setDefaultRelays(relaysToWrite);
-    rxNostr.send(newEvent);
-    console.log('sendPinOrMutePhase2 * Complete *');
-  };
-  const relaysToRead = Object.entries(relaysToUse)
-    .filter((v) => v[1].read)
-    .map((v) => v[0]);
+    const oneose = async () => {
+      console.log('sendPinOrMutePhase1 * EOSE *');
+      if (window.nostr === undefined) return;
+      let tags;
+      let content = '';
+      if (newestEvent) {
+        tags = newestEvent.tags;
+        const publicList = newestEvent.tags
+          .filter((tag) => tag.length >= 2 && tag[0] === tagName)
+          .map((tag) => tag[1]);
+        let list: string[][] = [];
+        if (newestEvent.content !== '' && window.nostr.nip04 !== undefined) {
+          try {
+            const content = await window.nostr.nip04.decrypt(
+              loginPubkey,
+              newestEvent.content,
+            );
+            list = JSON.parse(content);
+          } catch (error) {
+            console.warn(error);
+            reject(error);
+            return;
+          }
+        }
+        const privateList = list
+          .filter((tag) => tag.length >= 2 && tag[0] === tagName)
+          .map((tag) => tag[1]);
+        const includes: boolean = [...publicList, ...privateList].includes(
+          eventId,
+        );
+        if ((includes && toSet) || (!includes && !toSet)) {
+          throw new Error(
+            `The event does not have to update: ${newestEvent.id}`,
+          );
+        }
+        if (toSet) {
+          tags = [...tags, [tagName, eventId]];
+          content = newestEvent.content;
+        } else {
+          if (publicList.includes(eventId)) {
+            tags = tags.filter(
+              (tag) =>
+                !(tag.length >= 2 && tag[0] === tagName && tag[1] === eventId),
+            );
+            content = newestEvent.content;
+          } else if (window.nostr.nip04 !== undefined) {
+            try {
+              content = await window.nostr.nip04.encrypt(
+                loginPubkey,
+                JSON.stringify(
+                  list.filter(
+                    (tag) =>
+                      !(
+                        tag.length >= 2 &&
+                        tag[0] === tagName &&
+                        tag[1] === eventId
+                      ),
+                  ),
+                ),
+              );
+            } catch (error) {
+              reject(error);
+              return;
+            }
+          }
+        }
+      } else {
+        if (toSet) {
+          tags = [[tagName, eventId]];
+        } else {
+          throw new Error(
+            `The kind ${kind} event to remove the pin does not exist: ${eventId}`,
+          );
+        }
+      }
+      const relaysToWrite = Object.entries(relaysToUse)
+        .filter((v) => v[1].write)
+        .map((v) => v[0]);
+      const baseEvent: EventTemplate = {
+        kind: kind,
+        created_at: Math.floor(Date.now() / 1000),
+        tags: tags,
+        content: content,
+      };
+      let newEvent;
+      try {
+        newEvent = await window.nostr.signEvent(baseEvent);
+      } catch (error) {
+        reject(error);
+        return;
+      }
+      rxNostr.setDefaultRelays(relaysToWrite);
+      rxNostr.send(newEvent);
+      console.log('sendPinOrMutePhase2 * Complete *');
+      resolve();
+    };
+    const relaysToRead = Object.entries(relaysToUse)
+      .filter((v) => v[1].read)
+      .map((v) => v[0]);
 
-  const rxReq = createRxBackwardReq();
-  rxNostr.use(rxReq).pipe(tie).subscribe({
-    next: onevent,
-    complete: oneose,
+    const rxReq = createRxBackwardReq();
+    rxNostr.use(rxReq).subscribe({
+      next: onevent,
+      complete: oneose,
+    });
+    rxReq.emit([{ kinds: [kind], authors: [loginPubkey] }], {
+      relays: relaysToRead,
+    });
+    rxReq.over();
   });
-  rxReq.emit([{ kinds: [0], authors: [loginPubkey] }], {
-    relays: relaysToRead,
-  });
-  rxReq.over();
 };
 
 export const broadcast = async (
