@@ -705,10 +705,6 @@ export const sendCreateChannel = async (
 
 export const sendEditChannel = async (
   rxNostr: RxNostr,
-  tie: OperatorFunction<
-    EventPacket,
-    EventPacket & { seenOn: Set<string>; isNew: boolean }
-  >,
   seenOn: Map<string, Set<string>>,
   relaysToUse: object,
   loginPubkey: string,
@@ -716,70 +712,77 @@ export const sendEditChannel = async (
   name: string,
   about: string,
   picture: string,
-) => {
-  let newestEvent: NostrEvent;
-  const onevent = (
-    packet: EventPacket & {
-      seenOn: Set<string>;
-    },
-  ) => {
-    const ev = packet.event;
-    if (
-      ev.pubkey === loginPubkey &&
-      (!newestEvent || newestEvent.created_at < ev.created_at)
-    ) {
-      newestEvent = ev;
-    }
-  };
-  const oneose = async () => {
-    console.log('sendEditChannelPhase1 * EOSE *');
-    if (!newestEvent) {
-      throw new Error(`The event to edit does not exist: ${currentChannelId}`);
-    }
-    const relaysToWrite = Object.entries(relaysToUse)
-      .filter((v) => v[1].write)
-      .map((v) => v[0]);
-    const objContent: object = JSON.parse(newestEvent.content);
-    (objContent as any).name = name;
-    (objContent as any).about = about;
-    (objContent as any).picture = picture;
-    (objContent as any).relays = relaysToWrite;
-    const recommendeRelay =
-      Array.from(seenOn.get(currentChannelId) ?? []).at(0) ?? '';
-    const baseEvent: EventTemplate = {
-      kind: 41,
-      created_at: Math.floor(Date.now() / 1000),
-      tags: [['e', currentChannelId, recommendeRelay]],
-      content: JSON.stringify(objContent),
+): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    let newestEvent: NostrEvent;
+    const onevent = (packet: EventPacket) => {
+      const ev = packet.event;
+      if (
+        ev.pubkey === loginPubkey &&
+        (!newestEvent || newestEvent.created_at < ev.created_at)
+      ) {
+        newestEvent = ev;
+      }
     };
-    if (window.nostr === undefined) return;
-    const newEvent = await window.nostr.signEvent(baseEvent);
-    rxNostr.setDefaultRelays(relaysToWrite);
-    rxNostr.send(newEvent);
-    console.log('sendEditChannelPhase2 * Complete *');
-  };
-  const limit = 500;
-  const relaysToRead = Object.entries(relaysToUse)
-    .filter((v) => v[1].read)
-    .map((v) => v[0]);
-  const rxReq = createRxBackwardReq();
-  rxNostr.use(rxReq).pipe(tie).subscribe({
-    next: onevent,
-    complete: oneose,
+    const oneose = async () => {
+      console.log('sendEditChannelPhase1 * EOSE *');
+      if (!newestEvent) {
+        throw new Error(
+          `The event to edit does not exist: ${currentChannelId}`,
+        );
+      }
+      const relaysToWrite = Object.entries(relaysToUse)
+        .filter((v) => v[1].write)
+        .map((v) => v[0]);
+      const objContent: object = JSON.parse(newestEvent.content);
+      (objContent as any).name = name;
+      (objContent as any).about = about;
+      (objContent as any).picture = picture;
+      (objContent as any).relays = relaysToWrite;
+      const recommendeRelay =
+        Array.from(seenOn.get(currentChannelId) ?? []).at(0) ?? '';
+      const baseEvent: EventTemplate = {
+        kind: 41,
+        created_at: Math.floor(Date.now() / 1000),
+        tags: [['e', currentChannelId, recommendeRelay]],
+        content: JSON.stringify(objContent),
+      };
+      if (window.nostr === undefined) return;
+      let newEvent;
+      try {
+        newEvent = await window.nostr.signEvent(baseEvent);
+      } catch (error) {
+        reject(error);
+        return;
+      }
+      rxNostr.setDefaultRelays(relaysToWrite);
+      rxNostr.send(newEvent);
+      console.log('sendEditChannelPhase2 * Complete *');
+      resolve();
+    };
+    const now = Math.floor(Date.now() / 1000);
+    const relaysToRead = Object.entries(relaysToUse)
+      .filter((v) => v[1].read)
+      .map((v) => v[0]);
+    const rxReq = createRxBackwardReq();
+    rxNostr.use(rxReq).subscribe({
+      next: onevent,
+      complete: oneose,
+    });
+    rxReq.emit(
+      [
+        { kinds: [40], ids: [currentChannelId], until: now },
+        {
+          kinds: [41],
+          authors: [loginPubkey],
+          '#e': [currentChannelId],
+          until: now,
+        },
+      ],
+      { relays: relaysToRead },
+    );
+    rxReq.over();
   });
-  rxReq.emit(
-    [
-      { kinds: [40], ids: [currentChannelId], limit: limit },
-      {
-        kinds: [41],
-        authors: [loginPubkey],
-        '#e': [currentChannelId],
-        limit: limit,
-      },
-    ],
-    { relays: relaysToRead },
-  );
-  rxReq.over();
 };
 
 export const sendEditProfile = async (

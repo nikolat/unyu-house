@@ -30,6 +30,7 @@
   let editChannelName: string;
   let editChannelAbout: string;
   let editChannelPicture: string;
+  let isCallingSendEditChannel: boolean = false;
 
   const setChannelMetadata = (
     currentChannelName: string,
@@ -42,19 +43,24 @@
     return '';
   };
 
-  const callSendEditChannel = () => {
+  const callSendEditChannel = async () => {
     if (channel?.event.id) {
-      sendEditChannel(
-        rxNostr,
-        tie,
-        seenOn,
-        relaysToUse,
-        loginPubkey,
-        channel.event.id,
-        editChannelName,
-        editChannelAbout,
-        editChannelPicture,
-      );
+      isCallingSendEditChannel = true;
+      try {
+        await sendEditChannel(
+          rxNostr,
+          seenOn,
+          relaysToUse,
+          loginPubkey,
+          channel.event.id,
+          editChannelName,
+          editChannelAbout,
+          editChannelPicture,
+        );
+      } catch (error) {
+        console.error(error);
+      }
+      isCallingSendEditChannel = false;
     }
   };
 
@@ -124,39 +130,39 @@
     <details>
       <summary>Edit Channel</summary>
       {setChannelMetadata(channel.name, channel.about, channel.picture)}
-      <form>
-        <dl>
-          <dt><label for="edit-channel-name">Name</label></dt>
-          <dd>
-            <input
-              id="edit-channel-name"
-              type="text"
-              placeholder="channel name"
-              bind:value={editChannelName}
-            />
-          </dd>
-          <dt><label for="edit-channel-about">About</label></dt>
-          <dd>
-            <textarea
-              id="edit-channel-about"
-              placeholder="channel description"
-              bind:value={editChannelAbout}
-            ></textarea>
-          </dd>
-          <dt><label for="edit-channel-picture">Picture</label></dt>
-          <dd>
-            <input
-              id="edit-channel-picture"
-              type="url"
-              placeholder="https://..."
-              bind:value={editChannelPicture}
-            />
-          </dd>
-        </dl>
-        <button on:click={callSendEditChannel} disabled={!editChannelName}
-          >Edit</button
-        >
-      </form>
+      <dl>
+        <dt><label for="edit-channel-name">Name</label></dt>
+        <dd>
+          <input
+            id="edit-channel-name"
+            type="text"
+            placeholder="channel name"
+            bind:value={editChannelName}
+          />
+        </dd>
+        <dt><label for="edit-channel-about">About</label></dt>
+        <dd>
+          <textarea
+            id="edit-channel-about"
+            placeholder="channel description"
+            bind:value={editChannelAbout}
+          ></textarea>
+        </dd>
+        <dt><label for="edit-channel-picture">Picture</label></dt>
+        <dd>
+          <input
+            id="edit-channel-picture"
+            type="url"
+            placeholder="https://..."
+            bind:value={editChannelPicture}
+          />
+        </dd>
+      </dl>
+      <button
+        type="button"
+        on:click={callSendEditChannel}
+        disabled={!editChannelName || isCallingSendEditChannel}>Edit</button
+      >
     </details>
   {/if}
   {#if !isQuote}
