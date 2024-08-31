@@ -26,6 +26,8 @@
   let editChannelAbout: string;
   let editChannelPicture: string;
   let isCallingSendEditChannel: boolean = false;
+  let isCallingSendPin: boolean = false;
+  let isCallingSendMute: boolean = false;
 
   const setChannelMetadata = (
     currentChannelName: string,
@@ -74,12 +76,30 @@
     alert('Completed.');
   };
 
-  const callSendPin = (toSet: boolean) => {
-    sendPin(rxNostr, relaysToUse, loginPubkey, channel.event.id, toSet);
+  const callSendPin = async (toSet: boolean) => {
+    isCallingSendPin = true;
+    try {
+      await sendPin(rxNostr, relaysToUse, loginPubkey, channel.event.id, toSet);
+    } catch (error) {
+      console.error(error);
+    }
+    isCallingSendPin = false;
   };
 
-  const callSendMute = (toSet: boolean) => {
-    sendMute(rxNostr, relaysToUse, loginPubkey, channel.event.id, toSet);
+  const callSendMute = async (toSet: boolean) => {
+    isCallingSendMute = true;
+    try {
+      await sendMute(
+        rxNostr,
+        relaysToUse,
+        loginPubkey,
+        channel.event.id,
+        toSet,
+      );
+    } catch (error) {
+      console.error(error);
+    }
+    isCallingSendMute = false;
   };
 </script>
 
@@ -173,6 +193,7 @@
       <button
         class="channel-metadata on"
         on:click={() => callSendPin(false)}
+        disabled={isCallingSendPin}
         title="Remove Pin"
         ><svg><use xlink:href="/bookmark.svg#pin"></use></svg></button
       >
@@ -180,6 +201,7 @@
       <button
         class="channel-metadata off"
         on:click={() => callSendPin(true)}
+        disabled={isCallingSendPin}
         title="Add Pin"
         ><svg><use xlink:href="/bookmark.svg#pin"></use></svg></button
       >
@@ -188,6 +210,7 @@
       <button
         class="channel-metadata on"
         on:click={() => callSendMute(false)}
+        disabled={isCallingSendMute}
         title="Unmute"
         ><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button
       >
@@ -195,6 +218,7 @@
       <button
         class="channel-metadata off"
         on:click={() => callSendMute(true)}
+        disabled={isCallingSendMute}
         title="Mute"
         ><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button
       >
