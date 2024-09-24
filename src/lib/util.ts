@@ -62,7 +62,7 @@ export class RelayConnector {
   #until: number;
   #since: number;
   #callbackPhase3: Function;
-  #callbackEvent: Function;
+  #callbackEvent: (event: NostrEvent) => void;
   #execScroll: Function;
 
   constructor(
@@ -76,7 +76,7 @@ export class RelayConnector {
     filterBase: Filter[],
     until: number,
     callbackPhase3: Function,
-    callbackEvent: Function,
+    callbackEvent: (event: NostrEvent) => void,
     execScroll: Function,
   ) {
     this.#rxNostr = rxNostr;
@@ -1212,7 +1212,7 @@ const getGeneralEvents = (
   >,
   relays: string[],
   filters: Filter[],
-  callbackEvent: Function = () => {},
+  callbackEvent: (event: NostrEvent) => void = () => {},
 ): Promise<NostrEvent[]> => {
   return new Promise((resolve) => {
     const events: NostrEvent[] = [];
