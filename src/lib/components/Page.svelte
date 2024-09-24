@@ -1,11 +1,5 @@
 <script lang="ts">
-  import {
-    type Channel,
-    type Profile,
-    getRelaysToUse,
-    RelayConnector,
-    insertEventIntoAscendingList,
-  } from '$lib/util';
+  import { type Channel, type Profile, getRelaysToUse, RelayConnector, insertEventIntoAscendingList } from '$lib/util';
   import {
     storedCurrentChannelId,
     storedCurrentPubkey,
@@ -31,12 +25,7 @@
   import ProfileMetadata from './ProfileMetadata.svelte';
   import Timeline from './Timeline.svelte';
   import Post from './Post.svelte';
-  import {
-    createRxNostr,
-    createTie,
-    type EventPacket,
-    type RxNostr,
-  } from 'rx-nostr';
+  import { createRxNostr, createTie, type EventPacket, type RxNostr } from 'rx-nostr';
   import { verifier } from 'rx-nostr-crypto';
   import type { OperatorFunction } from 'rxjs';
 
@@ -79,24 +68,15 @@
   storedRelaysToUse.subscribe((value) => {
     relaysToUse = value;
   });
-  preferences.subscribe(
-    (value: {
-      theme: string;
-      loginPubkey: string;
-      isLoggedin: boolean;
-      relaysSelected: string;
-    }) => {
-      theme = value.theme ?? theme;
-      loginPubkey = value.loginPubkey;
-      isLoggedin = value.isLoggedin;
-      relaysSelected = value.relaysSelected;
-      if (browser) {
-        (
-          document.querySelector('link[rel=stylesheet]') as HTMLLinkElement
-        ).href = theme ?? $preferences.theme;
-      }
-    },
-  );
+  preferences.subscribe((value: { theme: string; loginPubkey: string; isLoggedin: boolean; relaysSelected: string }) => {
+    theme = value.theme ?? theme;
+    loginPubkey = value.loginPubkey;
+    isLoggedin = value.isLoggedin;
+    relaysSelected = value.relaysSelected;
+    if (browser) {
+      (document.querySelector('link[rel=stylesheet]') as HTMLLinkElement).href = theme ?? $preferences.theme;
+    }
+  });
   storedCurrentChannelId.subscribe((value) => {
     currentChannelId = value;
   });
@@ -146,8 +126,7 @@
           [30007, 30030].includes(ev.kind) &&
           ev.kind === event.kind &&
           ev.pubkey === event.pubkey &&
-          ev.tags.find((tag) => tag[0] === 'd')?.at(1) ===
-            event.tags.find((tag) => tag[0] === 'd')?.at(1) &&
+          ev.tags.find((tag) => tag[0] === 'd')?.at(1) === event.tags.find((tag) => tag[0] === 'd')?.at(1) &&
           ev.created_at >= event.created_at,
       )
     ) {
@@ -169,21 +148,13 @@
         if (redraw) profs = profs;
         break;
       case 3:
-        followList = event.tags
-          .filter((tag) => tag.length >= 2 && tag[0] === 'p')
-          .map((tag) => tag[1]);
+        followList = event.tags.filter((tag) => tag.length >= 2 && tag[0] === 'p').map((tag) => tag[1]);
         break;
       case 7:
         if (redraw) favList = insertEventIntoAscendingList(favList, event);
         else favList.unshift(event);
         const targetChannel7 = channels.find(
-          (channel) =>
-            channel.event.id ===
-            event.tags
-              .find(
-                (tag) => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root',
-              )
-              ?.at(1),
+          (channel) => channel.event.id === event.tags.find((tag) => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1),
         );
         if (targetChannel7 !== undefined) {
           targetChannel7.fav_count++;
@@ -193,21 +164,9 @@
       case 16:
         let isRepostToShow = false;
         if (currentChannelId) {
-          const baseevent = notes.find(
-            (note) =>
-              note.id ===
-              event.tags
-                .find((tag) => tag.length >= 2 && tag[0] === 'e')
-                ?.at(1),
-          );
+          const baseevent = notes.find((note) => note.id === event.tags.find((tag) => tag.length >= 2 && tag[0] === 'e')?.at(1));
           isRepostToShow =
-            baseevent?.tags.some(
-              (tag) =>
-                tag.length >= 4 &&
-                tag[0] === 'e' &&
-                tag[1] === currentChannelId &&
-                tag[3] === 'root',
-            ) ?? false;
+            baseevent?.tags.some((tag) => tag.length >= 4 && tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root') ?? false;
         } else if (currentPubkey) {
           isRepostToShow = event.pubkey === currentPubkey;
         } else if (currentHashtag) {
@@ -218,8 +177,7 @@
           isRepostToShow = true;
         }
         if (!isRepostToShow) return;
-        if (redraw)
-          repostList = insertEventIntoAscendingList(repostList, event);
+        if (redraw) repostList = insertEventIntoAscendingList(repostList, event);
         else repostList.unshift(event);
         break;
       case 40:
@@ -233,40 +191,21 @@
         channel.updated_at = event.created_at;
         channel.event = event;
         channel.post_count = notes.filter((ev) =>
-          ev.tags.some(
-            (tag) =>
-              tag.length >= 4 &&
-              tag[0] === 'e' &&
-              tag[1] === event.id &&
-              tag[3] === 'root',
-          ),
+          ev.tags.some((tag) => tag.length >= 4 && tag[0] === 'e' && tag[1] === event.id && tag[3] === 'root'),
         ).length;
         channel.fav_count = favList.filter((ev) =>
-          ev.tags.some(
-            (tag) =>
-              tag.length >= 4 &&
-              tag[0] === 'e' &&
-              tag[1] === event.id &&
-              tag[3] === 'root',
-          ),
+          ev.tags.some((tag) => tag.length >= 4 && tag[0] === 'e' && tag[1] === event.id && tag[3] === 'root'),
         ).length;
         if (redraw) channels = getSortedChannels([channel, ...channels]);
         else channels.unshift(channel);
         break;
       case 41:
-        const id = event.tags
-          .find((tag) => tag.length >= 2 && tag[0] === 'e')
-          ?.at(1);
-        const targetChannel41 = channels.find(
-          (channel) => channel.event.id === id,
-        );
+        const id = event.tags.find((tag) => tag.length >= 2 && tag[0] === 'e')?.at(1);
+        const targetChannel41 = channels.find((channel) => channel.event.id === id);
         if (targetChannel41 === undefined) {
           return;
         }
-        if (
-          event.pubkey !== targetChannel41.event.pubkey ||
-          event.created_at <= targetChannel41.updated_at
-        ) {
+        if (event.pubkey !== targetChannel41.event.pubkey || event.created_at <= targetChannel41.updated_at) {
           return;
         }
         let newChannel: Channel;
@@ -279,28 +218,12 @@
         newChannel.updated_at = event.created_at;
         newChannel.event = targetChannel41.event;
         newChannel.post_count = notes.filter((ev) =>
-          ev.tags.some(
-            (tag) =>
-              tag.length >= 4 &&
-              tag[0] === 'e' &&
-              tag[1] === id &&
-              tag[3] === 'root',
-          ),
+          ev.tags.some((tag) => tag.length >= 4 && tag[0] === 'e' && tag[1] === id && tag[3] === 'root'),
         ).length;
         newChannel.fav_count = favList.filter((ev) =>
-          ev.tags.some(
-            (tag) =>
-              tag.length >= 4 &&
-              tag[0] === 'e' &&
-              tag[1] === id &&
-              tag[3] === 'root',
-          ),
+          ev.tags.some((tag) => tag.length >= 4 && tag[0] === 'e' && tag[1] === id && tag[3] === 'root'),
         ).length;
-        if (redraw)
-          channels = getSortedChannels([
-            newChannel,
-            ...channels.filter((channel) => channel.event.id !== id),
-          ]);
+        if (redraw) channels = getSortedChannels([newChannel, ...channels.filter((channel) => channel.event.id !== id)]);
         else {
           channels.splice(
             channels.findIndex((channel) => channel.event.id === id),
@@ -312,20 +235,11 @@
       case 42:
         let isQuote = false;
         if (currentChannelId) {
-          isQuote = !event.tags.some(
-            (tag) =>
-              tag.length >= 4 &&
-              tag[0] === 'e' &&
-              tag[1] === currentChannelId &&
-              tag[3] === 'root',
-          );
+          isQuote = !event.tags.some((tag) => tag.length >= 4 && tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root');
         } else if (currentPubkey) {
           isQuote = event.pubkey !== currentPubkey;
         } else if (currentHashtag) {
-          isQuote = !event.tags.some(
-            (tag) =>
-              tag.length >= 2 && tag[0] === 't' && tag[1] === currentHashtag,
-          );
+          isQuote = !event.tags.some((tag) => tag.length >= 2 && tag[0] === 't' && tag[1] === currentHashtag);
         } else if (currentEvent) {
           isQuote = event.id !== currentEvent.id;
         }
@@ -343,13 +257,7 @@
           }
         }
         const targetChannel42 = channels.find(
-          (channel) =>
-            channel.event.id ===
-            event.tags
-              .find(
-                (tag) => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root',
-              )
-              ?.at(1),
+          (channel) => channel.event.id === event.tags.find((tag) => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1),
         );
         if (targetChannel42 !== undefined) {
           targetChannel42.post_count++;
@@ -361,9 +269,7 @@
       case 9735:
         let event9734;
         try {
-          event9734 = JSON.parse(
-            event.tags.find((tag) => tag[0] === 'description')?.at(1) ?? '{}',
-          );
+          event9734 = JSON.parse(event.tags.find((tag) => tag[0] === 'description')?.at(1) ?? '{}');
         } catch (error) {
           //console.warn(error);
           return;
@@ -380,16 +286,12 @@
         wordList = await getListWithEncrypt(event, 'word');
         break;
       case 10005:
-        pinList = event.tags
-          .filter((tag) => tag.length >= 2 && tag[0] === 'e')
-          .map((tag) => tag[1]);
+        pinList = event.tags.filter((tag) => tag.length >= 2 && tag[0] === 'e').map((tag) => tag[1]);
         break;
       case 10030:
         break;
       case 30007:
-        const dTagKind = parseInt(
-          event.tags.filter((tag) => tag[0] === 'd')[0][1],
-        );
+        const dTagKind = parseInt(event.tags.filter((tag) => tag[0] === 'd')[0][1]);
         switch (dTagKind) {
           case 7:
             muteListFav = await getListWithEncrypt(event, 'p');
@@ -406,47 +308,26 @@
         break;
       case 30030:
         for (const tag of event.tags.filter(
-          (tag) =>
-            tag.length >= 3 &&
-            tag[0] === 'emoji' &&
-            /^\w+$/.test(tag[1]) &&
-            URL.canParse(tag[2]),
+          (tag) => tag.length >= 3 && tag[0] === 'emoji' && /^\w+$/.test(tag[1]) && URL.canParse(tag[2]),
         )) {
           emojiMap.set(tag[1], tag[2]);
         }
         break;
       default:
-        if (redraw)
-          notesQuoted = insertEventIntoAscendingList(notesQuoted, event);
+        if (redraw) notesQuoted = insertEventIntoAscendingList(notesQuoted, event);
         else notesQuoted.unshift(event);
         break;
     }
   };
 
-  const getListWithEncrypt = async (
-    event: NostrEvent,
-    tagName: string,
-  ): Promise<string[]> => {
-    let rList =
-      event.tags
-        .filter((tag) => tag.length >= 2 && tag[0] === tagName)
-        .map((tag) => tag[1]) ?? [];
+  const getListWithEncrypt = async (event: NostrEvent, tagName: string): Promise<string[]> => {
+    let rList = event.tags.filter((tag) => tag.length >= 2 && tag[0] === tagName).map((tag) => tag[1]) ?? [];
     const nostr = window.nostr;
-    if (
-      isLoggedin &&
-      loginPubkey &&
-      event.content &&
-      browser &&
-      nostr?.nip04?.decrypt
-    ) {
+    if (isLoggedin && loginPubkey && event.content && browser && nostr?.nip04?.decrypt) {
       try {
         const content = await nostr.nip04.decrypt(loginPubkey, event.content);
         const list: string[][] = JSON.parse(content);
-        rList = rList.concat(
-          list
-            .filter((tag) => tag.length >= 2 && tag[0] === tagName)
-            .map((tag) => tag[1]),
-        );
+        rList = rList.concat(list.filter((tag) => tag.length >= 2 && tag[0] === tagName).map((tag) => tag[1]));
       } catch (error) {
         console.warn(error);
       }
@@ -471,10 +352,7 @@
     callbackEvent(ev);
   };
 
-  const importRelays = (
-    relaysSelected: string,
-    clearEvents: boolean = true,
-  ) => {
+  const importRelays = (relaysSelected: string, clearEvents: boolean = true) => {
     if (clearEvents) {
       eventsAll = [];
       storedEvents.set(eventsAll);
@@ -510,16 +388,9 @@
     repostList = [];
     favList = [];
     zapList = [];
-    let eventCopy: NostrEvent[] = eventsAll.filter((ev) =>
-      [0, 1, 7, 16, 40, 41, 42, 9735].includes(ev.kind),
-    );
+    let eventCopy: NostrEvent[] = eventsAll.filter((ev) => [0, 1, 7, 16, 40, 41, 42, 9735].includes(ev.kind));
     if (isLoggedin) {
-      eventCopy = [
-        ...eventCopy,
-        ...eventsAll.filter((ev) =>
-          [3, 10000, 10005, 10030, 30007, 30030].includes(ev.kind),
-        ),
-      ];
+      eventCopy = [...eventCopy, ...eventsAll.filter((ev) => [3, 10000, 10005, 10030, 30007, 30030].includes(ev.kind))];
     }
     eventCopy = sortEvents(eventCopy);
     const relaysToRead = Object.entries(relaysToUse)
@@ -548,9 +419,7 @@
         },
       ];
     } else if (currentHashtag) {
-      filters = [
-        { kinds: [42], '#t': [currentHashtag], until: until, limit: limit },
-      ];
+      filters = [{ kinds: [42], '#t': [currentHashtag], until: until, limit: limit }];
     } else if (currentEvent) {
       filters = [{ ids: [currentEvent.id] }];
       if (currentEvent.author !== undefined) {
@@ -562,10 +431,7 @@
         { kinds: [16], '#k': ['42'], until: until, limit: limit },
       ];
     }
-    if (
-      (loginPubkey && currentPubkey !== loginPubkey) ||
-      (currentEvent && currentEvent.author === loginPubkey)
-    ) {
+    if ((loginPubkey && currentPubkey !== loginPubkey) || (currentEvent && currentEvent.author === loginPubkey)) {
       filters = [{ kinds: [0], authors: [loginPubkey] }, ...filters];
     }
     eventsAll = [];
@@ -583,17 +449,7 @@
     repostList = repostList;
     favList = favList;
     zapList = zapList;
-    const rc = new RelayConnector(
-      rxNostr,
-      tie,
-      relaysToRead,
-      loginPubkey,
-      filters,
-      until,
-      callbackPhase3,
-      callbackEvent,
-      execScroll,
-    );
+    const rc = new RelayConnector(rxNostr, tie, relaysToRead, loginPubkey, filters, until, callbackPhase3, callbackEvent, execScroll);
     rc.getEventsPhase1();
   };
 
@@ -636,27 +492,16 @@
   $: repostListToShow = currentChannelId
     ? repostList.filter((ev16) => {
         const repostedEvent = [...notes, ...notesQuoted].find(
-          (ev) =>
-            ev.id ===
-            ev16.tags.find((tag) => tag.length >= 2 && tag[0] === 'e')?.at(1),
+          (ev) => ev.id === ev16.tags.find((tag) => tag.length >= 2 && tag[0] === 'e')?.at(1),
         );
-        return repostedEvent?.tags.some(
-          (tag) =>
-            tag.length >= 4 &&
-            tag[0] === 'e' &&
-            tag[1] === currentChannelId &&
-            tag[3] === 'root',
-        );
+        return repostedEvent?.tags.some((tag) => tag.length >= 4 && tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root');
       })
     : repostList;
 </script>
 
 <svelte:head>
   <title>{titleString}</title>
-  <script
-    type="module"
-    src="https://cdn.jsdelivr.net/npm/nostr-zap@1.1.0"
-  ></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/nostr-zap@1.1.0"></script>
 </svelte:head>
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
@@ -698,15 +543,7 @@
       {/if}
     {:else if currentPubkey}
       {#if profs[currentPubkey]}
-        <ProfileMetadata
-          {rxNostr}
-          {profs}
-          {currentPubkey}
-          {isLoggedin}
-          {loginPubkey}
-          {relaysToUse}
-          {muteList}
-        />
+        <ProfileMetadata {rxNostr} {profs} {currentPubkey} {isLoggedin} {loginPubkey} {relaysToUse} {muteList} />
       {:else}
         <h2>Profile View</h2>
       {/if}
@@ -715,9 +552,7 @@
     {:else if currentEvent}
       {@const rootId = notes
         .at(0)
-        ?.tags.find(
-          (tag) => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root',
-        )
+        ?.tags.find((tag) => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')
         ?.at(1)}
       {@const channel = channels.find((v) => v.event.id === rootId)}
       {#if channel}
@@ -769,16 +604,7 @@
       {theme}
     />
     {#if currentChannelId && isLoggedin && channels.some((channel) => channel.event.id === currentChannelId)}
-      <Post
-        {rxNostr}
-        {seenOn}
-        {currentChannelId}
-        {relaysToUse}
-        {channels}
-        {hidePostBar}
-        {resetScroll}
-        {emojiMap}
-      />
+      <Post {rxNostr} {seenOn} {currentChannelId} {relaysToUse} {channels} {hidePostBar} {resetScroll} {emojiMap} />
     {/if}
   </main>
 </div>

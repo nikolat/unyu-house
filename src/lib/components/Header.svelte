@@ -11,9 +11,7 @@
 
 <header>
   <h1><a href="/">{title}</a></h1>
-  <button id="toggle" on:click={expandSidebar}
-    ><svg><use xlink:href="/menu.svg#hamburger"></use></svg></button
-  >
+  <button id="toggle" on:click={expandSidebar}><svg><use xlink:href="/menu.svg#hamburger"></use></svg></button>
   {#if loginPubkey && profs[loginPubkey]}
     {@const npub = npubEncode(loginPubkey)}
     <a href="/{npub}"

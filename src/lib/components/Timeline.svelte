@@ -1,16 +1,7 @@
 <script lang="ts">
   import type { NostrEvent } from 'nostr-tools/pure';
   import * as nip19 from 'nostr-tools/nip19';
-  import {
-    sendRepost,
-    sendFav,
-    sendDeletion,
-    sendMessage,
-    getExpandTagsList,
-    type Profile,
-    type Channel,
-    zap,
-  } from '$lib/util';
+  import { sendRepost, sendFav, sendDeletion, sendMessage, getExpandTagsList, type Profile, type Channel, zap } from '$lib/util';
   import { preferences, storedRelaysToUse } from '$lib/store';
   import { defaultRelays, urlToLinkNaddr } from '$lib/config';
   import Quote from './Quote.svelte';
@@ -57,9 +48,7 @@
   let inputText: { [key: string]: string } = {};
 
   const getImageUrls = (content: string) => {
-    const matchesIterator = content.matchAll(
-      /https?:\/\/\S+\.(jpe?g|png|gif|webp)/gi,
-    );
+    const matchesIterator = content.matchAll(/https?:\/\/\S+\.(jpe?g|png|gif|webp)/gi);
     const urls = [];
     for (const match of matchesIterator) {
       urls.push(match[0]);
@@ -75,9 +64,7 @@
     return urls;
   };
   const getAudioUrls = (content: string) => {
-    const matchesIterator = content.matchAll(
-      /https?:\/\/\S+\.(mp3|m4a|wav|ogg|aac)/gi,
-    );
+    const matchesIterator = content.matchAll(/https?:\/\/\S+\.(mp3|m4a|wav|ogg|aac)/gi);
     const urls = [];
     for (const match of matchesIterator) {
       urls.push(match[0]);
@@ -97,35 +84,19 @@
     const content = inputText[noteId];
     if (!content) return;
     inputText[noteId] = '';
-    const details = <HTMLDetailsElement>(
-      document.querySelector(`#note-${noteId} + dd div.action-bar details`)
-    );
+    const details = <HTMLDetailsElement>document.querySelector(`#note-${noteId} + dd div.action-bar details`);
     details.open = false;
     resetScroll();
-    sendMessage(
-      rxNostr,
-      seenOn,
-      relaysToWrite,
-      content,
-      noteToReplay,
-      emojiMap,
-    );
+    sendMessage(rxNostr, seenOn, relaysToWrite, content, noteToReplay, emojiMap);
   };
 
-  const submitFromKeyboard = (
-    event: KeyboardEvent,
-    noteToReplay: NostrEvent,
-  ) => {
+  const submitFromKeyboard = (event: KeyboardEvent, noteToReplay: NostrEvent) => {
     if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
       callSendMessage(noteToReplay);
     }
   };
 
-  const callSendEmoji = (
-    rxNostr: RxNostr,
-    relaysToWrite: string[],
-    targetEvent: NostrEvent,
-  ) => {
+  const callSendEmoji = (rxNostr: RxNostr, relaysToWrite: string[], targetEvent: NostrEvent) => {
     const noteId = targetEvent.id;
     visible[noteId] = !visible[noteId];
     if (emojiPicker[noteId].children.length > 0) {
@@ -151,22 +122,12 @@
     });
     function onEmojiSelect(emoji: BaseEmoji) {
       visible[noteId] = false;
-      sendFav(
-        rxNostr,
-        relaysToWrite,
-        targetEvent,
-        emoji.native ?? ((emoji as any).shortcodes as string),
-        (emoji as any).src as string,
-      );
+      sendFav(rxNostr, relaysToWrite, targetEvent, emoji.native ?? ((emoji as any).shortcodes as string), (emoji as any).src as string);
     }
     emojiPicker[noteId].appendChild(picker as any);
   };
 
-  const callSendDeletion = async (
-    rxNostr: RxNostr,
-    relaysToWrite: string[],
-    event: NostrEvent,
-  ) => {
+  const callSendDeletion = async (rxNostr: RxNostr, relaysToWrite: string[], event: NostrEvent) => {
     if (!confirm('Delete this post?')) {
       return;
     }
@@ -183,9 +144,7 @@
   };
 
   const getevent9734 = (event9735: NostrEvent): NostrEvent => {
-    const event9734 = JSON.parse(
-      event9735.tags.find((tag) => tag[0] === 'description')?.at(1) ?? '{}',
-    );
+    const event9734 = JSON.parse(event9735.tags.find((tag) => tag[0] === 'description')?.at(1) ?? '{}');
     return event9734;
   };
 
@@ -211,35 +170,18 @@
     {@const noteOrg =
       note.kind === 42
         ? note
-        : [...notes, ...notesQuoted].find(
-            (ev) =>
-              ev.id ===
-              note.tags.find((tag) => tag.length >= 2 && tag[0] === 'e')?.at(1),
-          )}
-    {@const rootId = noteOrg?.tags
-      .find((v) => v[0] === 'e' && v[3] === 'root')
-      ?.at(1)}
+        : [...notes, ...notesQuoted].find((ev) => ev.id === note.tags.find((tag) => tag.length >= 2 && tag[0] === 'e')?.at(1))}
+    {@const rootId = noteOrg?.tags.find((v) => v[0] === 'e' && v[3] === 'root')?.at(1)}
     {@const channel = channels.find((v) => v.event.id === rootId)}
     {#if noteOrg !== undefined && rootId !== undefined && channel !== undefined && channel.name}
-      {@const isMutedNotePubkey =
-        muteList.includes(noteOrg.pubkey) || muteList.includes(note.pubkey)}
-      {@const isMutedRepostPubkey =
-        note.kind === 16 && muteListRepost.includes(note.pubkey)}
+      {@const isMutedNotePubkey = muteList.includes(noteOrg.pubkey) || muteList.includes(note.pubkey)}
+      {@const isMutedRepostPubkey = note.kind === 16 && muteListRepost.includes(note.pubkey)}
       {@const isMutedNoteChannel = muteChannels.includes(rootId)}
-      {@const isMutedNoteWord = wordList.some((word) =>
-        noteOrg.content.includes(word),
-      )}
+      {@const isMutedNoteWord = wordList.some((word) => noteOrg.content.includes(word))}
       {@const isMutedChannelPubkey = muteList.includes(channel.event.pubkey)}
-      {@const isMutedChannelWord = wordList.some((word) =>
-        channel.name.includes(word),
-      )}
+      {@const isMutedChannelWord = wordList.some((word) => channel.name.includes(word))}
       {@const isMuted =
-        isMutedNotePubkey ||
-        isMutedRepostPubkey ||
-        isMutedNoteChannel ||
-        isMutedNoteWord ||
-        isMutedChannelPubkey ||
-        isMutedChannelWord}
+        isMutedNotePubkey || isMutedRepostPubkey || isMutedNoteChannel || isMutedNoteWord || isMutedChannelPubkey || isMutedChannelWord}
       {#if !isMuted}
         {@const npub = nip19.npubEncode(note.pubkey)}
         {@const npubOrg = nip19.npubEncode(noteOrg.pubkey)}
@@ -252,22 +194,11 @@
           {#if note.kind === 16}
             reposted by
             {#if profs[note.pubkey]}
-              <img
-                src={profs[note.pubkey].picture ||
-                  getDefaultAvatar(note.pubkey, 16)}
-                alt="avatar of {npub}"
-                width="16"
-                height="16"
-              />
+              <img src={profs[note.pubkey].picture || getDefaultAvatar(note.pubkey, 16)} alt="avatar of {npub}" width="16" height="16" />
               {profs[note.pubkey].display_name ?? ''}
               <a href="/{npub}">@{profs[note.pubkey]?.name ?? ''}</a>
             {:else}
-              <img
-                src={getDefaultAvatar(note.pubkey, 16)}
-                alt=""
-                width="16"
-                height="16"
-              /><a href="/{npub}">@{npub.slice(0, 10)}...</a>
+              <img src={getDefaultAvatar(note.pubkey, 16)} alt="" width="16" height="16" /><a href="/{npub}">@{npub.slice(0, 10)}...</a>
             {/if}
             <br />
             <time>{new Date(1000 * note.created_at).toLocaleString()}</time>
@@ -275,8 +206,7 @@
           {/if}
           {#if profs[noteOrg.pubkey]}
             <img
-              src={profs[noteOrg.pubkey].picture ||
-                getDefaultAvatar(noteOrg.pubkey, 32)}
+              src={profs[noteOrg.pubkey].picture || getDefaultAvatar(noteOrg.pubkey, 32)}
               alt="avatar of {npubOrg}"
               width="32"
               height="32"
@@ -284,28 +214,16 @@
             {profs[noteOrg.pubkey].display_name ?? ''}
             <a href="/{npubOrg}">@{profs[noteOrg.pubkey]?.name ?? ''}</a>
           {:else}
-            <img
-              src={getDefaultAvatar(noteOrg.pubkey, 32)}
-              alt=""
-              width="32"
-              height="32"
-            /><a href="/{npubOrg}">@{npubOrg.slice(0, 10)}...</a>
+            <img src={getDefaultAvatar(noteOrg.pubkey, 32)} alt="" width="32" height="32" /><a href="/{npubOrg}"
+              >@{npubOrg.slice(0, 10)}...</a
+            >
           {/if}
           <br />
-          <a href="/{neventOrg}"
-            ><time>{new Date(1000 * noteOrg.created_at).toLocaleString()}</time
-            ></a
-          >
-          <a href="/channels/{nip19.neventEncode(channel.event)}"
-            >{channel.name}</a
-          >
+          <a href="/{neventOrg}"><time>{new Date(1000 * noteOrg.created_at).toLocaleString()}</time></a>
+          <a href="/channels/{nip19.neventEncode(channel.event)}">{channel.name}</a>
         </dt>
-        {@const replyTags = noteOrg.tags.filter(
-          (v) => v[0] === 'e' && v[3] === 'reply',
-        )}
-        {@const replyPubkeys = noteOrg.tags
-          .filter((v) => v[0] === 'p')
-          .map((v) => v[1])}
+        {@const replyTags = noteOrg.tags.filter((v) => v[0] === 'e' && v[3] === 'reply')}
+        {@const replyPubkeys = noteOrg.tags.filter((v) => v[0] === 'p').map((v) => v[1])}
         {@const r = getExpandTagsList(
           noteOrg.content,
           noteOrg.tags.filter((v) => v[0] === 'emoji'),
@@ -316,61 +234,35 @@
         {@const imageUrls = getImageUrls(noteOrg.content)}
         {@const videoUrls = getVideoUrls(noteOrg.content)}
         {@const audioUrls = getAudioUrls(noteOrg.content)}
-        {@const contentWarningTag = noteOrg.tags.filter(
-          (tag) => tag[0] === 'content-warning',
-        )}
+        {@const contentWarningTag = noteOrg.tags.filter((tag) => tag[0] === 'content-warning')}
         <dd>
-          {#if replyTags.length > 0 || replyPubkeys.length > 0}<div
-              class="info-header"
-            >
-              {#if replyTags.length > 0}<a href="#note-{replyTags[0][1]}"
-                  >&gt;&gt;</a
-                >{/if}{#each replyPubkeys as pubkey}&nbsp;@{profs[pubkey]
-                  ?.name ?? npubOrg.slice(0, 10) + '...'}{/each}
+          {#if replyTags.length > 0 || replyPubkeys.length > 0}<div class="info-header">
+              {#if replyTags.length > 0}<a href="#note-{replyTags[0][1]}">&gt;&gt;</a>{/if}{#each replyPubkeys as pubkey}&nbsp;@{profs[
+                  pubkey
+                ]?.name ?? npubOrg.slice(0, 10) + '...'}{/each}
             </div>{/if}
-          <div
-            class="content-warning-reason {contentWarningTag.length > 0
-              ? ''
-              : 'hide'}"
-          >
-            Content Warning{#if contentWarningTag.length > 0 && contentWarningTag[0][1]}<br
-              />Reason: {contentWarningTag[0][1]}{/if}
+          <div class="content-warning-reason {contentWarningTag.length > 0 ? '' : 'hide'}">
+            Content Warning{#if contentWarningTag.length > 0 && contentWarningTag[0][1]}<br />Reason: {contentWarningTag[0][1]}{/if}
           </div>
-          <button
-            class="content-warning-show {contentWarningTag.length > 0
-              ? ''
-              : 'hide'}"
-            on:click={() => showContentWarning(noteOrg.id)}>Show Content</button
+          <button class="content-warning-show {contentWarningTag.length > 0 ? '' : 'hide'}" on:click={() => showContentWarning(noteOrg.id)}
+            >Show Content</button
           >
-          <div
-            class="content-warning-target {contentWarningTag.length > 0
-              ? 'hide'
-              : ''}"
-          >
+          <div class="content-warning-target {contentWarningTag.length > 0 ? 'hide' : ''}">
             <div class="content">
               {plainTexts.shift()}{#each Array.from(matchesIterator) as match}{#if /https?:\/\/\S+/.test(match[1])}<a
                     href={match[1]}
                     target="_blank"
                     rel="noopener noreferrer">{match[1]}</a
-                  >{:else if /nostr:npub\w{59}/.test(match[2])}{@const matchedText =
-                    match[2]}{@const npubText = matchedText.replace(
+                  >{:else if /nostr:npub\w{59}/.test(match[2])}{@const matchedText = match[2]}{@const npubText = matchedText.replace(
                     /nostr:/,
                     '',
-                  )}{@const d = nip19.decode(npubText)}{#if d.type === 'npub'}<a
-                      href="/{npubText}"
-                      >@{profs[d.data]?.name ??
-                        npubText.slice(0, 10) + '...'}</a
+                  )}{@const d = nip19.decode(npubText)}{#if d.type === 'npub'}<a href="/{npubText}"
+                      >@{profs[d.data]?.name ?? npubText.slice(0, 10) + '...'}</a
                     >{:else}{matchedText}{/if}{:else if /nostr:nprofile\w+/.test(match[3])}{@const matchedText =
-                    match[3]}{@const nprofileText = matchedText.replace(
-                    /nostr:/,
-                    '',
-                  )}{@const d =
-                    nip19.decode(nprofileText)}{#if d.type === 'nprofile'}<a
-                      href="/{nprofileText}"
-                      >@{profs[d.data.pubkey]?.name ??
-                        nprofileText.slice(0, 10) + '...'}</a
-                    >{:else}{matchedText}{/if}{:else if /nostr:note\w{59}/.test(match[4])}{@const matchedText =
-                    match[4]}<Quote
+                    match[3]}{@const nprofileText = matchedText.replace(/nostr:/, '')}{@const d =
+                    nip19.decode(nprofileText)}{#if d.type === 'nprofile'}<a href="/{nprofileText}"
+                      >@{profs[d.data.pubkey]?.name ?? nprofileText.slice(0, 10) + '...'}</a
+                    >{:else}{matchedText}{/if}{:else if /nostr:note\w{59}/.test(match[4])}{@const matchedText = match[4]}<Quote
                     {rxNostr}
                     {seenOn}
                     {matchedText}
@@ -382,8 +274,7 @@
                     {muteList}
                     {muteChannels}
                     {wordList}
-                  />{:else if /nostr:nevent\w+/.test(match[5])}{@const matchedText =
-                    match[5]}<Quote
+                  />{:else if /nostr:nevent\w+/.test(match[5])}{@const matchedText = match[5]}<Quote
                     {rxNostr}
                     {seenOn}
                     {matchedText}
@@ -395,19 +286,12 @@
                     {muteList}
                     {muteChannels}
                     {wordList}
-                  />{:else if /nostr:naddr\w+/.test(match[6])}{@const matchedText =
-                    match[6]}{@const naddrText = matchedText.replace(
+                  />{:else if /nostr:naddr\w+/.test(match[6])}{@const matchedText = match[6]}{@const naddrText = matchedText.replace(
                     /nostr:/,
                     '',
-                  )}<a
-                    href="{urlToLinkNaddr}/{naddrText}"
-                    target="_blank"
-                    rel="noopener noreferrer">{matchedText}</a
-                  >{:else if /#\S+/.test(match[7])}{@const matchedText =
-                    match[7]}<a
-                    href="/hashtag/{encodeURI(
-                      matchedText.toLowerCase().replace('#', ''),
-                    )}">{matchedText}</a
+                  )}<a href="{urlToLinkNaddr}/{naddrText}" target="_blank" rel="noopener noreferrer">{matchedText}</a
+                  >{:else if /#\S+/.test(match[7])}{@const matchedText = match[7]}<a
+                    href="/hashtag/{encodeURI(matchedText.toLowerCase().replace('#', ''))}">{matchedText}</a
                   >{:else if match[8]}{@const matchedText = match[8]}<img
                     src={emojiUrls[matchedText]}
                     alt={matchedText}
@@ -417,9 +301,7 @@
             </div>
             {#if imageUrls.length > 0}<div class="image-holder">
                 {#each imageUrls as imageUrl}<figure>
-                    <a href={imageUrl} target="_blank" rel="noopener noreferrer"
-                      ><img src={imageUrl} alt="auto load" /></a
-                    >
+                    <a href={imageUrl} target="_blank" rel="noopener noreferrer"><img src={imageUrl} alt="auto load" /></a>
                   </figure>{/each}
               </div>{/if}{#if videoUrls.length > 0}<div class="video-holder">
                 {#each videoUrls as videoUrl}<video controls preload="metadata">
@@ -427,25 +309,16 @@
                     <source src={videoUrl} />
                   </video>{/each}
               </div>{/if}{#if audioUrls.length > 0}<div class="audio-holder">
-                {#each audioUrls as audioUrl}<audio
-                    controls
-                    preload="metadata"
-                    src={audioUrl}
-                  ></audio>{/each}
+                {#each audioUrls as audioUrl}<audio controls preload="metadata" src={audioUrl}></audio>{/each}
               </div>{/if}
           </div>
           {#if favList.some((ev) => ev.tags
                 .findLast((tag) => tag.length >= 2 && tag[0] === 'e')
-                ?.at(1) === noteOrg.id && profs[ev.pubkey])}<ul
-              class="fav-holder"
-              role="list"
-            >
+                ?.at(1) === noteOrg.id && profs[ev.pubkey])}<ul class="fav-holder" role="list">
               {#each favList as ev}{#if ev.tags
                   .findLast((tag) => tag[0] === 'e')
                   ?.at(1) === noteOrg.id && profs[ev.pubkey] && !muteList.includes(ev.pubkey) && !muteListFav.includes(ev.pubkey)}{@const emojiTag =
-                    ev.tags.find(
-                      (tag) => tag.length >= 3 && tag[0] === 'emoji',
-                    )}{@const prof = profs[ev.pubkey]}{@const npubFaved =
+                    ev.tags.find((tag) => tag.length >= 3 && tag[0] === 'emoji')}{@const prof = profs[ev.pubkey]}{@const npubFaved =
                     nip19.npubEncode(ev.pubkey)}
                   <li>
                     {#if emojiTag && ev.content === `:${emojiTag[1]}:` && emojiTag[2]}<img
@@ -454,9 +327,7 @@
                         height="20"
                         alt=":{emojiTag[1]}:"
                         title=":{emojiTag[1]}:"
-                      />{:else}{ev.content
-                        .replace(/^\+$/, '❤')
-                        .replace(/^-$/, '👎') || '❤'}{/if}<img
+                      />{:else}{ev.content.replace(/^\+$/, '❤').replace(/^-$/, '👎') || '❤'}{/if}<img
                       src={prof.picture || getDefaultAvatar(ev.pubkey, 16)}
                       alt="avatar of {npubFaved}"
                       width="16"
@@ -465,23 +336,17 @@
                     {prof.display_name ?? ''}
                     <a href="/{npubFaved}">@{prof.name ?? ''}</a> reacted
                   </li>{/if}{/each}
-            </ul>{/if}{#if zapList.some((ev) => ev.tags
-                .find((tag) => tag.length >= 2 && tag[0] === 'e')
-                ?.at(1) === noteOrg.id)}<ul class="zap-holder" role="list">
-              {#each zapList as ev}{@const event9734 =
-                  getevent9734(ev)}{#if event9734.tags
+            </ul>{/if}{#if zapList.some((ev) => ev.tags.find((tag) => tag.length >= 2 && tag[0] === 'e')?.at(1) === noteOrg.id)}<ul
+              class="zap-holder"
+              role="list"
+            >
+              {#each zapList as ev}{@const event9734 = getevent9734(ev)}{#if event9734.tags
                   .find((tag) => tag[0] === 'e')
                   ?.at(1) === noteOrg.id && profs[event9734.pubkey] && !muteList.includes(event9734.pubkey) && !muteListZap.includes(event9734.pubkey)}{@const prof =
-                    profs[event9734.pubkey]}{@const npubZapped =
-                    nip19.npubEncode(event9734.pubkey)}
+                    profs[event9734.pubkey]}{@const npubZapped = nip19.npubEncode(event9734.pubkey)}
                   <li>
                     <svg><use xlink:href="/lightning.svg#zap"></use></svg>
-                    <img
-                      src={prof.picture || getDefaultAvatar(ev.pubkey, 16)}
-                      alt="avatar of {npubZapped}"
-                      width="16"
-                      height="16"
-                    />
+                    <img src={prof.picture || getDefaultAvatar(ev.pubkey, 16)} alt="avatar of {npubZapped}" width="16" height="16" />
                     {prof.display_name ?? ''}
                     <a href="/{npubZapped}">@{prof.name ?? ''}</a>
                     zapped{#if event9734.content}<blockquote>
@@ -492,10 +357,8 @@
           <div class="action-bar">
             {#if isLoggedin}<details>
                 <summary>
-                  <svg><use xlink:href="/arrow-bold-reply.svg#reply"></use></svg
-                  ><span
-                    >reply to @{#if profs[noteOrg.pubkey]}{profs[noteOrg.pubkey]
-                        ?.name ?? ''}{:else}{npubOrg.slice(0, 10)}...{/if}</span
+                  <svg><use xlink:href="/arrow-bold-reply.svg#reply"></use></svg><span
+                    >reply to @{#if profs[noteOrg.pubkey]}{profs[noteOrg.pubkey]?.name ?? ''}{:else}{npubOrg.slice(0, 10)}...{/if}</span
                   >
                 </summary>
                 <textarea
@@ -511,55 +374,32 @@
                   disabled={!inputText[noteOrg.id]}>Reply</button
                 >
               </details>
-              <button
-                class="repost"
-                on:click={() =>
-                  sendRepost(rxNostr, seenOn, relaysToWrite, noteOrg)}
-                title="Repost"
-                ><svg><use xlink:href="/refresh-cw.svg#repost"></use></svg
-                ></button
-              ><button
-                class="fav"
-                on:click={() => sendFav(rxNostr, relaysToWrite, noteOrg, '+')}
-                title="Fav"
+              <button class="repost" on:click={() => sendRepost(rxNostr, seenOn, relaysToWrite, noteOrg)} title="Repost"
+                ><svg><use xlink:href="/refresh-cw.svg#repost"></use></svg></button
+              ><button class="fav" on:click={() => sendFav(rxNostr, relaysToWrite, noteOrg, '+')} title="Fav"
                 ><svg><use xlink:href="/heart.svg#fav"></use></svg></button
-              ><button
-                class="emoji"
-                on:click={() => callSendEmoji(rxNostr, relaysToWrite, noteOrg)}
-                title="Emoji fav"
+              ><button class="emoji" on:click={() => callSendEmoji(rxNostr, relaysToWrite, noteOrg)} title="Emoji fav"
                 ><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button
               >
-              <div
-                bind:this={emojiPicker[noteOrg.id]}
-                class={visible[noteOrg.id] ? '' : 'hidden'}
-              ></div>
+              <div bind:this={emojiPicker[noteOrg.id]} class={visible[noteOrg.id] ? '' : 'hidden'}></div>
               <button
                 id="zap-{note.id}"
                 aria-label="Zap Button"
                 class="zap"
                 title="Zap!"
-                on:click={() =>
-                  zap(npubOrg, nip19.noteEncode(noteOrg.id), relaysToWrite)}
+                on:click={() => zap(npubOrg, nip19.noteEncode(noteOrg.id), relaysToWrite)}
                 ><svg><use xlink:href="/lightning.svg#zap"></use></svg></button
               >{#if noteOrg.pubkey === loginPubkey}<button
                   class="delete"
-                  on:click={() =>
-                    callSendDeletion(rxNostr, relaysToWrite, noteOrg)}
-                  title="Delete"
-                  ><svg><use xlink:href="/trash.svg#delete"></use></svg></button
+                  on:click={() => callSendDeletion(rxNostr, relaysToWrite, noteOrg)}
+                  title="Delete"><svg><use xlink:href="/trash.svg#delete"></use></svg></button
                 >{/if}{:else}<button
                 class="login-as-this-account"
                 on:click={() => loginAsThisAccount(noteOrg.pubkey)}
-                title="Login with this pubkey"
-                ><svg
-                  ><use xlink:href="/eye.svg#login-as-this-account"></use></svg
-                ></button
+                title="Login with this pubkey"><svg><use xlink:href="/eye.svg#login-as-this-account"></use></svg></button
               >{/if}
             <details>
-              <summary
-                ><svg><use xlink:href="/more-horizontal.svg#more"></use></svg
-                ></summary
-              >
+              <summary><svg><use xlink:href="/more-horizontal.svg#more"></use></svg></summary>
               <dl class="details">
                 <dt>User ID</dt>
                 <dd><code>{npubOrg}</code></dd>
@@ -567,9 +407,7 @@
                 <dd><code>{neventOrg}</code></dd>
                 <dt>Event JSON</dt>
                 <dd>
-                  <pre class="json-view"><code
-                      >{JSON.stringify(noteOrg, undefined, 2)}</code
-                    ></pre>
+                  <pre class="json-view"><code>{JSON.stringify(noteOrg, undefined, 2)}</code></pre>
                 </dd>
                 <dt>Relays seen on</dt>
                 <dd>

@@ -1,7 +1,4 @@
-import type {
-  FileUploadResponse,
-  OptionalFormDataFields,
-} from 'nostr-tools/nip96';
+import type { FileUploadResponse, OptionalFormDataFields } from 'nostr-tools/nip96';
 
 export async function uploadFile(
   file: File,
@@ -49,9 +46,7 @@ export async function uploadFile(
 
     // 403 Forbidden
     if (response.status === 403) {
-      throw new Error(
-        'Forbidden! Payload tag does not match the requested file!',
-      );
+      throw new Error('Forbidden! Payload tag does not match the requested file!');
     }
 
     // 402 Payment Required

@@ -1,13 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { afterNavigate } from '$app/navigation';
-  import {
-    storedCurrentChannelId,
-    storedCurrentPubkey,
-    storedCurrentHashtag,
-    storedCurrentEvent,
-    storedNeedApplyRelays,
-  } from '$lib/store';
+  import { storedCurrentChannelId, storedCurrentPubkey, storedCurrentHashtag, storedCurrentEvent, storedNeedApplyRelays } from '$lib/store';
   import { nip19 } from 'nostr-tools';
   import Page from '$lib/components/Page.svelte';
 

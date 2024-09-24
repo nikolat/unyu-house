@@ -20,15 +20,8 @@
 
   const getNote = (eventText: string) => {
     const d = nip19.decode(eventText);
-    if (
-      d.type === 'note' &&
-      (notes.some((v) => v.id === d.data) ||
-        notesQuoted.some((v) => v.id === d.data))
-    ) {
-      return (
-        notes.find((v) => v.id === d.data) ??
-        notesQuoted.find((v) => v.id === d.data)
-      );
+    if (d.type === 'note' && (notes.some((v) => v.id === d.data) || notesQuoted.some((v) => v.id === d.data))) {
+      return notes.find((v) => v.id === d.data) ?? notesQuoted.find((v) => v.id === d.data);
     } else if (
       d.type === 'nevent' &&
       (notes.some((v) => v.id === d.data.id) ||
@@ -51,11 +44,8 @@
   {#if note}
     {@const isMutedNotePubkey = muteList.includes(note.pubkey)}
     {@const isMutedNoteChannel = muteChannels.includes(note.id)}
-    {@const isMutedNoteWord = wordList.some((word) =>
-      note.content.includes(word),
-    )}
-    {@const isMuted =
-      isMutedNotePubkey || isMutedNoteChannel || isMutedNoteWord}
+    {@const isMutedNoteWord = wordList.some((word) => note.content.includes(word))}
+    {@const isMuted = isMutedNotePubkey || isMutedNoteChannel || isMutedNoteWord}
     {#if !isMuted}
       <blockquote>
         {#if note.kind === 40}
@@ -78,54 +68,29 @@
           {/if}
         {:else}
           {@const npub = nip19.npubEncode(note.pubkey)}
-          {@const rootId = note.tags
-            .find(
-              (tag) => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root',
-            )
-            ?.at(1)}
-          {@const linkid =
-            note.kind === 1
-              ? nip19.noteEncode(note.id)
-              : nip19.neventEncode(note)}
+          {@const rootId = note.tags.find((tag) => tag.length >= 4 && tag[0] === 'e' && tag[3] === 'root')?.at(1)}
+          {@const linkid = note.kind === 1 ? nip19.noteEncode(note.id) : nip19.neventEncode(note)}
           <dl>
             <dt>
               {#if profs[note.pubkey]}
-                <img
-                  src={profs[note.pubkey].picture || '/default.png'}
-                  alt="avatar of {npub}"
-                  width="32"
-                  height="32"
-                />
+                <img src={profs[note.pubkey].picture || '/default.png'} alt="avatar of {npub}" width="32" height="32" />
                 {profs[note.pubkey].display_name ?? ''}
                 <a href="/{npub}">@{profs[note.pubkey]?.name ?? ''}</a>
               {:else}
-                <img src="/default.png" alt="" width="32" height="32" /><a
-                  href="/{npub}">@{npub.slice(0, 10)}...</a
-                >
+                <img src="/default.png" alt="" width="32" height="32" /><a href="/{npub}">@{npub.slice(0, 10)}...</a>
               {/if}
               <br />
               {#if note.kind === 42}
-                <a href="/{linkid}"
-                  ><time
-                    >{new Date(1000 * note.created_at).toLocaleString()}</time
-                  ></a
-                >
+                <a href="/{linkid}"><time>{new Date(1000 * note.created_at).toLocaleString()}</time></a>
               {:else}
-                <a
-                  href="{urlToLinkNote}/{linkid}"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  ><time
-                    >{new Date(1000 * note.created_at).toLocaleString()}</time
-                  ></a
+                <a href="{urlToLinkNote}/{linkid}" target="_blank" rel="noopener noreferrer"
+                  ><time>{new Date(1000 * note.created_at).toLocaleString()}</time></a
                 >
               {/if}kind:{note.kind}
               {#if note.kind === 42 && rootId !== undefined}
                 {@const channel = channels.find((v) => v.event.id === rootId)}
                 {#if rootId && channel}
-                  <a href="/channels/{nip19.neventEncode(channel.event)}"
-                    >{channel.name}</a
-                  >
+                  <a href="/channels/{nip19.neventEncode(channel.event)}">{channel.name}</a>
                 {:else}
                   (unknown channel)
                 {/if}

@@ -4,15 +4,7 @@
   import * as nip19 from 'nostr-tools/nip19';
   import { browser } from '$app/environment';
   import { storedFilterSelected, preferences } from '$lib/store';
-  import {
-    urlDarkTheme,
-    urlLightTheme,
-    urlDefaultTheme,
-    sendCreateChannel,
-    type Channel,
-    type Profile,
-    zap,
-  } from '$lib/util';
+  import { urlDarkTheme, urlLightTheme, urlDefaultTheme, sendCreateChannel, type Channel, type Profile, zap } from '$lib/util';
   import { urlNIP07guide } from '$lib/config';
   import { onMount } from 'svelte';
   import SidebarChannel from '$lib/components/SidebarChannel.svelte';
@@ -73,22 +65,12 @@
     importRelays(relaysSelected);
   };
   const callSendCreateChannel = () => {
-    const [channelName, channelAbout, channelPicture] = [
-      newChannelName,
-      newChannelAbout,
-      newChannelPicture,
-    ];
+    const [channelName, channelAbout, channelPicture] = [newChannelName, newChannelAbout, newChannelPicture];
     [newChannelName, newChannelAbout, newChannelPicture] = ['', '', ''];
     const relaysToWrite = Object.entries(relaysToUse)
       .filter((v) => v[1].write)
       .map((v) => v[0]);
-    sendCreateChannel(
-      rxNostr,
-      relaysToWrite,
-      channelName,
-      channelAbout,
-      channelPicture,
-    );
+    sendCreateChannel(rxNostr, relaysToWrite, channelName, channelAbout, channelPicture);
   };
 
   const changeTheme = () => {
@@ -161,11 +143,7 @@
   {#if loginPubkey}
     <section class="config">
       <div>Get Relay List</div>
-      <select
-        id="select-relay-list"
-        bind:value={relaysSelected}
-        on:change={changeRelays}
-      >
+      <select id="select-relay-list" bind:value={relaysSelected} on:change={changeRelays}>
         <option value="kind3">Kind 3</option>
         <option value="kind10002">Kind 10002</option>
         <option value="nip05">NIP-05</option>
@@ -191,22 +169,8 @@
           {/await}
         </td>
         <td>{relay[0]}</td>
-        <td
-          ><input
-            type="checkbox"
-            checked={relay[1].read}
-            name="read"
-            disabled
-          /></td
-        >
-        <td
-          ><input
-            type="checkbox"
-            checked={relay[1].write}
-            name="write"
-            disabled
-          /></td
-        >
+        <td><input type="checkbox" checked={relay[1].read} name="read" disabled /></td>
+        <td><input type="checkbox" checked={relay[1].write} name="write" disabled /></td>
       </tr>
     {/each}
   </table>
@@ -219,41 +183,25 @@
             <dl>
               <dt><label for="new-channel-name">Name</label></dt>
               <dd>
-                <input
-                  id="new-channel-name"
-                  type="text"
-                  placeholder="channel name"
-                  bind:value={newChannelName}
-                />
+                <input id="new-channel-name" type="text" placeholder="channel name" bind:value={newChannelName} />
               </dd>
               <dt><label for="new-channel-about">About</label></dt>
               <dd>
-                <textarea
-                  id="new-channel-about"
-                  placeholder="channel description"
-                  bind:value={newChannelAbout}
-                ></textarea>
+                <textarea id="new-channel-about" placeholder="channel description" bind:value={newChannelAbout}></textarea>
               </dd>
               <dt><label for="new-channel-picture">Picture</label></dt>
               <dd>
-                <input
-                  id="new-channel-picture"
-                  type="url"
-                  placeholder="https://..."
-                  bind:value={newChannelPicture}
-                />
+                <input id="new-channel-picture" type="url" placeholder="https://..." bind:value={newChannelPicture} />
               </dd>
             </dl>
-            <button on:click={callSendCreateChannel} disabled={!newChannelName}
-              >Create</button
-            >
+            <button on:click={callSendCreateChannel} disabled={!newChannelName}>Create</button>
           </form>
         </details>
       {/if}
       {#if pinList.length > 0}
         <h3>Pinned Channels</h3>
         <div>
-          {#each channels.filter( (ch) => pinList.includes(ch.event.id), ) as channel}
+          {#each channels.filter((ch) => pinList.includes(ch.event.id)) as channel}
             <SidebarChannel
               picture={channel.picture}
               url={nip19.neventEncode(channel.event)}
@@ -269,11 +217,7 @@
     <h3>All Channels</h3>
     <section class="config">
       <div>Filter</div>
-      <select
-        id="select-channel-filter"
-        bind:value={filterSelected}
-        on:change={changeFilter}
-      >
+      <select id="select-channel-filter" bind:value={filterSelected} on:change={changeFilter}>
         <option value="fav">❤ &gt; 0</option>
         <option value="kana">かなカナ</option>
         {#if loginPubkey}<option value="follow">follow</option>{/if}

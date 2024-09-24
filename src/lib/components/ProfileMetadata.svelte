@@ -1,10 +1,5 @@
 <script lang="ts">
-  import {
-    getExpandTagsList,
-    sendMuteUser,
-    type Profile,
-    sendEditProfile,
-  } from '$lib/util';
+  import { getExpandTagsList, sendMuteUser, type Profile, sendEditProfile } from '$lib/util';
   import type { RelayRecord } from 'nostr-tools/relay';
   import * as nip19 from 'nostr-tools/nip19';
   import type { RxNostr } from 'rx-nostr';
@@ -37,8 +32,7 @@
   const callSendEditProfile = async () => {
     const prof: Profile = {
       name: editProfileName,
-      display_name:
-        editProfileDisplayName !== '' ? editProfileDisplayName : undefined,
+      display_name: editProfileDisplayName !== '' ? editProfileDisplayName : undefined,
       about: editProfileAbout,
       picture: editProfilePicture,
       website: editProfileWebsite !== '' ? editProfileWebsite : undefined,
@@ -57,13 +51,7 @@
   const callSendMuteUser = async (toSet: boolean) => {
     isCallingSendMuteUser = true;
     try {
-      await sendMuteUser(
-        rxNostr,
-        relaysToUse,
-        loginPubkey,
-        currentPubkey,
-        toSet,
-      );
+      await sendMuteUser(rxNostr, relaysToUse, loginPubkey, currentPubkey, toSet);
     } catch (error) {
       console.error(error);
     }
@@ -72,19 +60,11 @@
 </script>
 
 <h2>
-  <img
-    src={profs[currentPubkey].picture || './default.png'}
-    alt="@{profs[currentPubkey].name ?? ''}"
-    width="32"
-    height="32"
-  />
+  <img src={profs[currentPubkey].picture || './default.png'} alt="@{profs[currentPubkey].name ?? ''}" width="32" height="32" />
   {profs[currentPubkey].display_name ?? ''} @{profs[currentPubkey].name ?? ''}
 </h2>
 {#if profs[currentPubkey].about}
-  {@const r = getExpandTagsList(
-    profs[currentPubkey].about,
-    profs[currentPubkey].tags,
-  )}
+  {@const r = getExpandTagsList(profs[currentPubkey].about, profs[currentPubkey].tags)}
   {@const matchesIterator = r[0]}
   {@const plainTexts = r[1]}
   {@const emojiUrls = r[2]}
@@ -92,17 +72,13 @@
     {plainTexts.shift()}
     {#each Array.from(matchesIterator) as match}
       {#if /https?:\/\/\S+/.test(match[1])}
-        <a href={match[1]} target="_blank" rel="noopener noreferrer"
-          >{match[1]}</a
-        >
+        <a href={match[1]} target="_blank" rel="noopener noreferrer">{match[1]}</a>
       {:else if /nostr:npub\w{59}/.test(match[2])}
         {@const matchedText = match[2]}
         {@const npubText = matchedText.replace(/nostr:/, '')}
         {@const d = nip19.decode(npubText)}
         {#if d.type === 'npub'}
-          <a href="/{npubText}"
-            >@{profs[d.data]?.name ?? npubText.slice(0, 10) + '...'}</a
-          >
+          <a href="/{npubText}">@{profs[d.data]?.name ?? npubText.slice(0, 10) + '...'}</a>
         {:else}
           {matchedText}
         {/if}
@@ -111,10 +87,7 @@
         {@const nprofileText = matchedText.replace(/nostr:/, '')}
         {@const d = nip19.decode(nprofileText)}
         {#if d.type === 'nprofile'}
-          <a href="/{nprofileText}"
-            >@{profs[d.data.pubkey]?.name ??
-              nprofileText.slice(0, 10) + '...'}</a
-          >
+          <a href="/{nprofileText}">@{profs[d.data.pubkey]?.name ?? nprofileText.slice(0, 10) + '...'}</a>
         {:else}
           {matchedText}
         {/if}
@@ -126,28 +99,17 @@
         {match[6]}
       {:else if /#\S+/.test(match[7])}
         {@const matchedText = match[7]}
-        <a href="/hashtag/{encodeURI(matchedText.replace('#', ''))}"
-          >{matchedText}</a
-        >
+        <a href="/hashtag/{encodeURI(matchedText.replace('#', ''))}">{matchedText}</a>
       {:else if match[8]}
         {@const matchedText = match[8]}
-        <img
-          src={emojiUrls[matchedText]}
-          alt={matchedText}
-          title={matchedText}
-          class="emoji"
-        />
+        <img src={emojiUrls[matchedText]} alt={matchedText} title={matchedText} class="emoji" />
       {/if}
       {plainTexts.shift()}
     {/each}
   </p>
 {/if}
 {#if profs[currentPubkey].website}<p id="profile-website">
-    <a
-      href={profs[currentPubkey].website}
-      target="_blank"
-      rel="noopener noreferrer">{profs[currentPubkey].website}</a
-    >
+    <a href={profs[currentPubkey].website} target="_blank" rel="noopener noreferrer">{profs[currentPubkey].website}</a>
   </p>{/if}
 {#if isLoggedin && loginPubkey === currentPubkey}
   <details>
@@ -156,71 +118,37 @@
     <dl>
       <dt><label for="edit-channel-name">name</label></dt>
       <dd>
-        <input
-          id="edit-channel-name"
-          type="text"
-          placeholder="name"
-          bind:value={editProfileName}
-        />
+        <input id="edit-channel-name" type="text" placeholder="name" bind:value={editProfileName} />
       </dd>
       <dt><label for="edit-channel-display_name">display_name</label></dt>
       <dd>
-        <input
-          id="edit-channel-name"
-          type="text"
-          placeholder="display_name"
-          bind:value={editProfileDisplayName}
-        />
+        <input id="edit-channel-name" type="text" placeholder="display_name" bind:value={editProfileDisplayName} />
       </dd>
       <dt><label for="edit-channel-about">about</label></dt>
       <dd>
-        <textarea
-          id="edit-channel-about"
-          placeholder="about"
-          bind:value={editProfileAbout}
-        ></textarea>
+        <textarea id="edit-channel-about" placeholder="about" bind:value={editProfileAbout}></textarea>
       </dd>
       <dt><label for="edit-channel-picture">picture</label></dt>
       <dd>
-        <input
-          id="edit-channel-picture"
-          type="url"
-          placeholder="https://..."
-          bind:value={editProfilePicture}
-        />
+        <input id="edit-channel-picture" type="url" placeholder="https://..." bind:value={editProfilePicture} />
       </dd>
       <dt><label for="edit-channel-website">website</label></dt>
       <dd>
-        <input
-          id="edit-channel-website"
-          type="url"
-          placeholder="https://..."
-          bind:value={editProfileWebsite}
-        />
+        <input id="edit-channel-website" type="url" placeholder="https://..." bind:value={editProfileWebsite} />
       </dd>
     </dl>
-    <button
-      on:click={callSendEditProfile}
-      disabled={!editProfileName || isCallingSendEditProfile}>Edit</button
-    >
+    <button on:click={callSendEditProfile} disabled={!editProfileName || isCallingSendEditProfile}>Edit</button>
   </details>
 {/if}
 
 {#if profs[currentPubkey] && isLoggedin && loginPubkey}
   {#if muteList.includes(currentPubkey)}
-    <button
-      class="profile-metadata on"
-      on:click={() => callSendMuteUser(false)}
-      disabled={isCallingSendMuteUser}
-      title="Unmute"
+    <button class="profile-metadata on" on:click={() => callSendMuteUser(false)} disabled={isCallingSendMuteUser} title="Unmute"
       ><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button
     >
   {:else}
-    <button
-      class="profile-metadata off"
-      on:click={() => callSendMuteUser(true)}
-      disabled={isCallingSendMuteUser}
-      title="Mute"><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button
+    <button class="profile-metadata off" on:click={() => callSendMuteUser(true)} disabled={isCallingSendMuteUser} title="Mute"
+      ><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button
     >
   {/if}
 {/if}

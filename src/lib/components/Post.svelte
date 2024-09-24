@@ -2,10 +2,7 @@
   import { sendMessage, type Channel } from '$lib/util';
   import type { EventTemplate, NostrEvent } from 'nostr-tools/pure';
   import type { RelayRecord } from 'nostr-tools/relay';
-  import {
-    readServerConfig,
-    type OptionalFormDataFields,
-  } from 'nostr-tools/nip96';
+  import { readServerConfig, type OptionalFormDataFields } from 'nostr-tools/nip96';
   import { getToken } from 'nostr-tools/nip98';
   import { uploadFile } from '$lib/nip96';
   import data from '@emoji-mart/data';
@@ -39,15 +36,7 @@
     const relaysToWrite = Object.entries(relaysToUse)
       .filter((v) => v[1].write)
       .map((v) => v[0]);
-    sendMessage(
-      rxNostr,
-      seenOn,
-      relaysToWrite,
-      content,
-      noteToReplay,
-      emojiMap,
-      contentWarningReason,
-    );
+    sendMessage(rxNostr, seenOn, relaysToWrite, content, noteToReplay, emojiMap, contentWarningReason);
   };
 
   const callGetEmoji = () => {
@@ -82,9 +71,7 @@
   };
 
   const insertText = (word: string): void => {
-    const textarea = document.getElementById(
-      'input-text',
-    ) as HTMLTextAreaElement;
+    const textarea = document.getElementById('input-text') as HTMLTextAreaElement;
     let sentence = textarea.value;
     const len = sentence.length;
     const pos = textarea.selectionStart;
@@ -125,19 +112,14 @@
       content_type: file.type,
     };
     const fileUploadResponse = await uploadFile(file, c.api_url, s, option);
-    const uploadedFileUrl = fileUploadResponse.nip94_event?.tags
-      .find((tag) => tag[0] === 'url')
-      ?.at(1);
+    const uploadedFileUrl = fileUploadResponse.nip94_event?.tags.find((tag) => tag[0] === 'url')?.at(1);
     if (uploadedFileUrl === undefined) {
       return;
     }
     insertText(uploadedFileUrl);
   };
 
-  const submitFromKeyboard = (
-    event: KeyboardEvent,
-    noteToReplay: NostrEvent,
-  ) => {
+  const submitFromKeyboard = (event: KeyboardEvent, noteToReplay: NostrEvent) => {
     if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
       callSendMessage(noteToReplay);
     }
@@ -152,9 +134,7 @@
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 {#if true}
-  {@const channel = channels.find(
-    (channel) => channel.event.id === currentChannelId,
-  )}
+  {@const channel = channels.find((channel) => channel.event.id === currentChannelId)}
   {#if channel !== undefined}
     <div id="input" class="show" on:click|stopPropagation={() => {}}>
       <textarea
@@ -173,28 +153,14 @@
       <button class="emoji" on:click={() => callGetEmoji()} title="Select Emoji"
         ><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button
       >
-      <div
-        id="emoji-picker-post"
-        bind:this={emojiPicker}
-        class={emojiVisible ? '' : 'hidden'}
-      ></div>
+      <div id="emoji-picker-post" bind:this={emojiPicker} class={emojiVisible ? '' : 'hidden'}></div>
       {#if contentWarningReason === undefined}
-        <button
-          class="content-warning off"
-          on:click={() => setContentWarning('')}
-          title="Add Content Warning"
-          ><svg
-            ><use xlink:href="/alert-triangle.svg#content-warning"></use></svg
-          ></button
+        <button class="content-warning off" on:click={() => setContentWarning('')} title="Add Content Warning"
+          ><svg><use xlink:href="/alert-triangle.svg#content-warning"></use></svg></button
         >
       {:else}
-        <button
-          class="content-warning on"
-          on:click={() => setContentWarning(undefined)}
-          title="Remove Content Warning"
-          ><svg
-            ><use xlink:href="/alert-triangle.svg#content-warning"></use></svg
-          ></button
+        <button class="content-warning on" on:click={() => setContentWarning(undefined)} title="Remove Content Warning"
+          ><svg><use xlink:href="/alert-triangle.svg#content-warning"></use></svg></button
         >
       {/if}
       <button
@@ -202,25 +168,16 @@
         on:click={() => {
           document.getElementById('select-upload-file')?.click();
         }}
-        title="Select Attachment"
-        ><svg><use xlink:href="/image.svg#attachment"></use></svg></button
+        title="Select Attachment"><svg><use xlink:href="/image.svg#attachment"></use></svg></button
       >
-      <input
-        id="select-upload-file"
-        type="file"
-        accept="image/*,video/*,audio/*"
-        bind:files={filesToUpload}
-        on:change={uploadFileExec}
-      />
+      <input id="select-upload-file" type="file" accept="image/*,video/*,audio/*" bind:files={filesToUpload} on:change={uploadFileExec} />
       <select id="uploader-url-to-upload" bind:value={targetUrlToUpload}>
         {#each uploaderURLs as url}
           <option value={url}>{url}</option>
         {/each}
       </select>
     </div>
-    <button id="show-post-bar" on:click|stopPropagation={showPostBar}
-      ><svg><use xlink:href="/pencil-create.svg#pencil"></use></svg></button
-    >
+    <button id="show-post-bar" on:click|stopPropagation={showPostBar}><svg><use xlink:href="/pencil-create.svg#pencil"></use></svg></button>
   {/if}
 {/if}
 
@@ -286,16 +243,10 @@
     display: inline;
     margin-left: 1em;
   }
-  :global(
-      #container.dark button.content-warning,
-      #container.dark button.attachment
-    ) {
+  :global(#container.dark button.content-warning, #container.dark button.attachment) {
     fill: white;
   }
-  :global(
-      #container.light button.content-warning,
-      #container.light button.attachment
-    ) {
+  :global(#container.light button.content-warning, #container.light button.attachment) {
     fill: black;
   }
   :global(#container button.content-warning.on) {

@@ -1,12 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import {
-    storedCurrentChannelId,
-    storedCurrentPubkey,
-    storedCurrentHashtag,
-    storedCurrentEvent,
-    storedNeedApplyRelays,
-  } from '$lib/store';
+  import { storedCurrentChannelId, storedCurrentPubkey, storedCurrentHashtag, storedCurrentEvent, storedNeedApplyRelays } from '$lib/store';
   import Page from '$lib/components/Page.svelte';
 
   const currentChannelId = null;
