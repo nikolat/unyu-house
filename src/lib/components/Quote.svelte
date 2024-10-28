@@ -19,7 +19,12 @@
   export let wordList: string[];
 
   const getNote = (eventText: string) => {
-    const d = nip19.decode(eventText);
+    let d;
+    try {
+      d = nip19.decode(eventText);
+    } catch (error) {
+      return null;
+    }
     if (d.type === 'note' && (notes.some((v) => v.id === d.data) || notesQuoted.some((v) => v.id === d.data))) {
       return notes.find((v) => v.id === d.data) ?? notesQuoted.find((v) => v.id === d.data);
     } else if (
