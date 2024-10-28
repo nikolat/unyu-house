@@ -15,21 +15,21 @@
     "@emoji-mart/data": "^1.2.1",
     "@types/emoji-mart": "^3.0.14",
     "emoji-mart": "^5.6.0",
-    "nostr-tools": "^2.7.2",
+    "nostr-tools": "^2.9.4",
     "rx-nostr": "^3.4.0",
     "rx-nostr-crypto": "^3.1.2",
     "svelte-persisted-store": "^0.11.0"
   },
   "devDependencies": {
-    "@sveltejs/adapter-auto": "^3.2.5",
-    "@sveltejs/kit": "^2.5.28",
+    "@sveltejs/adapter-auto": "^3.3.1",
+    "@sveltejs/kit": "^2.7.3",
     "prettier": "^3.3.3",
-    "prettier-plugin-svelte": "^3.2.6",
+    "prettier-plugin-svelte": "^3.2.7",
     "svelte": "^4.2.19",
-    "svelte-check": "^4.0.2",
-    "tslib": "^2.7.0",
-    "typescript": "^5.6.2",
-    "vite": "^5.4.7"
+    "svelte-check": "^4.0.5",
+    "tslib": "^2.8.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
   },
   "type": "module"
 }
