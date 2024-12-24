@@ -79,20 +79,20 @@
     dd?.querySelector('div.content-warning-target')?.classList.remove('hide');
   };
 
-  const callSendMessage = (noteToReplay: NostrEvent) => {
-    const noteId = noteToReplay.id;
+  const callSendMessage = (noteToReply: NostrEvent) => {
+    const noteId = noteToReply.id;
     const content = inputText[noteId];
     if (!content) return;
     inputText[noteId] = '';
     const details = <HTMLDetailsElement>document.querySelector(`#note-${noteId} + dd div.action-bar details`);
     details.open = false;
     resetScroll();
-    sendMessage(rxNostr, seenOn, relaysToWrite, content, noteToReplay, emojiMap);
+    sendMessage(rxNostr, seenOn, relaysToWrite, content, noteToReply, emojiMap);
   };
 
-  const submitFromKeyboard = (event: KeyboardEvent, noteToReplay: NostrEvent) => {
+  const submitFromKeyboard = (event: KeyboardEvent, noteToReply: NostrEvent) => {
     if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-      callSendMessage(noteToReplay);
+      callSendMessage(noteToReply);
     }
   };
 
