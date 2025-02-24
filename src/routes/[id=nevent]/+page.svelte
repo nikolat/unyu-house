@@ -9,7 +9,11 @@
   const currentHashtag = null;
   const currentPubkey = null;
 
-  export let data: any;
+  interface Props {
+    data: any;
+  }
+
+  let { data }: Props = $props();
   let currentEvent: nip19.EventPointer;
 
   const getEvent = (urlId: string) => {

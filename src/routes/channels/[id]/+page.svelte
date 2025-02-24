@@ -9,7 +9,11 @@
   const currentHashtag = null;
   const currentEvent = null;
 
-  export let data: any;
+  interface Props {
+    data: any;
+  }
+
+  let { data }: Props = $props();
   let currentChannelId: string;
 
   const getChannelId = (urlId: string) => {

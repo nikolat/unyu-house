@@ -6,17 +6,22 @@
   import ChannelMetadata from './ChannelMetadata.svelte';
   import type { RxNostr } from 'rx-nostr';
 
-  export let rxNostr: RxNostr;
-  export let seenOn: Map<string, Set<string>>;
-  export let matchedText: string;
-  export let notes: NostrEvent[];
-  export let notesQuoted: NostrEvent[];
-  export let channels: Channel[];
-  export let profs: { [key: string]: Profile };
-  export let loginPubkey: string;
-  export let muteList: string[];
-  export let muteChannels: string[];
-  export let wordList: string[];
+  interface Props {
+    rxNostr: RxNostr;
+    seenOn: Map<string, Set<string>>;
+    matchedText: string;
+    notes: NostrEvent[];
+    notesQuoted: NostrEvent[];
+    channels: Channel[];
+    profs: { [key: string]: Profile };
+    loginPubkey: string;
+    muteList: string[];
+    muteChannels: string[];
+    wordList: string[];
+  }
+
+  let { rxNostr, seenOn, matchedText, notes, notesQuoted, channels, profs, loginPubkey, muteList, muteChannels, wordList }: Props =
+    $props();
 
   const getNote = (eventText: string) => {
     let d;

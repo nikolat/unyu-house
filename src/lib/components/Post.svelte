@@ -12,20 +12,24 @@
   import { uploaderURLs } from '$lib/config';
   import type { RxNostr } from 'rx-nostr';
 
-  export let rxNostr: RxNostr;
-  export let seenOn: Map<string, Set<string>>;
-  export let currentChannelId: string | null;
-  export let relaysToUse: RelayRecord;
-  export let channels: Channel[] = [];
-  export let hidePostBar: Function;
-  export let resetScroll: Function;
-  export let emojiMap: Map<string, string>;
-  let inputText: string;
-  let emojiPicker: HTMLElement;
-  let emojiVisible: boolean = false;
-  let contentWarningReason: string | undefined;
-  let targetUrlToUpload: string;
-  let filesToUpload: FileList;
+  interface Props {
+    rxNostr: RxNostr;
+    seenOn: Map<string, Set<string>>;
+    currentChannelId: string | null;
+    relaysToUse: RelayRecord;
+    channels?: Channel[];
+    hidePostBar: Function;
+    resetScroll: Function;
+    emojiMap: Map<string, string>;
+  }
+
+  let { rxNostr, seenOn, currentChannelId, relaysToUse, channels = [], hidePostBar, resetScroll, emojiMap }: Props = $props();
+  let inputText: string = $state('');
+  let emojiPicker: HTMLElement | undefined = $state();
+  let emojiVisible: boolean = $state(false);
+  let contentWarningReason: string | undefined = $state();
+  let targetUrlToUpload: string = $state('');
+  let filesToUpload: FileList | undefined = $state();
 
   const callSendMessage = (noteToReplay: NostrEvent) => {
     const content = inputText;
@@ -41,7 +45,7 @@
 
   const callGetEmoji = () => {
     emojiVisible = !emojiVisible;
-    if (emojiPicker.children.length > 0) {
+    if (emojiPicker?.children.length ?? 0 > 0) {
       return;
     }
     const picker = new Picker({
@@ -67,7 +71,7 @@
       const emojiStr = emoji.native ?? ((emoji as any).shortcodes as string);
       insertText(emojiStr);
     }
-    emojiPicker.appendChild(picker as any);
+    emojiPicker?.appendChild(picker as any);
   };
 
   const insertText = (word: string): void => {
@@ -131,53 +135,67 @@
   };
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 {#if true}
   {@const channel = channels.find((channel) => channel.event.id === currentChannelId)}
   {#if channel !== undefined}
-    <div id="input" class="show" on:click|stopPropagation={() => {}}>
+    <div id="input" class="show" onclick={(e) => e.stopPropagation()}>
       <textarea
         id="input-text"
         bind:value={inputText}
-        on:keydown={(e) => {
+        onkeydown={(e) => {
           submitFromKeyboard(e, channel.event);
         }}
       ></textarea>
       <button
-        on:click={() => {
+        onclick={() => {
           callSendMessage(channel.event);
         }}
         disabled={!inputText}>Post</button
       >
-      <button class="emoji" on:click={() => callGetEmoji()} title="Select Emoji"
+      <button class="emoji" onclick={() => callGetEmoji()} title="Select Emoji" aria-label="Select Emoji"
         ><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button
       >
       <div id="emoji-picker-post" bind:this={emojiPicker} class={emojiVisible ? '' : 'hidden'}></div>
       {#if contentWarningReason === undefined}
-        <button class="content-warning off" on:click={() => setContentWarning('')} title="Add Content Warning"
-          ><svg><use xlink:href="/alert-triangle.svg#content-warning"></use></svg></button
+        <button
+          class="content-warning off"
+          onclick={() => setContentWarning('')}
+          title="Add Content Warning"
+          aria-label="Add Content Warning"><svg><use xlink:href="/alert-triangle.svg#content-warning"></use></svg></button
         >
       {:else}
-        <button class="content-warning on" on:click={() => setContentWarning(undefined)} title="Remove Content Warning"
-          ><svg><use xlink:href="/alert-triangle.svg#content-warning"></use></svg></button
+        <button
+          class="content-warning on"
+          onclick={() => setContentWarning(undefined)}
+          title="Remove Content Warning"
+          aria-label="Remove Content Warning"><svg><use xlink:href="/alert-triangle.svg#content-warning"></use></svg></button
         >
       {/if}
       <button
         class="attachment"
-        on:click={() => {
+        onclick={() => {
           document.getElementById('select-upload-file')?.click();
         }}
-        title="Select Attachment"><svg><use xlink:href="/image.svg#attachment"></use></svg></button
+        title="Select Attachment"
+        aria-label="Select Attachment"><svg><use xlink:href="/image.svg#attachment"></use></svg></button
       >
-      <input id="select-upload-file" type="file" accept="image/*,video/*,audio/*" bind:files={filesToUpload} on:change={uploadFileExec} />
+      <input id="select-upload-file" type="file" accept="image/*,video/*,audio/*" bind:files={filesToUpload} onchange={uploadFileExec} />
       <select id="uploader-url-to-upload" bind:value={targetUrlToUpload}>
         {#each uploaderURLs as url}
           <option value={url}>{url}</option>
         {/each}
       </select>
     </div>
-    <button id="show-post-bar" on:click|stopPropagation={showPostBar}><svg><use xlink:href="/pencil-create.svg#pencil"></use></svg></button>
+    <button
+      id="show-post-bar"
+      onclick={(e) => {
+        e.stopPropagation();
+        showPostBar();
+      }}
+      aria-label="Show Post Bar"><svg><use xlink:href="/pencil-create.svg#pencil"></use></svg></button
+    >
   {/if}
 {/if}
 

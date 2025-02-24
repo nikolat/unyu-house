@@ -9,7 +9,11 @@
   const currentHashtag = null;
   const currentEvent = null;
 
-  export let data: any;
+  interface Props {
+    data: any;
+  }
+
+  let { data }: Props = $props();
   let currentPubkey: string;
 
   const getPubkey = (urlId: string): string => {

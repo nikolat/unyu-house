@@ -4,23 +4,27 @@
   import * as nip19 from 'nostr-tools/nip19';
   import type { RxNostr } from 'rx-nostr';
 
-  export let channel: Channel;
-  export let rxNostr: RxNostr;
-  export let seenOn: Map<string, Set<string>>;
-  export let profs: { [key: string]: Profile };
-  export let isLoggedin: boolean;
-  export let loginPubkey: string;
-  export let relaysToUse: RelayRecord;
-  export let isQuote: boolean;
-  export let pinList: string[];
-  export let muteChannels: string[];
+  interface Props {
+    channel: Channel;
+    rxNostr: RxNostr;
+    seenOn: Map<string, Set<string>>;
+    profs: { [key: string]: Profile };
+    isLoggedin: boolean;
+    loginPubkey: string;
+    relaysToUse: RelayRecord;
+    isQuote: boolean;
+    pinList: string[];
+    muteChannels: string[];
+  }
 
-  let editChannelName: string;
-  let editChannelAbout: string;
-  let editChannelPicture: string;
-  let isCallingSendEditChannel: boolean = false;
-  let isCallingSendPin: boolean = false;
-  let isCallingSendMute: boolean = false;
+  let { channel, rxNostr, seenOn, profs, isLoggedin, loginPubkey, relaysToUse, isQuote, pinList, muteChannels }: Props = $props();
+
+  let editChannelName: string = $state('');
+  let editChannelAbout: string = $state('');
+  let editChannelPicture: string = $state('');
+  let isCallingSendEditChannel: boolean = $state(false);
+  let isCallingSendPin: boolean = $state(false);
+  let isCallingSendMute: boolean = $state(false);
 
   const setChannelMetadata = (currentChannelName: string, currentChannelAbout: string, currentChannelPicture: string) => {
     editChannelName = currentChannelName;
@@ -124,30 +128,42 @@
           <input id="edit-channel-picture" type="url" placeholder="https://..." bind:value={editChannelPicture} />
         </dd>
       </dl>
-      <button type="button" on:click={callSendEditChannel} disabled={!editChannelName || isCallingSendEditChannel}>Edit</button>
+      <button type="button" onclick={callSendEditChannel} disabled={!editChannelName || isCallingSendEditChannel}>Edit</button>
     </details>
   {/if}
   {#if !isQuote}
-    <button class="channel-metadata" on:click={() => callBroadcast()} title="Broadcast"
+    <button class="channel-metadata" onclick={() => callBroadcast()} title="Broadcast" aria-label="Broadcast"
       ><svg><use xlink:href="/copy.svg#broadcast"></use></svg></button
     >
   {/if}
   {#if isLoggedin && loginPubkey && !isQuote}
     {#if pinList.includes(channel.event.id)}
-      <button class="channel-metadata on" on:click={() => callSendPin(false)} disabled={isCallingSendPin} title="Remove Pin"
-        ><svg><use xlink:href="/bookmark.svg#pin"></use></svg></button
+      <button
+        class="channel-metadata on"
+        onclick={() => callSendPin(false)}
+        disabled={isCallingSendPin}
+        title="Remove Pin"
+        aria-label="Remove Pin"><svg><use xlink:href="/bookmark.svg#pin"></use></svg></button
       >
     {:else}
-      <button class="channel-metadata off" on:click={() => callSendPin(true)} disabled={isCallingSendPin} title="Add Pin"
-        ><svg><use xlink:href="/bookmark.svg#pin"></use></svg></button
+      <button
+        class="channel-metadata off"
+        onclick={() => callSendPin(true)}
+        disabled={isCallingSendPin}
+        title="Add Pin"
+        aria-label="Add Pin"><svg><use xlink:href="/bookmark.svg#pin"></use></svg></button
       >
     {/if}
     {#if muteChannels.includes(channel.event.id)}
-      <button class="channel-metadata on" on:click={() => callSendMute(false)} disabled={isCallingSendMute} title="Unmute"
-        ><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button
+      <button
+        class="channel-metadata on"
+        onclick={() => callSendMute(false)}
+        disabled={isCallingSendMute}
+        title="Unmute"
+        aria-label="Unmute"><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button
       >
     {:else}
-      <button class="channel-metadata off" on:click={() => callSendMute(true)} disabled={isCallingSendMute} title="Mute"
+      <button class="channel-metadata off" onclick={() => callSendMute(true)} disabled={isCallingSendMute} title="Mute" aria-label="Mute"
         ><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button
       >
     {/if}

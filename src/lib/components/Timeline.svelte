@@ -84,7 +84,7 @@
     const content = inputText[noteId];
     if (!content) return;
     inputText[noteId] = '';
-    const details = <HTMLDetailsElement>document.querySelector(`#note-${noteId} + dd div.action-bar details`);
+    const details: HTMLDetailsElement = document.querySelector(`#note-${noteId} + dd div.action-bar details`)!;
     details.open = false;
     resetScroll();
     sendMessage(rxNostr, seenOn, relaysToWrite, content, noteToReply, emojiMap);
@@ -374,12 +374,15 @@
                   disabled={!inputText[noteOrg.id]}>Reply</button
                 >
               </details>
-              <button class="repost" on:click={() => sendRepost(rxNostr, seenOn, relaysToWrite, noteOrg)} title="Repost"
+              <button class="repost" on:click={() => sendRepost(rxNostr, seenOn, relaysToWrite, noteOrg)} title="Repost" aria-label="Repost"
                 ><svg><use xlink:href="/refresh-cw.svg#repost"></use></svg></button
-              ><button class="fav" on:click={() => sendFav(rxNostr, relaysToWrite, noteOrg, '+')} title="Fav"
+              ><button class="fav" on:click={() => sendFav(rxNostr, relaysToWrite, noteOrg, '+')} title="Fav" aria-label="Fav"
                 ><svg><use xlink:href="/heart.svg#fav"></use></svg></button
-              ><button class="emoji" on:click={() => callSendEmoji(rxNostr, relaysToWrite, noteOrg)} title="Emoji fav"
-                ><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button
+              ><button
+                class="emoji"
+                on:click={() => callSendEmoji(rxNostr, relaysToWrite, noteOrg)}
+                title="Emoji fav"
+                aria-label="Emoji fav"><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button
               >
               <div bind:this={emojiPicker[noteOrg.id]} class={visible[noteOrg.id] ? '' : 'hidden'}></div>
               <button
@@ -392,11 +395,13 @@
               >{#if noteOrg.pubkey === loginPubkey}<button
                   class="delete"
                   on:click={() => callSendDeletion(rxNostr, relaysToWrite, noteOrg)}
-                  title="Delete"><svg><use xlink:href="/trash.svg#delete"></use></svg></button
+                  title="Delete"
+                  aria-label="Delete"><svg><use xlink:href="/trash.svg#delete"></use></svg></button
                 >{/if}{:else}<button
                 class="login-as-this-account"
                 on:click={() => loginAsThisAccount(noteOrg.pubkey)}
-                title="Login with this pubkey"><svg><use xlink:href="/eye.svg#login-as-this-account"></use></svg></button
+                title="Login with this pubkey"
+                aria-label="Login with this pubkey"><svg><use xlink:href="/eye.svg#login-as-this-account"></use></svg></button
               >{/if}
             <details>
               <summary><svg><use xlink:href="/more-horizontal.svg#more"></use></svg></summary>
