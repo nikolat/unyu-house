@@ -562,25 +562,25 @@
     display: none;
   }
   :global(
-      #container.dark button.repost,
-      #container.dark button.fav,
-      #container.dark button.emoji,
-      #container.dark button.zap,
-      #container.dark button.delete,
-      #container.dark button.login-as-this-account,
-      #container.dark details
-    ) {
+    #container.dark button.repost,
+    #container.dark button.fav,
+    #container.dark button.emoji,
+    #container.dark button.zap,
+    #container.dark button.delete,
+    #container.dark button.login-as-this-account,
+    #container.dark details
+  ) {
     fill: white;
   }
   :global(
-      #container.light button.repost,
-      #container.light button.fav,
-      #container.light button.emoji,
-      #container.light button.zap,
-      #container.light button.delete,
-      #container.light button.login-as-this-account,
-      #container.light details
-    ) {
+    #container.light button.repost,
+    #container.light button.fav,
+    #container.light button.emoji,
+    #container.light button.zap,
+    #container.light button.delete,
+    #container.light button.login-as-this-account,
+    #container.light details
+  ) {
     fill: black;
   }
   :global(#container button.fav:active) {
