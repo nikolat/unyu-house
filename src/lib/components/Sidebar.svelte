@@ -153,26 +153,28 @@
     </section>
   {/if}
   <table>
-    <tr>
-      <th></th>
-      <th>relay</th>
-      <th>r</th>
-      <th>w</th>
-    </tr>
-    {#each Object.entries(relaysToUse) as relay}
+    <tbody>
       <tr>
-        <td>
-          {#await nip11.fetchRelayInformation(relay[0]) then r}
-            <img src={r.icon || '/default.png'} alt="" />
-          {:catch error}
-            {error.message}
-          {/await}
-        </td>
-        <td>{relay[0]}</td>
-        <td><input type="checkbox" checked={relay[1].read} name="read" disabled /></td>
-        <td><input type="checkbox" checked={relay[1].write} name="write" disabled /></td>
+        <th></th>
+        <th>relay</th>
+        <th>r</th>
+        <th>w</th>
       </tr>
-    {/each}
+      {#each Object.entries(relaysToUse) as relay}
+        <tr>
+          <td>
+            {#await nip11.fetchRelayInformation(relay[0]) then r}
+              <img src={r.icon || '/default.png'} alt="" />
+            {:catch error}
+              {error.message}
+            {/await}
+          </td>
+          <td>{relay[0]}</td>
+          <td><input type="checkbox" checked={relay[1].read} name="read" disabled /></td>
+          <td><input type="checkbox" checked={relay[1].write} name="write" disabled /></td>
+        </tr>
+      {/each}
+    </tbody>
   </table>
   <section id="channels">
     {#if loginPubkey}

@@ -1,10 +1,14 @@
 <script lang="ts">
-  export let picture: string;
-  export let url: string;
-  export let channelName: string;
-  export let post_count: number;
-  export let fav_count: number;
-  export let classname: string;
+  interface Props {
+    picture: string;
+    url: string;
+    channelName: string;
+    post_count: number;
+    fav_count: number;
+    classname: string;
+  }
+
+  let { picture, url, channelName, post_count, fav_count, classname }: Props = $props();
 </script>
 
 <li class="outline {classname}">

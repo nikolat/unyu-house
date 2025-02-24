@@ -1,9 +1,13 @@
 <script lang="ts">
   import { npubEncode } from 'nostr-tools/nip19';
   import type { Profile } from '$lib/util';
-  export let title: string;
-  export let profs: { [key: string]: Profile };
-  export let loginPubkey: string;
+  interface Props {
+    title: string;
+    profs: { [key: string]: Profile };
+    loginPubkey: string;
+  }
+
+  let { title, profs, loginPubkey }: Props = $props();
   const expandSidebar = () => {
     document.getElementById('container')?.classList.toggle('expand-sidebar');
   };
@@ -11,7 +15,7 @@
 
 <header>
   <h1><a href="/">{title}</a></h1>
-  <button id="toggle" on:click={expandSidebar}><svg><use xlink:href="/menu.svg#hamburger"></use></svg></button>
+  <button id="toggle" onclick={expandSidebar} aria-label="menu"><svg><use xlink:href="/menu.svg#hamburger"></use></svg></button>
   {#if loginPubkey && profs[loginPubkey]}
     {@const npub = npubEncode(loginPubkey)}
     <a href="/{npub}"

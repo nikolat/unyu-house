@@ -4,21 +4,25 @@
   import * as nip19 from 'nostr-tools/nip19';
   import type { RxNostr } from 'rx-nostr';
 
-  export let rxNostr: RxNostr;
-  export let profs: { [key: string]: Profile };
-  export let currentPubkey: string;
-  export let isLoggedin: boolean;
-  export let loginPubkey: string;
-  export let relaysToUse: RelayRecord;
-  export let muteList: string[];
+  interface Props {
+    rxNostr: RxNostr;
+    profs: { [key: string]: Profile };
+    currentPubkey: string;
+    isLoggedin: boolean;
+    loginPubkey: string;
+    relaysToUse: RelayRecord;
+    muteList: string[];
+  }
 
-  let editProfileName: string;
-  let editProfileDisplayName: string | undefined;
-  let editProfileAbout: string;
-  let editProfilePicture: string;
-  let editProfileWebsite: string | undefined;
-  let isCallingSendEditProfile: boolean = false;
-  let isCallingSendMuteUser: boolean = false;
+  let { rxNostr, profs, currentPubkey, isLoggedin, loginPubkey, relaysToUse, muteList }: Props = $props();
+
+  let editProfileName: string = $state('');
+  let editProfileDisplayName: string | undefined = $state();
+  let editProfileAbout: string = $state('');
+  let editProfilePicture: string = $state('');
+  let editProfileWebsite: string | undefined = $state();
+  let isCallingSendEditProfile: boolean = $state(false);
+  let isCallingSendMuteUser: boolean = $state(false);
 
   const setProfileMetadata = (currentProfile: Profile) => {
     editProfileName = currentProfile.name;
@@ -137,18 +141,26 @@
         <input id="edit-channel-website" type="url" placeholder="https://..." bind:value={editProfileWebsite} />
       </dd>
     </dl>
-    <button on:click={callSendEditProfile} disabled={!editProfileName || isCallingSendEditProfile}>Edit</button>
+    <button onclick={callSendEditProfile} disabled={!editProfileName || isCallingSendEditProfile}>Edit</button>
   </details>
 {/if}
 
 {#if profs[currentPubkey] && isLoggedin && loginPubkey}
   {#if muteList.includes(currentPubkey)}
-    <button class="profile-metadata on" on:click={() => callSendMuteUser(false)} disabled={isCallingSendMuteUser} title="Unmute"
-      ><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button
+    <button
+      class="profile-metadata on"
+      onclick={() => callSendMuteUser(false)}
+      disabled={isCallingSendMuteUser}
+      title="Unmute"
+      aria-label="Unmute"><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button
     >
   {:else}
-    <button class="profile-metadata off" on:click={() => callSendMuteUser(true)} disabled={isCallingSendMuteUser} title="Mute"
-      ><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button
+    <button
+      class="profile-metadata off"
+      onclick={() => callSendMuteUser(true)}
+      disabled={isCallingSendMuteUser}
+      title="Mute"
+      aria-label="Mute"><svg><use xlink:href="/eye-no.svg#mute"></use></svg></button
     >
   {/if}
 {/if}

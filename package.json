@@ -20,16 +20,16 @@
     "svelte-persisted-store": "^0.12.0"
   },
   "devDependencies": {
-    "@sveltejs/adapter-auto": "^3.3.1",
-    "@sveltejs/kit": "2.5.23",
+    "@sveltejs/adapter-auto": "^4.0.0",
+    "@sveltejs/kit": "^2.17.2",
     "@types/emoji-mart": "^3.0.14",
     "prettier": "^3.5.2",
     "prettier-plugin-svelte": "^3.3.3",
-    "svelte": "^4.2.19",
+    "svelte": "^5.20.2",
     "svelte-check": "^4.1.4",
     "tslib": "^2.8.1",
     "typescript": "^5.7.3",
-    "vite": "^5.4.14"
+    "vite": "^6.1.1"
   },
   "type": "module"
 }

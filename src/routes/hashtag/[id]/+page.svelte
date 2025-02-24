@@ -8,7 +8,11 @@
   const currentEvent = null;
   const currentPubkey = null;
 
-  export let data: any;
+  interface Props {
+    data: any;
+  }
+
+  let { data }: Props = $props();
   let currentHashtag: string;
 
   onMount(() => {
