@@ -1,3 +1,3 @@
 export function match(param: string) {
-  return /^nprofile\w+$/.test(param);
+	return /^nprofile\w+$/.test(param);
 }
