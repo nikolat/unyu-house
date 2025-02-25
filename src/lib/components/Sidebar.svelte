@@ -24,7 +24,7 @@
 	export let loginPubkey: string;
 	export let channels: Channel[];
 	export let profs: { [key: string]: Profile };
-	export let importRelays: Function;
+	export let importRelays: (relaysSelected: string) => void;
 	export let theme: string;
 	export let pinList: string[];
 	export let muteList: string[];
@@ -37,12 +37,19 @@
 		filterSelected = value;
 	});
 
-	preferences.subscribe((value: any) => {
-		theme = value.theme ?? theme;
-		loginPubkey = value.loginPubkey;
-		isLoggedin = value.isLoggedin;
-		relaysSelected = value.relaysSelected;
-	});
+	preferences.subscribe(
+		(value: {
+			theme: string | undefined;
+			loginPubkey: string;
+			isLoggedin: boolean;
+			relaysSelected: string;
+		}) => {
+			theme = value.theme ?? theme;
+			loginPubkey = value.loginPubkey;
+			isLoggedin = value.isLoggedin;
+			relaysSelected = value.relaysSelected;
+		}
+	);
 
 	let newChannelName: string;
 	let newChannelAbout: string;

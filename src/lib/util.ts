@@ -12,6 +12,7 @@ import type { OperatorFunction } from 'rxjs';
 declare global {
 	interface Window {
 		nostr?: WindowNostr;
+		nostrZap?: { initTarget: (el: HTMLElement) => void };
 	}
 }
 
@@ -54,9 +55,9 @@ export class RelayConnector {
 	#filterBase: Filter[];
 	#until: number;
 	#since: number;
-	#callbackPhase3: Function;
+	#callbackPhase3: (ev: NostrEvent) => void;
 	#callbackEvent: (event: NostrEvent) => void;
-	#execScroll: Function;
+	#execScroll: () => void;
 
 	constructor(
 		rxNostr: RxNostr,
@@ -65,9 +66,9 @@ export class RelayConnector {
 		loginPubkey: string,
 		filterBase: Filter[],
 		until: number,
-		callbackPhase3: Function,
+		callbackPhase3: (ev: NostrEvent) => void,
 		callbackEvent: (event: NostrEvent) => void,
-		execScroll: Function
+		execScroll: () => void
 	) {
 		this.#rxNostr = rxNostr;
 		this.#tie = tie;
@@ -264,7 +265,7 @@ export class RelayConnector {
 		this.#getEventsPhase2(filterPhase2, filterPhase3, true);
 	};
 
-	#getEventsPhase2 = async (filterPhase2: Filter[], filterPhase3: Filter[], goPhase3: Boolean) => {
+	#getEventsPhase2 = async (filterPhase2: Filter[], filterPhase3: Filter[], goPhase3: boolean) => {
 		const events: { [key: number]: NostrEvent[] } = {
 			0: [],
 			42: [],
@@ -690,11 +691,11 @@ export const sendEditChannel = async (
 			const relaysToWrite = Object.entries(relaysToUse)
 				.filter((v) => v[1].write)
 				.map((v) => v[0]);
-			const objContent: object = JSON.parse(newestEvent.content);
-			(objContent as any).name = name;
-			(objContent as any).about = about;
-			(objContent as any).picture = picture;
-			(objContent as any).relays = relaysToWrite;
+			const objContent = JSON.parse(newestEvent.content);
+			objContent.name = name;
+			objContent.about = about;
+			objContent.picture = picture;
+			objContent.relays = relaysToWrite;
 			const recommendeRelay = Array.from(seenOn.get(currentChannelId) ?? []).at(0) ?? '';
 			const baseEvent: EventTemplate = {
 				kind: 41,
@@ -759,17 +760,17 @@ export const sendEditProfile = async (
 			const relaysToWrite = Object.entries(relaysToUse)
 				.filter((v) => v[1].write)
 				.map((v) => v[0]);
-			let objContent: object;
+			let objContent;
 			if (newestEvent !== undefined) {
 				objContent = JSON.parse(newestEvent.content);
 			} else {
 				objContent = {};
 			}
-			(objContent as any).name = prof.name;
-			(objContent as any).about = prof.about;
-			(objContent as any).picture = prof.picture;
-			(objContent as any).display_name = prof.display_name;
-			(objContent as any).website = prof.website;
+			objContent.name = prof.name;
+			objContent.about = prof.about;
+			objContent.picture = prof.picture;
+			objContent.display_name = prof.display_name;
+			objContent.website = prof.website;
 			const baseEvent: EventTemplate = {
 				kind: 0,
 				created_at: Math.floor(Date.now() / 1000),
@@ -1148,10 +1149,10 @@ export function insertEventIntoAscendingList(
 }
 
 export const zap = (npub: string, id: string, relays: string[]) => {
-	const elm = document.createElement('button') as HTMLButtonElement;
+	const elm: HTMLButtonElement = document.createElement('button');
 	elm.dataset.npub = npub;
 	elm.dataset.noteId = id;
 	elm.dataset.relays = relays.join(',');
-	(window as any).nostrZap.initTarget(elm);
+	window.nostrZap?.initTarget(elm);
 	elm.dispatchEvent(new Event('click'));
 };

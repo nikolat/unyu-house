@@ -16,7 +16,7 @@
 	import Quote from './Quote.svelte';
 	import data from '@emoji-mart/data';
 	import { Picker } from 'emoji-mart';
-	// @ts-ignore
+	// @ts-expect-error なんもわからんかも
 	import type { BaseEmoji } from '@types/emoji-mart';
 	import type { RxNostr } from 'rx-nostr';
 
@@ -38,18 +38,25 @@
 	export let repostList: NostrEvent[];
 	export let favList: NostrEvent[];
 	export let zapList: NostrEvent[];
-	export let resetScroll: Function;
-	export let importRelays: Function;
+	export let resetScroll: () => void;
+	export let importRelays: (relaysSelected: string) => void;
 	export let emojiMap: Map<string, string>;
 	export let theme: string;
 	export let relaysSelected: string;
 
-	preferences.subscribe((value: any) => {
-		theme = value.theme ?? theme;
-		loginPubkey = value.loginPubkey;
-		isLoggedin = value.isLoggedin;
-		relaysSelected = value.loginPubkey;
-	});
+	preferences.subscribe(
+		(value: {
+			theme: string | undefined;
+			loginPubkey: string;
+			isLoggedin: boolean;
+			relaysSelected: string;
+		}) => {
+			theme = value.theme ?? theme;
+			loginPubkey = value.loginPubkey;
+			isLoggedin = value.isLoggedin;
+			relaysSelected = value.loginPubkey;
+		}
+	);
 
 	let emojiPicker: { [key: string]: HTMLElement } = {};
 	let visible: { [key: string]: boolean } = {};
@@ -107,6 +114,11 @@
 		}
 	};
 
+	interface MyBaseEmoji extends BaseEmoji {
+		shortcodes: string;
+		src: string | undefined;
+	}
+
 	const callSendEmoji = (rxNostr: RxNostr, relaysToWrite: string[], targetEvent: NostrEvent) => {
 		const noteId = targetEvent.id;
 		visible[noteId] = !visible[noteId];
@@ -131,16 +143,11 @@
 			],
 			onEmojiSelect
 		});
-		function onEmojiSelect(emoji: BaseEmoji) {
+		function onEmojiSelect(emoji: MyBaseEmoji) {
 			visible[noteId] = false;
-			sendFav(
-				rxNostr,
-				relaysToWrite,
-				targetEvent,
-				emoji.native ?? ((emoji as any).shortcodes as string),
-				(emoji as any).src as string
-			);
+			sendFav(rxNostr, relaysToWrite, targetEvent, emoji.native ?? emoji.shortcodes, emoji.src);
 		}
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		emojiPicker[noteId].appendChild(picker as any);
 	};
 
@@ -212,7 +219,6 @@
 			{#if !isMuted}
 				{@const npub = nip19.npubEncode(note.pubkey)}
 				{@const npubOrg = nip19.npubEncode(noteOrg.pubkey)}
-				{@const nevent = nip19.neventEncode({ ...note, author: note.pubkey })}
 				{@const neventOrg = nip19.neventEncode({
 					...noteOrg,
 					author: noteOrg.pubkey

@@ -7,7 +7,7 @@
 	import { uploadFile } from '$lib/nip96';
 	import data from '@emoji-mart/data';
 	import { Picker } from 'emoji-mart';
-	// @ts-ignore
+	// @ts-expect-error なんもわからんかも
 	import type { BaseEmoji } from '@types/emoji-mart';
 	import { uploaderURLs } from '$lib/config';
 	import type { RxNostr } from 'rx-nostr';
@@ -18,8 +18,8 @@
 		currentChannelId: string | null;
 		relaysToUse: RelayRecord;
 		channels?: Channel[];
-		hidePostBar: Function;
-		resetScroll: Function;
+		hidePostBar: () => void;
+		resetScroll: () => void;
 		emojiMap: Map<string, string>;
 	}
 
@@ -60,6 +60,10 @@
 		);
 	};
 
+	interface MyBaseEmoji extends BaseEmoji {
+		shortcodes: string;
+	}
+
 	const callGetEmoji = () => {
 		emojiVisible = !emojiVisible;
 		if (emojiPicker?.children.length ?? 0 > 0) {
@@ -83,11 +87,12 @@
 			],
 			onEmojiSelect
 		});
-		function onEmojiSelect(emoji: BaseEmoji) {
+		function onEmojiSelect(emoji: MyBaseEmoji) {
 			emojiVisible = false;
-			const emojiStr = emoji.native ?? ((emoji as any).shortcodes as string);
+			const emojiStr = emoji.native ?? emoji.shortcodes;
 			insertText(emojiStr);
 		}
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		emojiPicker?.appendChild(picker as any);
 	};
 

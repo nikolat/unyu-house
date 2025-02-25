@@ -38,7 +38,7 @@
 		let d;
 		try {
 			d = nip19.decode(eventText);
-		} catch (error) {
+		} catch (_error) {
 			return null;
 		}
 		if (

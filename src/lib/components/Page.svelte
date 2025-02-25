@@ -151,7 +151,7 @@
 		storedEvents.set(eventsAll);
 		if (redraw) console.info(`kind:${event.kind}`);
 		switch (event.kind) {
-			case 0:
+			case 0: {
 				try {
 					profs[event.pubkey] = JSON.parse(event.content);
 				} catch (error) {
@@ -162,12 +162,14 @@
 				profs[event.pubkey].tags = event.tags;
 				if (redraw) profs = profs;
 				break;
-			case 3:
+			}
+			case 3: {
 				followList = event.tags
 					.filter((tag) => tag.length >= 2 && tag[0] === 'p')
 					.map((tag) => tag[1]);
 				break;
-			case 7:
+			}
+			case 7: {
 				if (redraw) favList = insertEventIntoAscendingList(favList, event);
 				else favList.unshift(event);
 				const targetChannel7 = channels.find(
@@ -180,7 +182,8 @@
 					if (redraw) channels = channels;
 				}
 				break;
-			case 16:
+			}
+			case 16: {
 				let isRepostToShow = false;
 				if (currentChannelId) {
 					const baseevent = notes.find(
@@ -207,7 +210,8 @@
 				if (redraw) repostList = insertEventIntoAscendingList(repostList, event);
 				else repostList.unshift(event);
 				break;
-			case 40:
+			}
+			case 40: {
 				let channel: Channel;
 				try {
 					channel = JSON.parse(event.content);
@@ -230,7 +234,8 @@
 				if (redraw) channels = getSortedChannels([channel, ...channels]);
 				else channels.unshift(channel);
 				break;
-			case 41:
+			}
+			case 41: {
 				const id = event.tags.find((tag) => tag.length >= 2 && tag[0] === 'e')?.at(1);
 				const targetChannel41 = channels.find((channel) => channel.event.id === id);
 				if (targetChannel41 === undefined) {
@@ -274,7 +279,8 @@
 					);
 				}
 				break;
-			case 42:
+			}
+			case 42: {
 				let isQuote = false;
 				if (currentChannelId) {
 					isQuote = !event.tags.some(
@@ -315,11 +321,12 @@
 					channels = channels;
 				}
 				break;
-			case 9735:
+			}
+			case 9735: {
 				let event9734;
 				try {
 					event9734 = JSON.parse(event.tags.find((tag) => tag[0] === 'description')?.at(1) ?? '{}');
-				} catch (error) {
+				} catch (_error) {
 					//console.warn(error);
 					return;
 				}
@@ -329,19 +336,22 @@
 				if (redraw) zapList = insertEventIntoAscendingList(zapList, event);
 				else zapList.unshift(event);
 				break;
-			case 10000:
+			}
+			case 10000: {
 				muteList = await getListWithEncrypt(event, 'p');
 				muteChannels = await getListWithEncrypt(event, 'e');
 				wordList = await getListWithEncrypt(event, 'word');
 				break;
-			case 10005:
+			}
+			case 10005: {
 				pinList = event.tags
 					.filter((tag) => tag.length >= 2 && tag[0] === 'e')
 					.map((tag) => tag[1]);
 				break;
+			}
 			case 10030:
 				break;
-			case 30007:
+			case 30007: {
 				const dTagKind = parseInt(event.tags.filter((tag) => tag[0] === 'd')[0][1]);
 				switch (dTagKind) {
 					case 7:
@@ -357,7 +367,8 @@
 						break;
 				}
 				break;
-			case 30030:
+			}
+			case 30030: {
 				for (const tag of event.tags.filter(
 					(tag) =>
 						tag.length >= 3 && tag[0] === 'emoji' && /^\w+$/.test(tag[1]) && URL.canParse(tag[2])
@@ -365,10 +376,12 @@
 					emojiMap.set(tag[1], tag[2]);
 				}
 				break;
-			default:
+			}
+			default: {
 				if (redraw) notesQuoted = insertEventIntoAscendingList(notesQuoted, event);
 				else notesQuoted.unshift(event);
 				break;
+			}
 		}
 	};
 

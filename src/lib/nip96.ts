@@ -9,16 +9,12 @@ export async function uploadFile(
 	// Create FormData object
 	const formData = new FormData();
 
-	// Append the authorization header to HTML Form Data
-	formData.append('Authorization', nip98AuthorizationHeader);
-
 	// Append optional fields to FormData
-	optionalFormDataFields &&
-		Object.entries(optionalFormDataFields).forEach(([key, value]) => {
-			if (value) {
-				formData.append(key, value);
-			}
-		});
+	Object.entries(optionalFormDataFields ?? {}).forEach(([key, value]) => {
+		if (value) {
+			formData.append(key, value);
+		}
+	});
 
 	// Append the file to FormData as the last field
 	formData.append('file', file);
@@ -28,7 +24,6 @@ export async function uploadFile(
 		method: 'POST',
 		headers: {
 			Authorization: nip98AuthorizationHeader
-			//'Content-Type': 'multipart/form-data', //https://github.com/nbd-wtf/nostr-tools/pull/413
 		},
 		body: formData
 	});
@@ -66,7 +61,7 @@ export async function uploadFile(
 		//}
 
 		return parsedResponse;
-	} catch (error) {
+	} catch (_error) {
 		throw new Error('Error parsing JSON response!');
 	}
 }

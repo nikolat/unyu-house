@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { PageData } from './$types';
 	import { onMount } from 'svelte';
 	import { afterNavigate } from '$app/navigation';
 	import {
@@ -16,7 +17,7 @@
 	const currentPubkey = null;
 
 	interface Props {
-		data: any;
+		data: PageData;
 	}
 
 	let { data }: Props = $props();
