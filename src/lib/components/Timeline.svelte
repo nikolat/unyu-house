@@ -293,7 +293,7 @@
 					>
 					<div class="content-warning-target {contentWarningTag.length > 0 ? 'hide' : ''}">
 						<div class="content">
-							{plainTexts.shift()}{#each Array.from(matchesIterator) as match}{#if /https?:\/\/\S+/.test(match[1])}<a
+							{plainTexts[0]}{#each Array.from(matchesIterator) as match, i}{#if /https?:\/\/\S+/.test(match[1])}<a
 										href={match[1]}
 										target="_blank"
 										rel="noopener noreferrer">{match[1]}</a
@@ -343,7 +343,7 @@
 										alt={matchedText}
 										title={matchedText}
 										class="emoji"
-									/>{/if}{plainTexts.shift()}{/each}
+									/>{/if}{plainTexts[i + 1]}{/each}
 						</div>
 						{#if imageUrls.length > 0}<div class="image-holder">
 								{#each imageUrls as imageUrl}<figure>
