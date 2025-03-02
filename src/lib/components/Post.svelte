@@ -34,7 +34,6 @@
 		emojiMap
 	}: Props = $props();
 	let inputText: string = $state('');
-	let emojiPicker: HTMLElement | undefined = $state();
 	let emojiVisible: boolean = $state(false);
 	let contentWarningReason: string | undefined = $state();
 	let targetUrlToUpload: string = $state('');
@@ -66,6 +65,7 @@
 
 	const callGetEmoji = () => {
 		emojiVisible = !emojiVisible;
+		const emojiPicker = document.getElementById('emoji-picker-post');
 		if (emojiPicker?.children.length ?? 0 > 0) {
 			return;
 		}
@@ -184,11 +184,7 @@
 				title="Select Emoji"
 				aria-label="Select Emoji"><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button
 			>
-			<div
-				id="emoji-picker-post"
-				bind:this={emojiPicker}
-				class={emojiVisible ? '' : 'hidden'}
-			></div>
+			<div id="emoji-picker-post" class={emojiVisible ? '' : 'hidden'}></div>
 			{#if contentWarningReason === undefined}
 				<button
 					class="content-warning off"
@@ -223,7 +219,7 @@
 				onchange={uploadFileExec}
 			/>
 			<select id="uploader-url-to-upload" bind:value={targetUrlToUpload}>
-				{#each uploaderURLs as url}
+				{#each uploaderURLs as url (url)}
 					<option value={url}>{url}</option>
 				{/each}
 			</select>

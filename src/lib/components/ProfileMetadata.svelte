@@ -80,7 +80,7 @@
 	{@const emojiUrls = r[2]}
 	<p id="profile-about">
 		{plainTexts.shift()}
-		{#each Array.from(matchesIterator) as match}
+		{#each Array.from(matchesIterator) as match, i (i)}
 			{#if /https?:\/\/\S+/.test(match[1])}
 				<a href={match[1]} target="_blank" rel="noopener noreferrer">{match[1]}</a>
 			{:else if /nostr:npub\w{59}/.test(match[2])}
