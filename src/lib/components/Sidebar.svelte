@@ -179,7 +179,7 @@
 				<th>r</th>
 				<th>w</th>
 			</tr>
-			{#each Object.entries(relaysToUse) as relay}
+			{#each Object.entries(relaysToUse) as relay (relay)}
 				<tr>
 					<td>
 						{#await nip11.fetchRelayInformation(relay[0]) then r}
@@ -236,7 +236,7 @@
 			{#if pinList.length > 0}
 				<h3>Pinned Channels</h3>
 				<div>
-					{#each channels.filter((ch) => pinList.includes(ch.event.id)) as channel}
+					{#each channels.filter( (ch) => pinList.includes(ch.event.id) ) as channel (channel.event.id)}
 						<SidebarChannel
 							picture={channel.picture}
 							url={nip19.neventEncode(channel.event)}
@@ -260,7 +260,7 @@
 			</select>
 		</section>
 		<div>
-			{#each channels.filter((ch) => ch.name && (filterSelected === 'default' || (filterSelected === 'fav' && ch.fav_count > 0) || (filterSelected === 'kana' && /[ぁ-んァ-ヴｦ-ﾟ]/.test(ch.name)) || (filterSelected === 'follow' && followList.includes(ch.event.pubkey)))) as channel}
+			{#each channels.filter((ch) => ch.name && (filterSelected === 'default' || (filterSelected === 'fav' && ch.fav_count > 0) || (filterSelected === 'kana' && /[ぁ-んァ-ヴｦ-ﾟ]/.test(ch.name)) || (filterSelected === 'follow' && followList.includes(ch.event.pubkey)))) as channel (channel.event.id)}
 				{#if !muteList.includes(channel.event.pubkey) && !muteChannels.includes(channel.event.id) && !wordList.some( (word) => channel.name.includes(word) )}
 					<SidebarChannel
 						picture={profs[channel.event.pubkey]?.picture}

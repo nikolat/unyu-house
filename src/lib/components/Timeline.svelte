@@ -65,25 +65,25 @@
 
 	const getImageUrls = (content: string) => {
 		const matchesIterator = content.matchAll(/https?:\/\/\S+\.(jpe?g|png|gif|webp)/gi);
-		const urls = [];
+		const urls = new Set<string>();
 		for (const match of matchesIterator) {
-			urls.push(match[0]);
+			urls.add(match[0]);
 		}
 		return urls;
 	};
 	const getVideoUrls = (content: string) => {
 		const matchesIterator = content.matchAll(/https?:\/\/\S+\.(mp4|mov)/gi);
-		const urls = [];
+		const urls = new Set<string>();
 		for (const match of matchesIterator) {
-			urls.push(match[0]);
+			urls.add(match[0]);
 		}
 		return urls;
 	};
 	const getAudioUrls = (content: string) => {
 		const matchesIterator = content.matchAll(/https?:\/\/\S+\.(mp3|m4a|wav|ogg|aac)/gi);
-		const urls = [];
+		const urls = new Set<string>();
 		for (const match of matchesIterator) {
-			urls.push(match[0]);
+			urls.add(match[0]);
 		}
 		return urls;
 	};
@@ -192,7 +192,7 @@
 
 <p>Total: {notesToShow.slice(-50).length} posts</p>
 <dl>
-	{#each notesToShow.slice(-50) as note}
+	{#each notesToShow.slice(-50) as note (note.id)}
 		{@const noteOrg =
 			note.kind === 42
 				? note
@@ -265,7 +265,9 @@
 					<a href="/channels/{nip19.neventEncode(channel.event)}">{channel.name}</a>
 				</dt>
 				{@const replyTags = noteOrg.tags.filter((v) => v[0] === 'e' && v[3] === 'reply')}
-				{@const replyPubkeys = noteOrg.tags.filter((v) => v[0] === 'p').map((v) => v[1])}
+				{@const replyPubkeys = new Set<string>(
+					noteOrg.tags.filter((v) => v[0] === 'p').map((v) => v[1])
+				)}
 				{@const r = getExpandTagsList(
 					noteOrg.content,
 					noteOrg.tags.filter((v) => v[0] === 'emoji')
@@ -278,9 +280,9 @@
 				{@const audioUrls = getAudioUrls(noteOrg.content)}
 				{@const contentWarningTag = noteOrg.tags.filter((tag) => tag[0] === 'content-warning')}
 				<dd>
-					{#if replyTags.length > 0 || replyPubkeys.length > 0}<div class="info-header">
+					{#if replyTags.length > 0 || replyPubkeys.size > 0}<div class="info-header">
 							{#if replyTags.length > 0}<a href="#note-{replyTags[0][1]}">&gt;&gt;</a
-								>{/if}{#each replyPubkeys as pubkey}&nbsp;@{profs[pubkey]?.name ??
+								>{/if}{#each replyPubkeys as pubkey (pubkey)}&nbsp;@{profs[pubkey]?.name ??
 									npubOrg.slice(0, 10) + '...'}{/each}
 						</div>{/if}
 					<div class="content-warning-reason {contentWarningTag.length > 0 ? '' : 'hide'}">
@@ -293,7 +295,7 @@
 					>
 					<div class="content-warning-target {contentWarningTag.length > 0 ? 'hide' : ''}">
 						<div class="content">
-							{plainTexts[0]}{#each Array.from(matchesIterator) as match, i}{#if /https?:\/\/\S+/.test(match[1])}<a
+							{plainTexts[0]}{#each Array.from(matchesIterator) as match, i (i)}{#if /https?:\/\/\S+/.test(match[1])}<a
 										href={match[1]}
 										target="_blank"
 										rel="noopener noreferrer">{match[1]}</a
@@ -345,26 +347,29 @@
 										class="emoji"
 									/>{/if}{plainTexts[i + 1]}{/each}
 						</div>
-						{#if imageUrls.length > 0}<div class="image-holder">
-								{#each imageUrls as imageUrl}<figure>
+						{#if imageUrls.size > 0}<div class="image-holder">
+								{#each imageUrls as imageUrl (imageUrl)}<figure>
 										<a href={imageUrl} target="_blank" rel="noopener noreferrer"
 											><img src={imageUrl} alt="auto load" /></a
 										>
 									</figure>{/each}
-							</div>{/if}{#if videoUrls.length > 0}<div class="video-holder">
-								{#each videoUrls as videoUrl}<video controls preload="metadata">
+							</div>{/if}{#if videoUrls.size > 0}<div class="video-holder">
+								{#each videoUrls as videoUrl (videoUrl)}<video controls preload="metadata">
 										<track kind="captions" />
 										<source src={videoUrl} />
 									</video>{/each}
-							</div>{/if}{#if audioUrls.length > 0}<div class="audio-holder">
-								{#each audioUrls as audioUrl}<audio controls preload="metadata" src={audioUrl}
+							</div>{/if}{#if audioUrls.size > 0}<div class="audio-holder">
+								{#each audioUrls as audioUrl (audioUrl)}<audio
+										controls
+										preload="metadata"
+										src={audioUrl}
 									></audio>{/each}
 							</div>{/if}
 					</div>
 					{#if favList.some((ev) => ev.tags
 								.findLast((tag) => tag.length >= 2 && tag[0] === 'e')
 								?.at(1) === noteOrg.id && profs[ev.pubkey])}<ul class="fav-holder" role="list">
-							{#each favList as ev}{#if ev.tags
+							{#each favList as ev (ev.id)}{#if ev.tags
 									.findLast((tag) => tag[0] === 'e')
 									?.at(1) === noteOrg.id && profs[ev.pubkey] && !muteList.includes(ev.pubkey) && !muteListFav.includes(ev.pubkey)}{@const emojiTag =
 										ev.tags.find((tag) => tag.length >= 3 && tag[0] === 'emoji')}{@const prof =
@@ -389,7 +394,7 @@
 						</ul>{/if}{#if zapList.some((ev) => ev.tags
 								.find((tag) => tag.length >= 2 && tag[0] === 'e')
 								?.at(1) === noteOrg.id)}<ul class="zap-holder" role="list">
-							{#each zapList as ev}{@const event9734 = getevent9734(ev)}{#if event9734.tags
+							{#each zapList as ev (ev.id)}{@const event9734 = getevent9734(ev)}{#if event9734.tags
 									.find((tag) => tag[0] === 'e')
 									?.at(1) === noteOrg.id && profs[event9734.pubkey] && !muteList.includes(event9734.pubkey) && !muteListZap.includes(event9734.pubkey)}{@const prof =
 										profs[event9734.pubkey]}{@const npubZapped = nip19.npubEncode(event9734.pubkey)}
@@ -483,7 +488,7 @@
 								<dt>Relays seen on</dt>
 								<dd>
 									<ul>
-										{#each Array.from(seenOn.get(noteOrg.id) ?? []) as relay}
+										{#each Array.from(seenOn.get(noteOrg.id) ?? []) as relay (relay)}
 											<li>{relay}</li>
 										{/each}
 									</ul>
