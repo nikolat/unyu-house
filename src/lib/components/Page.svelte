@@ -32,7 +32,7 @@
 	import Timeline from './Timeline.svelte';
 	import Post from './Post.svelte';
 	import { createRxNostr, createTie, type EventPacket, type RxNostr } from 'rx-nostr';
-	import { verifier } from 'rx-nostr-crypto';
+	import { verifier } from '@rx-nostr/crypto';
 	import type { OperatorFunction } from 'rxjs';
 
 	let rxNostr: RxNostr;

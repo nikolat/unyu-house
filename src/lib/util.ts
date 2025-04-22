@@ -1090,10 +1090,6 @@ export const getRelaysToUse = (
 					resolve(newRelays);
 				});
 			});
-		case 'nip07':
-			if (window.nostr === undefined || window.nostr.getRelays === undefined)
-				return Promise.resolve({});
-			return window.nostr.getRelays();
 		case 'default':
 		default:
 			return Promise.resolve(defaultRelays);
