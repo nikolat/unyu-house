@@ -166,7 +166,6 @@
 				<option value="kind3">Kind 3</option>
 				<option value="kind10002">Kind 10002</option>
 				<option value="nip05">NIP-05</option>
-				{#if isLoggedin}<option value="nip07">NIP-07</option>{/if}
 				<option value="default">Default</option>
 			</select>
 		</section>
