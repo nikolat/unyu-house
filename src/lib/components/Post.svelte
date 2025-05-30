@@ -1,16 +1,15 @@
 <script lang="ts">
 	import { sendMessage, type Channel } from '$lib/util';
+	import { uploaderURLs } from '$lib/config';
+	import { readServerConfig, uploadFile, type OptionalFormDataFields } from '$lib/nip96';
 	import type { EventTemplate, NostrEvent } from 'nostr-tools/pure';
 	import type { RelayRecord } from 'nostr-tools/relay';
-	import { readServerConfig, type OptionalFormDataFields } from 'nostr-tools/nip96';
 	import { getToken } from 'nostr-tools/nip98';
-	import { uploadFile } from '$lib/nip96';
+	import type { RxNostr } from 'rx-nostr';
 	import data from '@emoji-mart/data';
 	import { Picker } from 'emoji-mart';
 	// @ts-expect-error なんもわからんかも
 	import type { BaseEmoji } from '@types/emoji-mart';
-	import { uploaderURLs } from '$lib/config';
-	import type { RxNostr } from 'rx-nostr';
 
 	interface Props {
 		rxNostr: RxNostr;
