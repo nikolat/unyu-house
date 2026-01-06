@@ -85,7 +85,7 @@
 			loginPubkey = value.loginPubkey;
 			isLoggedin = value.isLoggedin;
 			relaysSelected = value.relaysSelected;
-			if (browser) {
+			if (browser && document.querySelector('link[rel=stylesheet]') !== null) {
 				(document.querySelector('link[rel=stylesheet]') as HTMLLinkElement).href =
 					theme ?? $preferences.theme;
 			}

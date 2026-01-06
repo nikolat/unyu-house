@@ -10,6 +10,7 @@
 	import type { RelayRecord } from 'nostr-tools/relay';
 	import * as nip19 from 'nostr-tools/nip19';
 	import type { RxNostr } from 'rx-nostr';
+	import { resolve } from '$app/paths';
 
 	interface Props {
 		channel: Channel;
@@ -114,7 +115,8 @@
 
 {#if channel}
 	<h2>
-		{#if isQuote}<a href="/channels/{nip19.neventEncode(channel.event)}">{channel.name}</a
+		{#if isQuote}<a href={resolve(`/channels/${nip19.neventEncode(channel.event)}`)}
+				>{channel.name}</a
 			>{:else}{channel.name}{/if}
 	</h2>
 {:else}
@@ -136,7 +138,7 @@
 							height="32"
 							alt="@{profs[channel.event.pubkey].name}"
 						/>
-						<a href="/{nip19.npubEncode(channel.event.pubkey)}"
+						<a href={resolve(`/${nip19.npubEncode(channel.event.pubkey)}`)}
 							>@{profs[channel.event.pubkey].name ?? ''}</a
 						>
 					</div>

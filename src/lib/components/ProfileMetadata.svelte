@@ -3,6 +3,7 @@
 	import type { RelayRecord } from 'nostr-tools/relay';
 	import * as nip19 from 'nostr-tools/nip19';
 	import type { RxNostr } from 'rx-nostr';
+	import { resolve } from '$app/paths';
 
 	interface Props {
 		rxNostr: RxNostr;
@@ -82,13 +83,16 @@
 		{plainTexts.shift()}
 		{#each Array.from(matchesIterator) as match, i (i)}
 			{#if /https?:\/\/\S+/.test(match[1])}
-				<a href={match[1]} target="_blank" rel="noopener noreferrer">{match[1]}</a>
+				{@const url = match[1]}
+				<a href={url} target="_blank" rel="noopener noreferrer">{url}</a>
 			{:else if /nostr:npub\w{59}/.test(match[2])}
 				{@const matchedText = match[2]}
 				{@const npubText = matchedText.replace(/nostr:/, '')}
 				{@const d = nip19.decode(npubText)}
 				{#if d.type === 'npub'}
-					<a href="/{npubText}">@{profs[d.data]?.name ?? npubText.slice(0, 10) + '...'}</a>
+					<a href={resolve(`/${npubText}`)}
+						>@{profs[d.data]?.name ?? npubText.slice(0, 10) + '...'}</a
+					>
 				{:else}
 					{matchedText}
 				{/if}
@@ -97,7 +101,7 @@
 				{@const nprofileText = matchedText.replace(/nostr:/, '')}
 				{@const d = nip19.decode(nprofileText)}
 				{#if d.type === 'nprofile'}
-					<a href="/{nprofileText}"
+					<a href={resolve(`/${nprofileText}`)}
 						>@{profs[d.data.pubkey]?.name ?? nprofileText.slice(0, 10) + '...'}</a
 					>
 				{:else}
@@ -111,7 +115,7 @@
 				{match[6]}
 			{:else if /#\S+/.test(match[7])}
 				{@const matchedText = match[7]}
-				<a href="/hashtag/{encodeURI(matchedText.replace('#', ''))}">{matchedText}</a>
+				<a href={resolve(`/hashtag/${encodeURI(matchedText.replace('#', ''))}`)}>{matchedText}</a>
 			{:else if match[8]}
 				{@const matchedText = match[8]}
 				<img src={emojiUrls[matchedText]} alt={matchedText} title={matchedText} class="emoji" />
@@ -120,10 +124,10 @@
 		{/each}
 	</p>
 {/if}
-{#if profs[currentPubkey].website}<p id="profile-website">
-		<a href={profs[currentPubkey].website} target="_blank" rel="noopener noreferrer"
-			>{profs[currentPubkey].website}</a
-		>
+{#if profs[currentPubkey].website}
+	{@const url = profs[currentPubkey].website}
+	<p id="profile-website">
+		<a href={url} target="_blank" rel="noopener noreferrer">{url}</a>
 	</p>{/if}
 {#if isLoggedin && loginPubkey === currentPubkey}
 	<details>

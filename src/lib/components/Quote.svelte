@@ -5,6 +5,7 @@
 	import { urlToLinkNote } from '$lib/config';
 	import ChannelMetadata from './ChannelMetadata.svelte';
 	import type { RxNostr } from 'rx-nostr';
+	import { resolve } from '$app/paths';
 
 	interface Props {
 		rxNostr: RxNostr;
@@ -106,15 +107,15 @@
 									height="32"
 								/>
 								{profs[note.pubkey].display_name ?? ''}
-								<a href="/{npub}">@{profs[note.pubkey]?.name ?? ''}</a>
+								<a href={resolve(`/${npub}`)}>@{profs[note.pubkey]?.name ?? ''}</a>
 							{:else}
-								<img src="/default.png" alt="" width="32" height="32" /><a href="/{npub}"
-									>@{npub.slice(0, 10)}...</a
+								<img src="/default.png" alt="" width="32" height="32" /><a
+									href={resolve(`/${npub}`)}>@{npub.slice(0, 10)}...</a
 								>
 							{/if}
 							<br />
 							{#if note.kind === 42}
-								<a href="/{linkid}"
+								<a href={resolve(`/${linkid}`)}
 									><time>{new Date(1000 * note.created_at).toLocaleString()}</time></a
 								>
 							{:else}
@@ -125,7 +126,9 @@
 							{#if note.kind === 42 && rootId !== undefined}
 								{@const channel = channels.find((v) => v.event.id === rootId)}
 								{#if rootId && channel}
-									<a href="/channels/{nip19.neventEncode(channel.event)}">{channel.name}</a>
+									<a href={resolve(`/channels/${nip19.neventEncode(channel.event)}`)}
+										>{channel.name}</a
+									>
 								{:else}
 									(unknown channel)
 								{/if}
