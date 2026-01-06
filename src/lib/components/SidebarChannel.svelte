@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+
 	interface Props {
 		picture: string;
 		url: string;
@@ -13,7 +15,7 @@
 
 <li class="outline {classname}">
 	<img src={picture || '/default.png'} alt="" class="channel_icon {classname}" />
-	<a href={`/channels/${url}`}>{channelName}</a>
+	<a href={resolve(`/channels/${url}`)}>{channelName}</a>
 	{#if post_count > 0}📜{post_count}{/if}
 	{#if fav_count > 0}❤{fav_count}{/if}
 </li>

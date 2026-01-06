@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { npubEncode } from 'nostr-tools/nip19';
 	import type { Profile } from '$lib/util';
+	import { resolve } from '$app/paths';
 	interface Props {
 		title: string;
 		profs: { [key: string]: Profile };
@@ -14,13 +15,13 @@
 </script>
 
 <header>
-	<h1><a href="/">{title}</a></h1>
+	<h1><a href={resolve('/')}>{title}</a></h1>
 	<button id="toggle" onclick={expandSidebar} aria-label="menu"
 		><svg><use xlink:href="/menu.svg#hamburger"></use></svg></button
 	>
 	{#if loginPubkey && profs[loginPubkey]}
 		{@const npub = npubEncode(loginPubkey)}
-		<a href="/{npub}"
+		<a href={resolve(`/${npub}`)}
 			><img
 				id="account-avatar"
 				src={profs[loginPubkey].picture || '/default.png'}

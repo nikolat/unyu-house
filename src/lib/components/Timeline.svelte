@@ -19,6 +19,7 @@
 	// @ts-expect-error なんもわからんかも
 	import type { BaseEmoji } from '@types/emoji-mart';
 	import type { RxNostr } from 'rx-nostr';
+	import { resolve } from '$app/paths';
 
 	export let rxNostr: RxNostr;
 	export let seenOn: Map<string, Set<string>>;
@@ -234,10 +235,10 @@
 								height="16"
 							/>
 							{profs[note.pubkey].display_name ?? ''}
-							<a href="/{npub}">@{profs[note.pubkey]?.name ?? ''}</a>
+							<a href={resolve(`/${npub}`)}>@{profs[note.pubkey]?.name ?? ''}</a>
 						{:else}
 							<img src={getDefaultAvatar(note.pubkey, 16)} alt="" width="16" height="16" /><a
-								href="/{npub}">@{npub.slice(0, 10)}...</a
+								href={resolve(`/${npub}`)}>@{npub.slice(0, 10)}...</a
 							>
 						{/if}
 						<br />
@@ -252,17 +253,17 @@
 							height="32"
 						/>
 						{profs[noteOrg.pubkey].display_name ?? ''}
-						<a href="/{npubOrg}">@{profs[noteOrg.pubkey]?.name ?? ''}</a>
+						<a href={resolve(`/${npubOrg}`)}>@{profs[noteOrg.pubkey]?.name ?? ''}</a>
 					{:else}
 						<img src={getDefaultAvatar(noteOrg.pubkey, 32)} alt="" width="32" height="32" /><a
-							href="/{npubOrg}">@{npubOrg.slice(0, 10)}...</a
+							href={resolve(`/${npubOrg}`)}>@{npubOrg.slice(0, 10)}...</a
 						>
 					{/if}
 					<br />
-					<a href="/{neventOrg}"
+					<a href={resolve(`/${neventOrg}`)}
 						><time>{new Date(1000 * noteOrg.created_at).toLocaleString()}</time></a
 					>
-					<a href="/channels/{nip19.neventEncode(channel.event)}">{channel.name}</a>
+					<a href={resolve(`/channels/${nip19.neventEncode(channel.event)}`)}>{channel.name}</a>
 				</dt>
 				{@const replyTags = noteOrg.tags.filter((v) => v[0] === 'e' && v[3] === 'reply')}
 				{@const replyPubkeys = new Set<string>(
@@ -295,17 +296,16 @@
 					>
 					<div class="content-warning-target {contentWarningTag.length > 0 ? 'hide' : ''}">
 						<div class="content">
-							{plainTexts[0]}{#each Array.from(matchesIterator) as match, i (i)}{#if /https?:\/\/\S+/.test(match[1])}<a
-										href={match[1]}
-										target="_blank"
-										rel="noopener noreferrer">{match[1]}</a
+							{plainTexts[0]}{#each Array.from(matchesIterator) as match, i (i)}{#if /https?:\/\/\S+/.test(match[1])}{@const url =
+										match[1]}<a href={url} target="_blank" rel="noopener noreferrer">{url}</a
 									>{:else if /nostr:npub\w{59}/.test(match[2])}{@const matchedText =
 										match[2]}{@const npubText = matchedText.replace(/nostr:/, '')}{@const d =
-										nip19.decode(npubText)}{#if d.type === 'npub'}<a href="/{npubText}"
+										nip19.decode(npubText)}{#if d.type === 'npub'}<a href={resolve(`/${npubText}`)}
 											>@{profs[d.data]?.name ?? npubText.slice(0, 10) + '...'}</a
 										>{:else}{matchedText}{/if}{:else if /nostr:nprofile\w+/.test(match[3])}{@const matchedText =
 										match[3]}{@const nprofileText = matchedText.replace(/nostr:/, '')}{@const d =
-										nip19.decode(nprofileText)}{#if d.type === 'nprofile'}<a href="/{nprofileText}"
+										nip19.decode(nprofileText)}{#if d.type === 'nprofile'}<a
+											href={resolve(`/${nprofileText}`)}
 											>@{profs[d.data.pubkey]?.name ?? nprofileText.slice(0, 10) + '...'}</a
 										>{:else}{matchedText}{/if}{:else if /nostr:note\w{59}/.test(match[4])}{@const matchedText =
 										match[4]}<Quote
@@ -338,8 +338,9 @@
 										target="_blank"
 										rel="noopener noreferrer">{matchedText}</a
 									>{:else if /#\S+/.test(match[7])}{@const matchedText = match[7]}<a
-										href="/hashtag/{encodeURI(matchedText.toLowerCase().replace('#', ''))}"
-										>{matchedText}</a
+										href={resolve(
+											`/hashtag/${encodeURI(matchedText.toLowerCase().replace('#', ''))}`
+										)}>{matchedText}</a
 									>{:else if match[8]}{@const matchedText = match[8]}<img
 										src={emojiUrls[matchedText]}
 										alt={matchedText}
@@ -389,7 +390,7 @@
 											height="16"
 										/>
 										{prof.display_name ?? ''}
-										<a href="/{npubFaved}">@{prof.name ?? ''}</a> reacted
+										<a href={resolve(`/${npubFaved}`)}>@{prof.name ?? ''}</a> reacted
 									</li>{/if}{/each}
 						</ul>{/if}{#if zapList.some((ev) => ev.tags
 								.find((tag) => tag.length >= 2 && tag[0] === 'e')
@@ -407,7 +408,7 @@
 											height="16"
 										/>
 										{prof.display_name ?? ''}
-										<a href="/{npubZapped}">@{prof.name ?? ''}</a>
+										<a href={resolve(`/${npubZapped}`)}>@{prof.name ?? ''}</a>
 										zapped{#if event9734.content}<blockquote>
 												{event9734.content}
 											</blockquote>{/if}
