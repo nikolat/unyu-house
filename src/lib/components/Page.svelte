@@ -184,7 +184,7 @@
 				break;
 			}
 			case 16: {
-				let isRepostToShow = false;
+				let isRepostToShow: boolean;
 				if (currentChannelId) {
 					const baseevent = notes.find(
 						(note) => note.id === event.tags.find((tag) => tag.length >= 2 && tag[0] === 'e')?.at(1)
