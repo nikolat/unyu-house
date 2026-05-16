@@ -15,47 +15,64 @@
 	import { defaultRelays, urlToLinkNaddr } from '$lib/config';
 	import Quote from './Quote.svelte';
 	import data from '@emoji-mart/data';
-	import { Picker } from 'emoji-mart';
-	// @ts-expect-error なんもわからんかも
-	import type { BaseEmoji } from '@types/emoji-mart';
 	import type { RxNostr } from 'rx-nostr';
 	import { resolve } from '$app/paths';
 
-	export let rxNostr: RxNostr;
-	export let seenOn: Map<string, Set<string>>;
-	export let relaysToWrite: string[];
-	export let notes: NostrEvent[];
-	export let notesQuoted: NostrEvent[];
-	export let profs: { [key: string]: Profile };
-	export let channels: Channel[];
-	export let isLoggedin: boolean;
-	export let loginPubkey: string;
-	export let muteList: string[];
-	export let muteListFav: string[];
-	export let muteListRepost: string[];
-	export let muteListZap: string[];
-	export let muteChannels: string[];
-	export let wordList: string[];
-	export let repostList: NostrEvent[];
-	export let favList: NostrEvent[];
-	export let zapList: NostrEvent[];
-	export let resetScroll: () => void;
-	export let importRelays: (relaysSelected: string) => void;
-	export let emojiMap: Map<string, string>;
-	export let theme: string;
-	export let relaysSelected: string;
+	interface Props {
+		rxNostr: RxNostr;
+		seenOn: Map<string, Set<string>>;
+		relaysToWrite: string[];
+		notes: NostrEvent[];
+		notesQuoted: NostrEvent[];
+		profs: { [key: string]: Profile };
+		channels: Channel[];
+		isLoggedin: boolean;
+		loginPubkey: string;
+		muteList: string[];
+		muteListFav: string[];
+		muteListRepost: string[];
+		muteListZap: string[];
+		muteChannels: string[];
+		wordList: string[];
+		repostList: NostrEvent[];
+		favList: NostrEvent[];
+		zapList: NostrEvent[];
+		resetScroll: () => void;
+		importRelays: (relaysSelected: string) => void;
+		emojiMap: Map<string, string>;
+		theme: string;
+	}
+
+	let {
+		rxNostr,
+		seenOn,
+		relaysToWrite,
+		notes,
+		notesQuoted,
+		profs,
+		channels,
+		isLoggedin,
+		loginPubkey,
+		muteList,
+		muteListFav,
+		muteListRepost,
+		muteListZap,
+		muteChannels,
+		wordList,
+		repostList,
+		favList,
+		zapList,
+		resetScroll,
+		importRelays,
+		emojiMap,
+		theme
+	}: Props = $props();
 
 	preferences.subscribe(
-		(value: {
-			theme: string | undefined;
-			loginPubkey: string;
-			isLoggedin: boolean;
-			relaysSelected: string;
-		}) => {
+		(value: { theme: string | undefined; loginPubkey: string; isLoggedin: boolean }) => {
 			theme = value.theme ?? theme;
 			loginPubkey = value.loginPubkey;
 			isLoggedin = value.isLoggedin;
-			relaysSelected = value.loginPubkey;
 		}
 	);
 
@@ -115,17 +132,23 @@
 		}
 	};
 
-	interface MyBaseEmoji extends BaseEmoji {
+	interface MyBaseEmoji {
+		native: string;
 		shortcodes: string;
 		src: string | undefined;
 	}
 
-	const callSendEmoji = (rxNostr: RxNostr, relaysToWrite: string[], targetEvent: NostrEvent) => {
+	const callSendEmoji = async (
+		rxNostr: RxNostr,
+		relaysToWrite: string[],
+		targetEvent: NostrEvent
+	) => {
 		const noteId = targetEvent.id;
 		visible[noteId] = !visible[noteId];
 		if (emojiPicker[noteId].children.length > 0) {
 			return;
 		}
+		const { Picker } = await import('emoji-mart');
 		const picker = new Picker({
 			data,
 			custom: [
@@ -180,15 +203,17 @@
 		return url;
 	};
 
-	$: notesToShow = [...notes, ...repostList].sort((a, b) => {
-		if (a.created_at < b.created_at) {
-			return -1;
-		}
-		if (a.created_at > b.created_at) {
-			return 1;
-		}
-		return 0;
-	});
+	let notesToShow = $derived(
+		[...notes, ...repostList].sort((a, b) => {
+			if (a.created_at < b.created_at) {
+				return -1;
+			}
+			if (a.created_at > b.created_at) {
+				return 1;
+			}
+			return 0;
+		})
+	);
 </script>
 
 <p>Total: {notesToShow.slice(-50).length} posts</p>
@@ -292,7 +317,7 @@
 					</div>
 					<button
 						class="content-warning-show {contentWarningTag.length > 0 ? '' : 'hide'}"
-						on:click={() => showContentWarning(noteOrg.id)}>Show Content</button
+						onclick={() => showContentWarning(noteOrg.id)}>Show Content</button
 					>
 					<div class="content-warning-target {contentWarningTag.length > 0 ? 'hide' : ''}">
 						<div class="content">
@@ -425,11 +450,11 @@
 								<textarea
 									name="input-text"
 									bind:value={inputText[noteOrg.id]}
-									on:keydown={(e) => {
+									onkeydown={(e) => {
 										submitFromKeyboard(e, noteOrg);
 									}}
 								></textarea><button
-									on:click={() => {
+									onclick={() => {
 										callSendMessage(noteOrg);
 									}}
 									disabled={!inputText[noteOrg.id]}>Reply</button
@@ -437,18 +462,18 @@
 							</details>
 							<button
 								class="repost"
-								on:click={() => sendRepost(rxNostr, seenOn, relaysToWrite, noteOrg)}
+								onclick={() => sendRepost(rxNostr, seenOn, relaysToWrite, noteOrg)}
 								title="Repost"
 								aria-label="Repost"
 								><svg><use xlink:href="/refresh-cw.svg#repost"></use></svg></button
 							><button
 								class="fav"
-								on:click={() => sendFav(rxNostr, relaysToWrite, noteOrg, '+')}
+								onclick={() => sendFav(rxNostr, relaysToWrite, noteOrg, '+')}
 								title="Fav"
 								aria-label="Fav"><svg><use xlink:href="/heart.svg#fav"></use></svg></button
 							><button
 								class="emoji"
-								on:click={() => callSendEmoji(rxNostr, relaysToWrite, noteOrg)}
+								onclick={() => callSendEmoji(rxNostr, relaysToWrite, noteOrg)}
 								title="Emoji fav"
 								aria-label="Emoji fav"><svg><use xlink:href="/smiled.svg#emoji"></use></svg></button
 							>
@@ -461,16 +486,16 @@
 								aria-label="Zap Button"
 								class="zap"
 								title="Zap!"
-								on:click={() => zap(npubOrg, nip19.noteEncode(noteOrg.id), relaysToWrite)}
+								onclick={() => zap(npubOrg, nip19.noteEncode(noteOrg.id), relaysToWrite)}
 								><svg><use xlink:href="/lightning.svg#zap"></use></svg></button
 							>{#if noteOrg.pubkey === loginPubkey}<button
 									class="delete"
-									on:click={() => callSendDeletion(rxNostr, relaysToWrite, noteOrg)}
+									onclick={() => callSendDeletion(rxNostr, relaysToWrite, noteOrg)}
 									title="Delete"
 									aria-label="Delete"><svg><use xlink:href="/trash.svg#delete"></use></svg></button
 								>{/if}{:else}<button
 								class="login-as-this-account"
-								on:click={() => loginAsThisAccount(noteOrg.pubkey)}
+								onclick={() => loginAsThisAccount(noteOrg.pubkey)}
 								title="Login with this pubkey"
 								aria-label="Login with this pubkey"
 								><svg><use xlink:href="/eye.svg#login-as-this-account"></use></svg></button
