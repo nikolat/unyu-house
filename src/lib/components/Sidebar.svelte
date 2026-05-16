@@ -18,21 +18,40 @@
 	import SidebarChannel from '$lib/components/SidebarChannel.svelte';
 	import type { RxNostr } from 'rx-nostr';
 
-	export let rxNostr: RxNostr;
-	export let relaysToUse: RelayRecord;
-	export let isLoggedin: boolean;
-	export let loginPubkey: string;
-	export let channels: Channel[];
-	export let profs: { [key: string]: Profile };
-	export let importRelays: (relaysSelected: string) => void;
-	export let theme: string;
-	export let pinList: string[];
-	export let muteList: string[];
-	export let muteChannels: string[];
-	export let wordList: string[];
-	export let followList: string[];
-	let relaysSelected: string;
-	let filterSelected: string;
+	interface Props {
+		rxNostr: RxNostr;
+		relaysToUse: RelayRecord;
+		isLoggedin: boolean;
+		loginPubkey: string;
+		channels: Channel[];
+		profs: { [key: string]: Profile };
+		importRelays: (relaysSelected: string) => void;
+		theme: string;
+		pinList: string[];
+		muteList: string[];
+		muteChannels: string[];
+		wordList: string[];
+		followList: string[];
+	}
+
+	let {
+		rxNostr,
+		relaysToUse,
+		isLoggedin,
+		loginPubkey,
+		channels,
+		profs,
+		importRelays,
+		theme,
+		pinList,
+		muteList,
+		muteChannels,
+		wordList,
+		followList
+	}: Props = $props();
+
+	let relaysSelected: string = $state('');
+	let filterSelected: string = $state('');
 	storedFilterSelected.subscribe((value) => {
 		filterSelected = value;
 	});
@@ -51,9 +70,9 @@
 		}
 	);
 
-	let newChannelName: string;
-	let newChannelAbout: string;
-	let newChannelPicture: string;
+	let newChannelName: string = $state('');
+	let newChannelAbout: string = $state('');
+	let newChannelPicture: string = $state('');
 
 	const login = async () => {
 		const nostr = window.nostr;
@@ -145,15 +164,15 @@
 		<div>Login</div>
 		<div>
 			{#if isLoggedin}
-				<button on:click={logout}>Logout</button>
+				<button onclick={logout}>Logout</button>
 			{:else}
-				<button on:click={login}>Login with Browser Extension (NIP-07)</button>
+				<button onclick={login}>Login with Browser Extension (NIP-07)</button>
 			{/if}
 		</div>
 	</section>
 	<section class="config">
 		<div>Theme</div>
-		<select id="select-theme" bind:value={theme} on:change={changeTheme}>
+		<select id="select-theme" bind:value={theme} onchange={changeTheme}>
 			<option value={urlDarkTheme}>Dark Theme</option>
 			<option value={urlLightTheme}>Light Theme</option>
 		</select>
@@ -162,7 +181,7 @@
 	{#if loginPubkey}
 		<section class="config">
 			<div>Get Relay List</div>
-			<select id="select-relay-list" bind:value={relaysSelected} on:change={changeRelays}>
+			<select id="select-relay-list" bind:value={relaysSelected} onchange={changeRelays}>
 				<option value="kind3">Kind 3</option>
 				<option value="kind10002">Kind 10002</option>
 				<option value="nip05">NIP-05</option>
@@ -228,7 +247,7 @@
 								/>
 							</dd>
 						</dl>
-						<button on:click={callSendCreateChannel} disabled={!newChannelName}>Create</button>
+						<button onclick={callSendCreateChannel} disabled={!newChannelName}>Create</button>
 					</form>
 				</details>
 			{/if}
@@ -251,7 +270,7 @@
 		<h3>All Channels</h3>
 		<section class="config">
 			<div>Filter</div>
-			<select id="select-channel-filter" bind:value={filterSelected} on:change={changeFilter}>
+			<select id="select-channel-filter" bind:value={filterSelected} onchange={changeFilter}>
 				<option value="fav">❤ &gt; 0</option>
 				<option value="kana">かなカナ</option>
 				{#if loginPubkey}<option value="follow">follow</option>{/if}
@@ -280,7 +299,7 @@
 			class="zap"
 			title="Zap!"
 			aria-label="Zap Button"
-			on:click={() =>
+			onclick={() =>
 				zap(
 					'npub1dv9xpnlnajj69vjstn9n7ufnmppzq3wtaaq085kxrz0mpw2jul2qjy6uhz',
 					'note1fejz3tnexnfc5s8vf3f3fmmskyzadc78dgprqsn8z9mjajl7vjsqsrd2xh',

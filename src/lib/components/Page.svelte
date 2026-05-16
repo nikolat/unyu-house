@@ -19,7 +19,7 @@
 	import { defaultRelays, title } from '$lib/config';
 	import { browser } from '$app/environment';
 	import { afterNavigate, beforeNavigate } from '$app/navigation';
-	import { afterUpdate, onDestroy, onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import type { Filter } from 'nostr-tools/filter';
 	import type { RelayRecord } from 'nostr-tools/relay';
 	import { type NostrEvent, sortEvents, verifyEvent } from 'nostr-tools/pure';
@@ -35,7 +35,7 @@
 	import { verifier } from '@rx-nostr/crypto';
 	import type { OperatorFunction } from 'rxjs';
 
-	let rxNostr: RxNostr;
+	let rxNostr: RxNostr = $state(createRxNostr({ verifier }));
 	let tie: OperatorFunction<
 		EventPacket,
 		EventPacket & {
@@ -43,33 +43,32 @@
 			isNew: boolean;
 		}
 	>;
-	let seenOn: Map<string, Set<string>>;
-	let relaysToUse: RelayRecord;
-	let theme: string;
-	let currentChannelId: string | null;
-	let currentPubkey: string | null;
-	let currentEvent: nip19.EventPointer | null;
-	let currentHashtag: string | null;
-	let isLoggedin: boolean;
-	let loginPubkey: string;
-	let relaysSelected: string;
-	let muteList: string[] = [];
-	let muteListFav: string[] = [];
-	let muteListRepost: string[] = [];
-	let muteListZap: string[] = [];
-	let muteChannels: string[] = [];
-	let wordList: string[] = [];
-	let pinList: string[] = [];
-	let followList: string[] = [];
+	let seenOn: Map<string, Set<string>> = $state(new Map<string, Set<string>>());
+	let relaysToUse: RelayRecord = $state({});
+	let theme: string = $state('');
+	let currentChannelId: string | null = $state(null);
+	let currentPubkey: string | null = $state(null);
+	let currentEvent: nip19.EventPointer | null = $state(null);
+	let currentHashtag: string | null = $state(null);
+	let isLoggedin: boolean = $state(false);
+	let loginPubkey: string = $state('');
+	let relaysSelected: string = $state('');
+	let muteList: string[] = $state([]);
+	let muteListFav: string[] = $state([]);
+	let muteListRepost: string[] = $state([]);
+	let muteListZap: string[] = $state([]);
+	let muteChannels: string[] = $state([]);
+	let wordList: string[] = $state([]);
+	let pinList: string[] = $state([]);
+	let followList: string[] = $state([]);
 	let emojiMap: Map<string, string> = new Map();
 	let repostList: NostrEvent[] = [];
-	let favList: NostrEvent[] = [];
-	let zapList: NostrEvent[] = [];
-	let channels: Channel[] = [];
-	let notes: NostrEvent[] = [];
-	let notesQuoted: NostrEvent[] = [];
-	let profs: { [key: string]: Profile } = {};
-	let scrolled: boolean = false;
+	let favList: NostrEvent[] = $state([]);
+	let zapList: NostrEvent[] = $state([]);
+	let channels: Channel[] = $state([]);
+	let notes: NostrEvent[] = $state([]);
+	let notesQuoted: NostrEvent[] = $state([]);
+	let profs: { [key: string]: Profile } = $state({});
 	let eventsAll: NostrEvent[] = [];
 	storedRelaysToUse.subscribe((value) => {
 		relaysToUse = value;
@@ -107,16 +106,12 @@
 		eventsAll = value;
 	});
 
-	const resetScroll = () => {
-		scrolled = false;
-	};
 	const execScroll = () => {
 		if (document.querySelectorAll('main dl dt').length === 0) {
 			return;
 		}
 		const main = document.getElementsByTagName('main')[0];
 		main.scroll(0, main.scrollHeight);
-		scrolled = true;
 	};
 
 	const callbackEvent = async (event: NostrEvent, redraw: boolean = true) => {
@@ -445,7 +440,6 @@
 
 	const applyRelays = async () => {
 		storedNeedApplyRelays.set(false);
-		resetScroll();
 		channels = [];
 		notes = [];
 		notesQuoted = [];
@@ -545,11 +539,6 @@
 	onDestroy(() => {
 		console.log('[onDestroy]');
 	});
-	afterUpdate(() => {
-		if (!scrolled) {
-			execScroll();
-		}
-	});
 	beforeNavigate(() => {
 		console.log('[beforeNavigate]');
 		rxNostr?.dispose();
@@ -569,32 +558,36 @@
 		document.getElementById('input')?.classList.remove('show');
 	};
 
-	$: titleString = currentChannelId
-		? `${channels.find((v) => v.event.id === currentChannelId)?.name ?? '(unknown channel)'} | ${title}`
-		: currentPubkey
-			? `${profs[currentPubkey]?.name ?? '(unknown profile)'} | ${title}`
-			: title;
+	let titleString = $derived(
+		currentChannelId
+			? `${channels.find((v) => v.event.id === currentChannelId)?.name ?? '(unknown channel)'} | ${title}`
+			: currentPubkey
+				? `${profs[currentPubkey]?.name ?? '(unknown profile)'} | ${title}`
+				: title
+	);
 
-	$: repostListToShow = currentChannelId
-		? repostList.filter((ev16) => {
-				const repostedEvent = [...notes, ...notesQuoted].find(
-					(ev) => ev.id === ev16.tags.find((tag) => tag.length >= 2 && tag[0] === 'e')?.at(1)
-				);
-				return repostedEvent?.tags.some(
-					(tag) =>
-						tag.length >= 4 && tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root'
-				);
-			})
-		: repostList;
+	let repostListToShow = $derived(
+		currentChannelId
+			? repostList.filter((ev16) => {
+					const repostedEvent = [...notes, ...notesQuoted].find(
+						(ev) => ev.id === ev16.tags.find((tag) => tag.length >= 2 && tag[0] === 'e')?.at(1)
+					);
+					return repostedEvent?.tags.some(
+						(tag) =>
+							tag.length >= 4 && tag[0] === 'e' && tag[1] === currentChannelId && tag[3] === 'root'
+					);
+				})
+			: repostList
+	);
 </script>
 
 <svelte:head>
 	<title>{titleString}</title>
 	<script type="module" src="https://cdn.jsdelivr.net/npm/nostr-zap@1.1.0"></script>
 </svelte:head>
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
-<div id="container" on:click={hidePostBar}>
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div id="container" onclick={hidePostBar}>
 	<Header {title} {profs} {loginPubkey} />
 	<Sidebar
 		{rxNostr}
@@ -695,7 +688,7 @@
 			repostList={repostListToShow}
 			{favList}
 			{zapList}
-			{resetScroll}
+			resetScroll={() => {}}
 			{importRelays}
 			{emojiMap}
 			{theme}
@@ -708,7 +701,7 @@
 				{relaysToUse}
 				{channels}
 				{hidePostBar}
-				{resetScroll}
+				resetScroll={() => {}}
 				{emojiMap}
 			/>
 		{/if}

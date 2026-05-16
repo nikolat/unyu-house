@@ -7,9 +7,6 @@
 	import { getToken } from 'nostr-tools/nip98';
 	import type { RxNostr } from 'rx-nostr';
 	import data from '@emoji-mart/data';
-	import { Picker } from 'emoji-mart';
-	// @ts-expect-error なんもわからんかも
-	import type { BaseEmoji } from '@types/emoji-mart';
 
 	interface Props {
 		rxNostr: RxNostr;
@@ -58,16 +55,18 @@
 		);
 	};
 
-	interface MyBaseEmoji extends BaseEmoji {
+	interface MyBaseEmoji {
+		native: string;
 		shortcodes: string;
 	}
 
-	const callGetEmoji = () => {
+	const callGetEmoji = async () => {
 		emojiVisible = !emojiVisible;
 		const emojiPicker = document.getElementById('emoji-picker-post');
 		if (emojiPicker?.children.length ?? 0 > 0) {
 			return;
 		}
+		const { Picker } = await import('emoji-mart');
 		const picker = new Picker({
 			data,
 			custom: [
