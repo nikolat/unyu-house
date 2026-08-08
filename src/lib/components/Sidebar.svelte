@@ -234,8 +234,7 @@
 								<textarea
 									id="new-channel-about"
 									placeholder="channel description"
-									bind:value={newChannelAbout}
-								></textarea>
+									bind:value={newChannelAbout}></textarea>
 							</dd>
 							<dt><label for="new-channel-picture">Picture</label></dt>
 							<dd>

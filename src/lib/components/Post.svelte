@@ -168,8 +168,7 @@
 				bind:value={inputText}
 				onkeydown={(e) => {
 					submitFromKeyboard(e, channel.event);
-				}}
-			></textarea>
+				}}></textarea>
 			<button
 				onclick={() => {
 					callSendMessage(channel.event);

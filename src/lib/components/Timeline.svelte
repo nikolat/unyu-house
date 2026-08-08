@@ -452,8 +452,7 @@
 									bind:value={inputText[noteOrg.id]}
 									onkeydown={(e) => {
 										submitFromKeyboard(e, noteOrg);
-									}}
-								></textarea><button
+									}}></textarea><button
 									onclick={() => {
 										callSendMessage(noteOrg);
 									}}
