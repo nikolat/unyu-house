@@ -165,8 +165,7 @@
 					<textarea
 						id="edit-channel-about"
 						placeholder="channel description"
-						bind:value={editChannelAbout}
-					></textarea>
+						bind:value={editChannelAbout}></textarea>
 				</dd>
 				<dt><label for="edit-channel-picture">Picture</label></dt>
 				<dd>

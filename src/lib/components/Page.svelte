@@ -52,7 +52,6 @@
 	let currentHashtag: string | null = $state(null);
 	let isLoggedin: boolean = $state(false);
 	let loginPubkey: string = $state('');
-	let relaysSelected: string = $state('');
 	let muteList: string[] = $state([]);
 	let muteListFav: string[] = $state([]);
 	let muteListRepost: string[] = $state([]);
@@ -73,23 +72,15 @@
 	storedRelaysToUse.subscribe((value) => {
 		relaysToUse = value;
 	});
-	preferences.subscribe(
-		(value: {
-			theme: string;
-			loginPubkey: string;
-			isLoggedin: boolean;
-			relaysSelected: string;
-		}) => {
-			theme = value.theme ?? theme;
-			loginPubkey = value.loginPubkey;
-			isLoggedin = value.isLoggedin;
-			relaysSelected = value.relaysSelected;
-			if (browser && document.querySelector('link[rel=stylesheet]') !== null) {
-				(document.querySelector('link[rel=stylesheet]') as HTMLLinkElement).href =
-					theme ?? $preferences.theme;
-			}
+	preferences.subscribe((value: { theme: string; loginPubkey: string; isLoggedin: boolean }) => {
+		theme = value.theme ?? theme;
+		loginPubkey = value.loginPubkey;
+		isLoggedin = value.isLoggedin;
+		if (browser && document.querySelector('link[rel=stylesheet]') !== null) {
+			(document.querySelector('link[rel=stylesheet]') as HTMLLinkElement).href =
+				theme ?? $preferences.theme;
 		}
-	);
+	});
 	storedCurrentChannelId.subscribe((value) => {
 		currentChannelId = value;
 	});
@@ -678,7 +669,6 @@
 			{channels}
 			{isLoggedin}
 			{loginPubkey}
-			{relaysSelected}
 			{muteList}
 			{muteListFav}
 			{muteListRepost}
